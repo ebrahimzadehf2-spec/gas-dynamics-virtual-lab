@@ -3,7 +3,7 @@
 ## What was actually run
 
 - Extracted original Rayleigh physics functions and tested zero heat, sub/supersonic heating and cooling, sonic input, and heat above the limit. Original neural networks were not retrained.
-- Node scientific and integration tests: 20 named groups, with parameterized loops within several groups. This is not a claim of 20 independent physical benchmark problems.
+- Node scientific and integration tests: 23 named groups, with parameterized loops within several groups. This is not a claim of 20 independent physical benchmark problems.
 - Independent Python references: quadratic inverse Rayleigh relation (four cases); SciPy DOP853 IVP + Brent cone shooting (three cases). The independent code does not import JS or reuse its RK stepping code.
 - Browser QA is tracked in BROWSER_QA.md.
 
@@ -34,6 +34,15 @@ Independent JS and SciPy calculations agree on beta≈26.73671771893°,surface M
 - NASA oblique shock: https://www.grc.nasa.gov/WWW/BGH/oblique.html — component transformation and attached-flow scope.
 - Taylor–Maccoll formulation: https://uahypersonics.github.io/gasdyn/theory/taylor_maccoll/ — ODE and velocity normalization.
 
+## Chapter 3 worked examples (2026-11-05)
+
+Both worked examples from the latest supplied Chapter 3 were compared with an independent dimensional mass/momentum/energy quadratic solver. See chapter-3-validation.html for the full comparison, book rounding conventions and the small entropy discrepancy in Example 3-1. No engine formula correction was needed. Added three tests including UI units and ratio independence from arbitrary upstream scales. All 23 groups pass.
+
+Source file: Chapter 3. Ehsan 16-7-2026(3).docx
+SHA256: d362193a8498bee07ad1e078afa11ec9a455c21c9866e47825d81ee067390892
+
+The XML fractions 1/0.1278 and 1/0.7978 were explicitly verified; flattened text must not be read as decimal factors. Book manuscripts are not included in this repository.
+
 ## Not yet accepted
 
-Every worked book example, final equation-number mapping, all parameter boundaries, strong conical branch, general multi-wave patterns, complete reflection models, real gases, learned surrogate accuracy, and experimental validation. The manuscript files reviewed have ambiguous historical filenames; topic mapping is based on content, not filename numbering.
+Worked examples outside Chapter 3, final equation-number mapping, all parameter boundaries, strong conical branch, general multi-wave patterns, complete reflection models, real gases, learned surrogate accuracy, and experimental validation. The latest ten supplied chapter files are the current baseline; internal chapter titles determine topic mapping.
