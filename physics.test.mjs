@@ -17,6 +17,17 @@ test('shock tube pressure/contact identities and notebook reference',()=>{let s=
 test('nozzle counterexample: pb/p0=.8 admits internal shock',()=>{let s=p.nozzle();near(s.AsAt,1.297184696078,1e-8);near(s.Me,.357162369823,1e-8);near(s.onset,.937162502432,1e-9);near(s.exitShock,.513400727996,1e-9);assert.ok(s.AsAt>=1&&s.AsAt<=2);});
 test('nozzle all regimes and pressure closure',()=>{for(let r of [1,.98,.94,.9,.7,.52,.4,.1,.02]){let s=p.nozzle({backRatio:r});if(r>=s.exitShock)near(s.points.at(-1).p,r,1e-8);else near(s.points.at(-1).p,s.design,1e-9);}let s=p.nozzle();near(p.nozzle({backRatio:s.onset}).Me,p.machFromArea(2,'subsonic'),1e-8);assert.throws(()=>p.nozzle({areaRatio:.9}));});
 test('corrected unequal-shock collision and symmetric case',()=>{let s=p.collision();near(s.slipAngle,9.5448881687,1e-7);near(s.p4,10.1092647896,1e-7);near(s.p4,s.p5,1e-8);let sy=p.collision({thetaUpper:10,thetaLower:10});near(sy.delta,0,1e-10);});
-test('linearized diamond integrates Cp to lift and wave drag',()=>{let s=p.linearAirfoil({M:3,alpha:4,thickness:.08}),a=p.rad(4),slope=.16;near((s.CpLF+s.CpLR-s.CpUF-s.CpUR)/2,s.CL,1e-13);let axial=slope/2*(s.CpUF-s.CpUR+s.CpLF-s.CpLR);near(axial+a*s.CL,s.CD,1e-13);});
+test('linearized diamond integrates Cp to lift and wave drag',()=>{let s=p.linearAirfoil({M:3,alpha:4,thickness:.08}),a=p.rad(4),slope=(.08/2)/.5;near((s.CpLF+s.CpLR-s.CpUF-s.CpUR)/2,s.CL,1e-13);let axial=slope/2*(s.CpUF-s.CpUR+s.CpLF-s.CpLR);near(axial+a*s.CL,s.CD,1e-13);});
 test('Taylor–Maccoll event, step refinement and surface EOS',()=>{let a=coneFromShock(2,p.rad(35),1.4,{step:.002}),b=coneFromShock(2,p.rad(35),1.4,{step:.001});near(a.thetaConeDeg,16.5322146574,2e-7);near(a.thetaConeDeg,b.thetaConeDeg,2e-7);near(a.eventResidual,0,1e-11);near(a.surface.p,a.surface.rho*a.surface.T,1e-13);});
 test('inverse cone recovers the target and selected direct beta',()=>{let s=cone({M:2.35,thetaCone:10});near(s.thetaConeDeg,10,1e-6);near(p.deg(s.beta),26.7367177173,2e-6);near(s.surface.M,2.1468308633,2e-7);});
+
+test('diamond full-thickness convention agrees with independent shock-expansion reference at small slope',()=>{
+ // Vertices (x/c,y/c): (0,0),(.5,t/(2c)),(1,0).
+ // Independent dimensional jump + PM quadrature gives this nonlinear wave drag.
+ const exactCD=0.0038964812182171694;
+ const tOverC=Math.tan(3*Math.PI/180);
+ const linear=p.linearAirfoil({M:3,alpha:0,thickness:tOverC});
+ assert.ok(Math.abs(linear.CD-exactCD)/exactCD<.01);
+ near(linear.CL,0,1e-14);
+ const plate=p.linearAirfoil({M:3,alpha:0,thickness:0});near(plate.CD,0,1e-14);
+});
