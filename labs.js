@@ -27,7 +27,7 @@ function shockStateSection({kind,title,location,before,after,gamma,R,extra=[]}){
  return {kind,title,location,rows,extra:[...extra,{label:'Entropy rise Δs',value:ds,unit:'J/(kg·K)'}]};
 }
 export const chapters=[
- [1,'Isentropic flow relations','Thermodynamics & stagnation properties',['foundations']],
+ [1,'Isentropic Flow Calculator','Thermodynamics & stagnation properties',['foundations']],
  [2,'Conservation','Control-volume balances',['balances']],
  [3,'Normal shocks','Sound, compression & entropy',['normal']],
  [4,'Rayleigh flow','Heat transfer & thermal choking',['rayleigh']],
@@ -39,7 +39,7 @@ export const chapters=[
  [10,'Conical flow','Taylor–Maccoll similarity solution',['cone']]
 ];
 export const labs={
- foundations:{chapter:1,title:'Isentropic flow relations',tag:'ISENTROPIC RELATIONS',description:'Inspect static, stagnation and sonic-reference ratios, area ratio, Mach angle and Prandtl–Meyer angle for a calorically perfect gas.',inputs:[M('M',2),T,P,g],model:'Calorically perfect ideal gas · local isentropic deceleration to rest',equation:'T₀/T = 1 + (γ − 1)M²/2',limitations:'This relation defines stagnation properties. It does not assert that an entire flow field is isentropic.'},
+ foundations:{chapter:1,title:'Isentropic Flow Calculator',tag:'ISENTROPIC RELATIONS',description:'Inspect static, stagnation and sonic-reference ratios, area ratio, Mach angle and Prandtl–Meyer angle for a calorically perfect gas.',inputs:[M('M',2),T,P,g],model:'Calorically perfect ideal gas · local isentropic deceleration to rest',equation:'T₀/T = 1 + (γ − 1)M²/2',limitations:'This relation defines stagnation properties. It does not assert that an entire flow field is isentropic.'},
  balances:{chapter:2,title:'Control-volume balance lab',tag:'MASS · MOMENTUM · ENERGY',description:'Change a proposed outlet state and inspect the mass, force and energy balances. Solve outlet speed from continuity or load a consistent example.',inputs:[
  {key:'balanceMode',label:'Experiment mode',value:'Check proposed outlet',options:['Check proposed outlet','Solve outlet speed']},
  {...M('M1',.3),section:'Inlet state'},T,{...P,value:200},input('A1','Inlet area',10,.1,100, .1,'cm²'),
