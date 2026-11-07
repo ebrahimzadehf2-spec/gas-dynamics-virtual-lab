@@ -19,10 +19,10 @@ export function controlVolume(x){
  return {status:entropyViolation?'entropy-violation':balanced?'balanced':'unbalanced',a,b,A1,A2,m1,m2,cp,gamma:g,R,terms,balanced,entropyChecked,entropyViolation,ds,Q,W,Fx:x.Fx,
   forceRequired:m2*b.u-m1*a.u-(a.p*A1-b.p*A2),heatRequired:W+m2*cp*b.T0-m1*cp*a.T0};
 }
-export function controlVolumePreset(kind='nozzle'){
- const gamma=1.4,R=287,base={balanceMode:'Check proposed outlet',gamma,R,M1:.3,T1:300,p1:200,A1:10,A2:5,Qdot:0,Wdot:0,Fx:0};
+export function controlVolumePreset(kind='nozzle',{gamma=1.4,R=287}={}){
+ const base={balanceMode:'Check proposed outlet',gamma,R,M1:.3,T1:300,p1:200,A1:10,A2:5,Qdot:0,Wdot:0,Fx:0};
  let M2,T2,p2;
  if(kind==='shock'){base.M1=2;base.A2=base.A1;const n=normalShock(base.M1,gamma);M2=n.M2;T2=base.T1*n.T;p2=base.p1*n.p;}
- else{M2=machFromArea(areaMach(base.M1,gamma)*base.A2/base.A1,'subsonic',gamma);const tr=isentropic(base.M1,gamma).T0T/isentropic(M2,gamma).T0T;T2=base.T1*tr;p2=base.p1*tr**(gamma/(gamma-1));}
+ else{if(areaMach(base.M1,gamma)*base.A2/base.A1<1)base.A2=1.05*base.A1/areaMach(base.M1,gamma);M2=machFromArea(areaMach(base.M1,gamma)*base.A2/base.A1,'subsonic',gamma);const tr=isentropic(base.M1,gamma).T0T/isentropic(M2,gamma).T0T;T2=base.T1*tr;p2=base.p1*tr**(gamma/(gamma-1));}
  const x={...base,M2,T2,p2},r=controlVolume(x);return {...x,Fx:r.forceRequired};
 }

@@ -15,6 +15,7 @@ Calorically perfect ideal gas; analytical relations, bracketed scalar roots and 
 This publication flattens the original source folders so GitHub Pages can serve the root directly. Only relative module imports and test paths were changed; equations and numerical algorithms are unchanged.
 
 - `physics.js`, `numerics.js`, `cone.js`, `control-volume.js`: pure scientific engine.
+- `gas-properties.js`: selectable gas constants at 300 K and custom fixed properties.
 - `labs.js`, `worker.js`: experiments and asynchronous calculation.
 - `graphics.js`, `app.js`, `style.css`, `index.html`: interface, charts and labeled fields.
 - `guide.html`: scientific scope, assumptions and reference status.
