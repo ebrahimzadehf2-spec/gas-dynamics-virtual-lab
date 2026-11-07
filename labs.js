@@ -27,7 +27,7 @@ function shockStateSection({kind,title,location,before,after,gamma,R,extra=[]}){
  return {kind,title,location,rows,extra:[...extra,{label:'Entropy rise Δs',value:ds,unit:'J/(kg·K)'}]};
 }
 export const chapters=[
- [1,'Foundations','Thermodynamics & stagnation properties',['foundations']],
+ [1,'Isentropic flow relations','Thermodynamics & stagnation properties',['foundations']],
  [2,'Conservation','Control-volume balances',['balances']],
  [3,'Normal shocks','Sound, compression & entropy',['normal']],
  [4,'Rayleigh flow','Heat transfer & thermal choking',['rayleigh']],
