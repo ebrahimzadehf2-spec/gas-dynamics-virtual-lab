@@ -1,4 +1,4 @@
-import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-gases';
+import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
 import * as p from './physics.js?v=20261107-isentropic';

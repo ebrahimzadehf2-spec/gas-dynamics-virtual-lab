@@ -19,7 +19,7 @@ export function gasInfo(x){
 }
 export function gasInputFields(x,id){
  const info=gasInfo(x),locked=info.name!=='Custom gas';
- return [{key:'fluid',label:'Working gas',value:'Air',options:gasNames,section:'Gas properties',help:`${locked?'Reference properties at 300 K, held constant.':'Custom properties, held constant.'} cₚ = ${Number(info.cp.toPrecision(6))} J/(kg·K). Choose Custom gas to edit γ and R.${id==='linear'?' This linearized coefficient model is independent of γ and R.':id==='cone'?' The dimensionless cone solution depends on γ, not R.':id==='tube'?' The same gas is used on both sides.':''}`},
+ return [{key:'fluid',label:'Working gas',value:'Air',options:gasNames,section:'Gas properties',help:`${locked?'Reference properties at 300 K, held constant.':'Custom properties, held constant.'} Choose Custom gas to edit γ and R.${id==='linear'?' This linearized coefficient model is independent of γ and R.':id==='cone'?' The dimensionless cone solution depends on γ, not R.':id==='tube'?' The same gas is used on both sides.':''}`},
  {key:'gamma',label:'Specific heat ratio',unit:'γ',min:1.01,max:2,step:.001,readOnly:locked},
  {key:'R',label:'Specific gas constant',unit:'J/(kg·K)',min:1,max:10000,step:1,readOnly:locked}];
 }
