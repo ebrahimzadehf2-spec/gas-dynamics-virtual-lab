@@ -1,6 +1,6 @@
 import {pressureSweepPlan,advancePressure} from './sweep.js?v=20261107-shock-states';
 import {labs,chapters,defaults,inputDefinitions,nozzleInfo} from './labs.js?v=20261107-english-only';
-import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261107-rainbow-all';
+import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261107-readable-type';
 const $=id=>document.getElementById(id);let id='rayleigh',inputs={},request=0,current=null,pinned=null,timer,animation=false,frame,lastFrame=0,sceneTime=.001,fieldQuantity='pressure';
 const worker=new Worker(new URL('./worker.js?v=20261107-english-only',import.meta.url),{type:'module'});
 function renderNav(){ $('chapters').innerHTML=chapters.map(([n,title,,ids])=>`<a href="#${ids[0]}" class="${ids.includes(id)?'active':''}" ${ids.includes(id)?'aria-current="page"':''}><span class="number">${String(n).padStart(2,'0')}</span><span><span class="nav-title">${title}</span></span></a>`).join('');}
