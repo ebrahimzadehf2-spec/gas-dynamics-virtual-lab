@@ -1,5 +1,5 @@
-import {externalJet} from './jet.js?v=20261107-external';
-import * as p from './physics.js?v=20261107-external';
+import {externalJet} from './jet.js?v=20261107-full-nozzle';
+import * as p from './physics.js?v=20261107-full-nozzle';
 import {cone} from './cone.js';
 const input=(key,label,value,min,max,step=1,unit='')=>({key,label,value,min,max,step,unit});
 const g=input('gamma','Specific heat ratio',1.4,1.1,1.67,.01,'γ');
@@ -30,7 +30,7 @@ export const labs={
  collision:{chapter:6,title:'Unequal shock interaction',tag:'SLIP-LINE COMPATIBILITY',description:'Find two outgoing attached shocks with equal pressure and a common flow direction.',inputs:[M('M1',4),input('thetaUpper','Upper incident turn',10,.1,30,.1,'°'),input('thetaLower','Lower incident turn',20,.1,30,.1,'°'),g],model:'Two incident weak shocks · two outgoing weak compression shocks',equation:'p₄ = p₅   ·   δ₄ = δ₅',limitations:'δ is positive upward; incoming directions are +upper turn and −lower turn. Only two outgoing attached compression shocks are solved.'},
  tube:{chapter:7,title:'Shock tube',tag:'MOVING-WAVE SYSTEM',description:'Rupture an ideal diaphragm and explore the incident shock, contact surface and expansion fan.',inputs:[input('p1','Driven pressure',5,.1,200,1,'kPa'),input('p4','Driver pressure',200,1,2000,1,'kPa'),input('T1','Driven temperature',298.15,100,1500,1,'K'),input('T4','Driver temperature',293.15,100,1500,1,'K'),g],model:'Same ideal gas on both sides · initially at rest · before any end-wall reflection',equation:'p₂ = p₃   ·   u₂ = u₃',limitations:'Time animation shows the infinite-tube similarity solution. End walls and reflected waves are not included. The core separately supports two different gases.'},
  nozzle:{chapter:8,title:'Nozzle flow laboratory',tag:'QUASI-1D FLOW',description:'Choose a converging, diverging or converging–diverging passage and inspect its flow regime.',inputs:[
-  {key:'nozzleView',label:'Nozzle view',value:'Internal flow',options:['Internal flow','External waves']},
+  {key:'nozzleView',label:'Nozzle view',value:'Internal flow',options:['Nozzle + external waves','Internal flow','External waves']},
   {key:'nozzleType',label:'Nozzle geometry',value:'Converging–diverging',options:['Converging–diverging','Converging','Diverging']},
   input('areaRatio','Exit-to-throat area',2,1.01,12,.01,'Aₑ/Aₜ'),
   input('contractionRatio','Inlet-to-exit area',2,1.01,12,.01,'Aᵢ/Aₑ'),
@@ -50,7 +50,7 @@ export function inputDefinitions(id,x={}){
  if(id!=='nozzle')return labs[id].inputs;
  const type=x.nozzleType??'Converging–diverging';
  return labs.nozzle.inputs.filter(f=>{
-  if(f.key==='ambientRatio')return x.nozzleView==='External waves'&&type==='Diverging'&&x.outletCondition!=='Specified back pressure';
+  if(f.key==='ambientRatio')return ['External waves','Nozzle + external waves'].includes(x.nozzleView)&&type==='Diverging'&&x.outletCondition!=='Specified back pressure';
   if(f.key==='areaRatio')return type!=='Converging';
   if(f.key==='contractionRatio')return type==='Converging';
   if(f.key==='backRatio')return type!=='Diverging'||x.outletCondition==='Specified back pressure';
@@ -62,7 +62,7 @@ export function inputDefinitions(id,x={}){
 }
 export function nozzleInfo(x){
  const base=labs.nozzle,type=x.nozzleType??'Converging–diverging';
- if(x.nozzleView==='External waves')return {description:'Match the local jet pressure to the ambient through a centered expansion or a weak attached oblique shock.',model:'Local planar upper-lip model · uniform axial exit · pressure-matched free jet boundary',equation:'p₂ = pₐ   ·   expansion: Δθ = ν(M₂) − ν(Mₑ)   ·   shock: θ–β–M',limitations:'Only the first upper-lip wave is solved. The drawing is a local simple-wave construction, not a full finite-width or axisymmetric jet. Opposite-lip interactions, reflections, shock cells, Mach disks, separation and mixing are not computed. Ambient is treated as a constant-pressure boundary.'};
+ if(['External waves','Nozzle + external waves'].includes(x.nozzleView))return {description:x.nozzleView==='Nozzle + external waves'?'Follow the complete schematic planar nozzle and the first pair of waves from its exit lips.':'Match the local jet pressure to the ambient through a centered expansion or a weak attached oblique shock.',model:'Local planar upper-lip model · uniform axial exit · pressure-matched free jet boundary',equation:'p₂ = pₐ   ·   expansion: Δθ = ν(M₂) − ν(Mₑ)   ·   shock: θ–β–M',limitations:'External waves shows a local upper lip. Nozzle + external waves shows the complete schematic planar nozzle and mirrored first lip waves, ending at their first centerline interaction. A sonic-exit fan is schematic in the combined view; use the local view for its simple-wave details. This is not a full interacting or axisymmetric jet solution. Opposite-lip interactions, reflections, shock cells, Mach disks, separation and mixing are not computed. Ambient is treated as a constant-pressure boundary.'};
  if(type==='Converging')return {description:'Accelerate reservoir air through a converging nozzle and find its sonic exit-pressure limit.',model:'Converging nozzle · reservoir inlet · isentropic internal flow',equation:'p*/p₀ = [2/(γ + 1)]^[γ/(γ − 1)]   ·   pₑ = max(pᵦ, p*)',limitations:'The minimum area is the exit. Once choked, reducing back pressure changes the external jet, not the internal exit Mach or pressure. Use External waves for a local planar lip expansion; the full jet is not resolved.'};
  if(type==='Diverging')return x.outletCondition==='Specified back pressure'?{description:'Prescribe the inlet Mach and back pressure to locate a normal shock or identify external pressure adjustment.',model:'Diverging passage · prescribed inlet state and back pressure · isentropic sections with up to one normal shock',equation:'pₑ(Aₛ/Aᵢ) = pᵦ   ·   T₀₂ = T₀₁   ·   p₀₂ < p₀₁ across a shock',limitations:'A normal shock requires a supersonic upstream stream. Pressure above the shock-at-inlet limit cannot preserve the prescribed inlet Mach. A subsonic inlet permits only its matched outlet pressure. Use External waves for local lip adjustment. Separation and unstart are not resolved; x/L follows the schematic area distribution.'}:{description:'Prescribe the inlet Mach number: a diverging passage decelerates subsonic flow and accelerates supersonic flow.',model:'Diverging passage · prescribed inlet Mach and stagnation state · isentropic branch',equation:'Aₑ/A* = (Aₑ/Aᵢ)(Aᵢ/A*)   ·   choose the inlet Mach branch',limitations:'The inlet Mach and area ratio fix the matched outlet pressure. Select Specified back pressure to test a normal shock on the supersonic branch. Local lip waves are available in External waves; separation is not resolved; a sonic inlet requires a downstream branch.'};
  return {description:'Vary back pressure to find subsonic flow, choking, an internal normal shock and external pressure adjustment.',model:'Converging–diverging nozzle · reservoir inlet · isentropic sections with up to one normal shock',equation:base.equation,limitations:'The divergent area increases monotonically. Shock location Aₛ/Aₜ is calculated; x/L uses the displayed schematic area distribution. Use External waves for local lip adjustment. Full jets and flow separation are not resolved.'};
@@ -93,7 +93,7 @@ export function calculate(id,x){let g=x.gamma??1.4,result,rows=[],chart,scene,ch
   chart={title:prop==='Pressure'?'Section-averaged pressure':prop==='Mach number'?'Section-averaged Mach number':'Section-averaged temperature',xlabel:'Axial position x/L',ylabel:prop==='Pressure'?'p/p₀':prop==='Mach number'?'Mach number':'Temperature (K)',series:[{name:prop,points:result.points.map(s=>[s.x,s[field]])}]};
   if(prop==='Pressure')chart.series.push({name:type==='Diverging'&&result.outletCondition!=='Specified back pressure'?'Matched outlet pressure':'Back pressure',points:[[0,result.backRatio],[1,result.backRatio]]});
   checks={massConservation:result.massResidual,...(result.pressureMatched?{pressureClosure:result.pressureResidual}:{}),...(result.shockChecks?{shockMass:result.shockChecks.mass,shockMomentum:result.shockChecks.momentum,shockEnergy:result.shockChecks.energy}:{})};
-  if(x.nozzleView==='External waves'){
+  if(['External waves','Nozzle + external waves'].includes(x.nozzleView)){
    const ambient=type==='Diverging'&&result.outletCondition!=='Specified back pressure'?(x.ambientRatio??.1)*result.p0:result.backRatio*result.p0;
    const jet=externalJet({M:result.Me,p:result.exitPressure,T:result.exitTemperature,pb:ambient,gamma:g,R:result.R});result.external=jet;
    rows=rows.slice(0,4);
@@ -102,7 +102,7 @@ export function calculate(id,x){let g=x.gamma??1.4,result,rows=[],chart,scene,ch
    if(jet.beta!==null)rows.push(row('External shock angle β',p.deg(jet.beta),'°'));
    if(jet.status==='expansion')rows.push(row('Fan head angle · upper lip',p.deg(jet.head),'°'),row('Fan tail angle · upper lip',p.deg(jet.tail),'°'));
    if(jet.weakPressureLimit)rows.push(row('Weak attached pressure limit',jet.weakPressureLimit,'pₐ/pₑ'));
-   scene={kind:'jet',...jet};notice=jet.message;checks={...checks,...Object.fromEntries(Object.entries(jet.checks).map(([k,v])=>['external'+k[0].toUpperCase()+k.slice(1),v]))};
+   scene={kind:x.nozzleView==='Nozzle + external waves'?'nozzleJet':'jet',...jet,...(x.nozzleView==='Nozzle + external waves'?{nozzle:{points:result.points,shockX:result.shockX,AsAt:result.AsAt,choked:result.choked,nozzleType:result.nozzleType,p0:result.p0,regime:result.regime}}:{})};notice=jet.message;checks={...checks,...Object.fromEntries(Object.entries(jet.checks).map(([k,v])=>['external'+k[0].toUpperCase()+k.slice(1),v]))};
    const val=z=>prop==='Pressure'?z.p/result.p0:prop==='Temperature'?z.T:z.M;
    let pts=jet.status==='expansion'?jet.samples.map(z=>[p.deg(z.theta),val(z)]):jet.status==='shock'?[[0,val(jet.inlet)],[.5,val(jet.inlet)],[.5,val(jet.outlet)],[1,val(jet.outlet)]]:[[0,val(jet.inlet)],[1,val(jet.inlet)]];
    chart={title:jet.status==='expansion'?`Expansion fan · ${prop.toLowerCase()}`:jet.status==='shock'?`Across external shock · ${prop.toLowerCase()}`:`Exit state · ${prop.toLowerCase()}`,xlabel:jet.status==='expansion'?'Upper-lip flow turn θ (°)':jet.status==='shock'?'Across shock · schematic coordinate':'Reference coordinate',ylabel:prop==='Pressure'?'p/p₀, inlet':prop==='Mach number'?'Mach number':'Temperature (K)',series:[{name:prop,points:pts}]};

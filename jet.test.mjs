@@ -39,3 +39,13 @@ test('angle directions and jump geometry remain valid across gases and moderate 
   const l=shockLimit(M,gamma),ratio=normalShock(M*Math.sin(l.beta),gamma).p,pb=100000*(1+(ratio-1)*.5),s=externalJet({M,gamma,pb});assert.equal(s.status,'shock');assert.ok(s.theta<0&&-s.theta<s.beta);assert.ok(Object.values(s.checks).every(z=>z<1e-9));
  }
 });
+test('complete-nozzle view preserves local wave states and distinguishes first interaction from sonic schematic',()=>{
+ const base={...defaults('nozzle'),nozzleType:'Converging–diverging',areaRatio:3};
+ for(const backRatio of [.02,.1,.32,.5,.04729869168295054]){
+  const local=calculate('nozzle',{...base,backRatio,nozzleView:'External waves'}),full=calculate('nozzle',{...base,backRatio,nozzleView:'Nozzle + external waves'});
+  assert.equal(full.scene.kind,'nozzleJet');assert.equal(full.result.external.status,local.result.external.status);near(full.result.external.theta,local.result.external.theta);near(full.result.Me,local.result.Me);
+  const drawing=sceneSVG(full.scene,full.inputs);assert.ok(!/NaN|Infinity|undefined/.test(drawing.svg));assert.ok(drawing.svg.includes('COMPLETE NOZZLE'));if(['expansion','shock'].includes(full.result.external.status))assert.ok(drawing.svg.includes('WAVE INTERACTION'));
+ }
+ const sonic=calculate('nozzle',{...base,nozzleType:'Converging',backRatio:.2,nozzleView:'Nozzle + external waves'}),svg=sceneSVG(sonic.scene,sonic.inputs);assert.ok(svg.label.includes('schematic sonic-lip'));assert.ok(svg.svg.includes('INTERACTING JET NOT SOLVED'));
+ const div={...base,nozzleType:'Diverging',MIn:2,nozzleView:'Nozzle + external waves'};assert.ok(inputDefinitions('nozzle',div).some(z=>z.key==='ambientRatio'));
+});

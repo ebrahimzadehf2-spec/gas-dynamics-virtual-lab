@@ -1,6 +1,6 @@
 // Local planar upper-lip simple-wave model; no jet reflections or CFD.
 // Relations: NACA Report 1135; NASA Glenn oblique-shock and expansion pages.
-import {state,isentropic,prandtlMeyer,normalShock,shockLimit,turnAngle,linspace,conservation} from './physics.js?v=20261107-external';
+import {state,isentropic,prandtlMeyer,normalShock,shockLimit,turnAngle,linspace,conservation} from './physics.js?v=20261107-full-nozzle';
 import {gas,positive,requireValue,finite} from './numerics.js';
 export function externalJet({M=2,p=100000,T=300,pb=50000,gamma:g=1.4,R=287}={}){
  gas(g,R);positive(p,'Exit pressure');positive(T,'Exit temperature');positive(pb,'Ambient pressure');requireValue(finite(M)&&M>=0,'Exit Mach must be finite and nonnegative.');
