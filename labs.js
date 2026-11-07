@@ -1,3 +1,4 @@
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261107-mach-ranges';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
@@ -85,7 +86,7 @@ function experimentInputs(id,x={}){
   return true;
  }).map(f=>f.key==='backRatio'&&type==='Diverging'?{...f,label:'Back-to-inlet stagnation pressure'}:f.key==='areaRatio'&&type==='Diverging'?{...f,label:'Exit-to-inlet area',unit:'Aₑ/Aᵢ'}:f.key==='minAreaCm2'?{...f,label:type==='Converging'?'Exit area':type==='Diverging'?'Inlet area':'Throat area'}:f);
 }
-export function inputDefinitions(id,x={}){return [...gasInputFields(x,id),...experimentInputs(id,x).filter(f=>!['gamma','R'].includes(f.key))];}
+export function inputDefinitions(id,x={}){return [...gasInputFields(x,id),...experimentInputs(id,x).filter(f=>!['gamma','R'].includes(f.key)).map(f=>expandedInput(id,f))];}
 export function nozzleInfo(x){
  const base=labs.nozzle,type=x.nozzleType??'Converging–diverging';
  if(['External waves','Nozzle + external waves'].includes(x.nozzleView))return {description:x.nozzleView==='Nozzle + external waves'?'Follow the complete schematic planar nozzle and the first pair of waves from its exit lips.':'Match the local jet pressure to the ambient through a centered expansion or a weak attached oblique shock.',model:'Local planar upper-lip model · uniform axial exit · pressure-matched free jet boundary',equation:'p₂ = pₐ   ·   expansion: Δθ = ν(M₂) − ν(Mₑ)   ·   shock: θ–β–M',limitations:'External waves shows a local upper lip. Nozzle + external waves shows the complete schematic planar nozzle and mirrored first lip waves, ending at their first centerline interaction. A sonic-exit fan is schematic in the combined view; use the local view for its simple-wave details. This is not a full interacting or axisymmetric jet solution. Opposite-lip interactions, reflections, shock cells, Mach disks, separation and mixing are not computed. Ambient is treated as a constant-pressure boundary.'};
@@ -95,7 +96,7 @@ export function nozzleInfo(x){
 }
 
 export function defaults(id){return {...Object.fromEntries(labs[id].inputs.map(x=>[x.key,x.value])),...(id==='balances'?controlVolumePreset():{}),fluid:'Air',gamma:1.4,R:287};}
-export function calculate(id,x){const workingGas=gasInfo(x);let g=workingGas.gamma,R=workingGas.R,result,rows=[],chart,scene,checks={},notice=null,shockDetails=[];
+export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(id,x);let g=workingGas.gamma,R=workingGas.R,result,rows=[],chart,scene,checks={},notice=null,shockDetails=[];
  if(id==='foundations'){result=p.state(x.M,x.T1,x.p1*1000,g,R);result.relations=p.isentropicRelations(x.M,g);rows=[row('Stagnation temperature',result.T0,'K'),row('Stagnation pressure',result.p0/1000,'kPa'),row('Speed of sound',result.a,'m/s'),row('Velocity',result.u,'m/s'),row('Density',result.rho,'kg/m³')];const r=result.relations;rows.push(...[
  row('Mach number M',r.M),row('Mach angle μ',r.machAngle,'°'),row('Prandtl–Meyer angle ν',r.pmAngle,'°'),
  row('p/p₀',r.pP0),row('ρ/ρ₀',r.rhoRho0),row('T/T₀',r.TT0),row('p/p*',r.pPstar),row('ρ/ρ*',r.rhoRhostar),row('T/T*',r.TTstar),{...row('A/A*',r.areaRatio),display:r.areaUnbounded?'∞':null}
