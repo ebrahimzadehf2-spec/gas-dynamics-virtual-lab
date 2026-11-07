@@ -1,4 +1,4 @@
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261107-mach-ranges';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261107-matched-sliders';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';

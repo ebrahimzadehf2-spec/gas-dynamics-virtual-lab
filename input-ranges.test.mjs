@@ -15,9 +15,9 @@ test('Upper Mach bounds produce finite results, scenes and selectable plots for 
   for(const o of plotOptions(d))assert.ok(!/NaN|Infinity|undefined/.test(chartSVG(o.chart).svg),id+' '+name+' '+o.key);
  }
 });
-test('Numerical entry above the slider bound is preserved and actual interface bounds are enforced',()=>{
+test('Slider upper bounds match numerical input bounds and values are preserved',()=>{
  for(const [id,cap] of Object.entries(caps)){
-  const {x,key}=upper(id,'Air'),field=inputDefinitions(id,x).find(f=>f.key===key);assert.equal(field.max,cap);assert.ok(field.sliderMax<field.max);assert.equal(calculate(id,x).inputs[key],cap);assert.throws(()=>calculate(id,{...x,[key]:cap+1}));
+  const {x,key}=upper(id,'Air'),field=inputDefinitions(id,x).find(f=>f.key===key);assert.equal(field.max,cap);assert.equal(field.sliderMax,field.max);assert.equal(calculate(id,x).inputs[key],cap);assert.throws(()=>calculate(id,{...x,[key]:cap+1}));
  }
 });
 test('High-Mach normal shock still closes conservation; critical and invalid wave domains are preserved',()=>{
