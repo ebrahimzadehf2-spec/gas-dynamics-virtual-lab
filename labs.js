@@ -1,5 +1,5 @@
-import {externalJet} from './jet.js?v=20261107-full-nozzle';
-import * as p from './physics.js?v=20261107-full-nozzle';
+import {externalJet} from './jet.js?v=20261107-pressure-sweep';
+import * as p from './physics.js?v=20261107-pressure-sweep';
 import {cone} from './cone.js';
 const input=(key,label,value,min,max,step=1,unit='')=>({key,label,value,min,max,step,unit});
 const g=input('gamma','Specific heat ratio',1.4,1.1,1.67,.01,'γ');

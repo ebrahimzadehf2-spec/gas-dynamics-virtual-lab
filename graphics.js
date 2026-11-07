@@ -1,4 +1,4 @@
-import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261107-full-nozzle';
+import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261107-pressure-sweep';
 export const colors=['#167c70','#dc9b52','#779bb7','#9c84b4'];
 export const fmt=(x,d=5)=>x===null||x===undefined?'—':!Number.isFinite(x)?'—':Math.abs(x)>1e5||Math.abs(x)>0&&Math.abs(x)<1e-4?x.toExponential(3):Number(x.toPrecision(d)).toString();
 const esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
@@ -59,7 +59,7 @@ export function sceneSVG(s,inputs,time=.001){let inner='',label='Schematic geome
    inner+=`<rect x="${xe}" y="58" width="${610-xe}" height="184" fill="url(#unsolvedHatch)"/>`;
    for(const sign of [-1,1]){const o=[xe,cy+sign*he];for(let i=0;i<s.samples.length;i+=8){let z=s.samples[i],phi=z.theta-Math.asin(1/z.M);inner+=line(...o,xe+42*Math.cos(phi),o[1]+sign*42*Math.sin(phi),'#438a80',.8);}inner+=line(...o,xe+55*Math.cos(s.theta),o[1]+sign*55*Math.sin(s.theta),'#57858a',1.3,'4 3');}
    inner+=txt(475,132,'SONIC-LIP FANS · SCHEMATIC','#7c8c79',9,'middle')+txt(475,153,'INTERACTING JET NOT SOLVED','#7c8c79',9,'middle');
-  }else if(!resolved)inner+=txt(445,148,'EXTERNAL MODEL LIMIT','#a77944',11,'middle');
+  }else if(!resolved)inner+=txt(445,148,s.status==='no-flow'?'NO FLOW · pᵦ = p₀':'EXTERNAL MODEL LIMIT','#a77944',11,'middle');
   if(s.inlet.M>0)for(const x of [48,130,212])inner+=arrow(x,cy,27);
   inner+='</g>';
   inner+=txt(30,22,'COMPLETE NOZZLE · PLANAR SCHEMATIC',undefined,10)+txt(30,43,`p₀ = ${fmt(n.p0/1000)} kPa`,undefined,10)+txt(610,43,`pₐ = ${fmt(s.inlet.p*s.ratio/1000)} kPa`,undefined,10,'end');
