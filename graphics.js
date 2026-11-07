@@ -18,14 +18,15 @@ const fieldValues=(s,kind,key)=>{
 const quantityLabel=(key,kind)=>({pressure:kind==='nozzle'?'Static pressure p/p₀':'Static pressure p/p∞',mach:'Mach number M',temperature:kind==='nozzle'?'Temperature T/T₀':'Temperature T/T∞',density:kind==='nozzle'?'Density ρ/ρ₀':'Density ρ/ρ∞'}[key]??'Static pressure');
 const allQuantities=['pressure','mach','temperature','density'];
 function regionalField(s,inputs,quantity){
- const full=['state','normal','duct','oblique','expansion','nozzle','cone'].includes(s.kind);
+ const full=['balance','state','normal','duct','oblique','expansion','nozzle','cone'].includes(s.kind);
  const options=s.kind==='linear'?['cp']:full?allQuantities:['pressure'];
  const key=options.includes(quantity)?quantity:options[0],g=inputs.gamma??1.4;
  let values=[],units='',note='Analytical uniform regions';
  const read=z=>key==='mach'?z.M:key==='temperature'?z.T:key==='density'?z.rho:z.p;
- if(['state','normal','duct'].includes(s.kind)){
-  const a=s.s1,b=s.kind==='state'?{M:0,p:a.p0,T:a.T0,rho:a.rho*(a.p0/a.p)*(a.T/a.T0)}:s.s2;
+ if(['balance','state','normal','duct'].includes(s.kind)){
+  const a=s.kind==='balance'?s.a:s.s1,b=s.kind==='balance'?s.b:s.kind==='state'?{M:0,p:a.p0,T:a.T0,rho:a.rho*(a.p0/a.p)*(a.T/a.T0)}:s.s2;
   values=[read(a),...(b?[read(b)]:[])];units=key==='mach'?'M':key==='temperature'?'K':key==='density'?'kg/m³':'Pa';
+  if(s.kind==='balance')note='Endpoint states only · interior schematic';
   if(s.kind==='duct')note='Inlet / outlet states only · interior distribution not resolved';
  }else if(s.kind==='oblique'){
   values=key==='mach'?[s.M,s.M2]:[1,key==='temperature'?s.T:key==='density'?s.rho:s.p];units=key==='mach'?'M':key==='temperature'?'T/T₁':key==='density'?'ρ/ρ₁':'p/p₁';
@@ -41,7 +42,21 @@ function regionalField(s,inputs,quantity){
 export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',label='Schematic geometry · analytical states',meta='Ideal gas · no CFD',field=null;
  const f=regionalField(s,inputs,quantity);quantity=f.key;const vals=f.values.filter(Number.isFinite),lo=Math.min(...vals),hi=Math.max(...vals),shade=v=>contourColor(hi-lo<1e-14?.5:(v-lo)/(hi-lo));if(vals.length)field={quantity,options:f.options,label:quantity==='cp'?'Surface pressure coefficient':quantity,units:f.units,min:lo,max:hi,note:f.note};
  const W=640,H=300;let flow=()=>{let r='';for(let y of [85,125,165,205])r+=arrow(27,y,56)+dot(45,y,y);return r;};
- if(s.kind==='state'){inner+=poly([[95,80],[360,80],[360,220],[95,220]],shade(f.values[0]))+poly([[360,80],[590,80],[590,220],[360,220]],shade(f.values[1]));inner+=flow();inner+=txt(120,112,'STATIC STATE',undefined,9)+txt(120,151,`M = ${fmt(s.s1.M)}`,undefined,21)+txt(120,183,`T = ${fmt(s.s1.T)} K  ·  p = ${fmt(s.s1.p/1000)} kPa`);inner+=line(360,105,360,205,'#a4bbab',1,'4 4')+txt(390,131,'AT REST',undefined,9)+txt(390,163,`T₀ = ${fmt(s.s1.T0)} K`,undefined,17)+txt(390,193,`p₀ = ${fmt(s.s1.p0/1000)} kPa`);}
+ if(s.kind==='balance'){
+  const H=55,ratio=Math.sqrt(s.A2/s.A1),h1=H/Math.max(1,ratio),h2=h1*ratio;
+  inner+=`<defs><pattern id="cvInterior" width="9" height="9" patternUnits="userSpaceOnUse"><path d="M0 9 L9 0" stroke="#ccd3da" stroke-width=".8"/></pattern></defs>`;
+  inner+=poly([[160,150-h1],[480,150-h2],[480,150+h2],[160,150+h1]],'url(#cvInterior)','#52616c',2);
+  inner+=poly([[160,150-h1],[187,150-h1],[187,150+h1],[160,150+h1]],shade(f.values[0]))+poly([[453,150-h2],[480,150-h2],[480,150+h2],[453,150+h2]],shade(f.values[1]));
+  inner+=`<rect x="140" y="72" width="360" height="157" rx="10" fill="none" stroke="#516376" stroke-width="1.3" stroke-dasharray="6 4"/>`;
+  inner+=arrow(35,150,110)+arrow(495,150,110)+txt(37,125,`ṁ₁ ${fmt(s.m1,4)} kg/s`)+txt(488,125,`ṁ₂ ${fmt(s.m2,4)} kg/s`);
+  inner+=txt(35,35,'INLET · 1','#24313c',13)+txt(440,35,'OUTLET · 2','#24313c',13)+txt(35,57,`M ${fmt(s.a.M,4)} · A ${fmt(s.A1*1e4,4)} cm²`)+txt(440,57,`M ${fmt(s.b.M,4)} · A ${fmt(s.A2*1e4,4)} cm²`);
+  inner+=txt(320,144,'INTERIOR NOT RESOLVED','#40505d',12,'middle')+txt(320,169,s.entropyViolation?'ENTROPY DECREASE':s.balanced?'BALANCES CLOSE':'PROPOSED STATES · MISMATCH',s.balanced?'#216446':'#9c3d26',12,'middle');
+  inner+=txt(320,92,`Q̇ in ${fmt(s.Q/1000,4)} kW · Ẇ out ${fmt(s.W/1000,4)} kW`,'#24313c',12,'middle');
+  const fx=s.Fx>=0?1:-1;inner+=line(320-35*fx,245,320+35*fx,245,'#263e55',2)+poly([[320+35*fx,245],[320+28*fx,241],[320+28*fx,249]],'#263e55')+txt(320,270,`Fₓ on fluid ${fmt(s.Fx,5)} N`,'#24313c',12,'middle');
+  inner+=txt(35,198,`p ${fmt(s.a.p/1000,4)} kPa`)+txt(35,220,`T ${fmt(s.a.T,4)} K`)+txt(490,198,`p ${fmt(s.b.p/1000,4)} kPa`)+txt(490,220,`T ${fmt(s.b.T,4)} K`);
+  label='Prescribed endpoint states · steady integral balances';meta='No spatial flow solution · positive flow to the right';
+ }
+ else if(s.kind==='state'){inner+=poly([[95,80],[360,80],[360,220],[95,220]],shade(f.values[0]))+poly([[360,80],[590,80],[590,220],[360,220]],shade(f.values[1]));inner+=flow();inner+=txt(120,112,'STATIC STATE',undefined,9)+txt(120,151,`M = ${fmt(s.s1.M)}`,undefined,21)+txt(120,183,`T = ${fmt(s.s1.T)} K  ·  p = ${fmt(s.s1.p/1000)} kPa`);inner+=line(360,105,360,205,'#a4bbab',1,'4 4')+txt(390,131,'AT REST',undefined,9)+txt(390,163,`T₀ = ${fmt(s.s1.T0)} K`,undefined,17)+txt(390,193,`p₀ = ${fmt(s.s1.p0/1000)} kPa`);}
  else if(s.kind==='normal'){inner+=poly([[20,70],[315,70],[315,230],[20,230]],shade(f.values[0]))+poly([[315,70],[620,70],[620,230],[315,230]],shade(f.values[1]));inner+=flow()+line(315,53,315,245,'#df9850',3)+txt(324,48,'NORMAL SHOCK', '#b47d39',9);inner+=txt(110,118,'UPSTREAM',undefined,9)+txt(110,151,`M₁ ${fmt(s.s1.M)}`,undefined,22)+txt(110,184,`${fmt(s.s1.p/1000)} kPa`,undefined,12)+txt(375,118,'DOWNSTREAM',undefined,9)+txt(375,151,`M₂ ${fmt(s.s2.M)}`,undefined,22)+txt(375,184,`${fmt(s.s2.p/1000)} kPa`,undefined,12);label='Uniform analytical regions · pressure jump';}
  else if(s.kind==='duct'){inner+=poly([[40,85],[600,85],[600,215],[40,215]],'#e5efe2');if(s.s2){inner+=poly([[40,86],[320,86],[320,214],[40,214]],shade(f.values[0]))+poly([[320,86],[600,86],[600,214],[320,214]],shade(f.values[1]));inner+=txt(68,130,'INLET',undefined,9)+txt(68,158,`M₁ = ${fmt(s.s1.M)}`,undefined,19)+txt(398,130,'OUTLET',undefined,9)+txt(398,158,`M₂ = ${fmt(s.s2.M)}`,undefined,19);for(let x=90;x<590;x+=80)inner+=arrow(x,187,35)+dot(x+10,187,x);if(s.process==='rayleigh'){for(let x=220;x<420;x+=42)inner+=line(x,44,x,77,'#cb9b60',1.4)+(inputs.q>=0?poly([[x,79],[x-3,73],[x+3,73]],'#cb9b60'):poly([[x,42],[x-3,48],[x+3,48]],'#cb9b60'));inner+=txt(320,33,`${inputs.q>=0?'HEATING':'COOLING'}  q = ${fmt(inputs.q)} kJ/kg`,'#a77944',10,'middle');}else inner+=txt(320,50,`WALL FRICTION · fᴅL/D = ${fmt(inputs.lambda)}`,'#8a7862',10,'middle');label='Illustration of endpoint states · shading is schematic';}else inner+=txt(320,152,'NO STEADY OUTLET FOR THIS INLET','#a3784c',14,'middle');inner+=line(40,85,600,85,'#819a85',3)+line(40,215,600,215,'#819a85',3);}
  else if(s.kind==='oblique'){inner+=poly([[0,45],[640,45],[640,300],[0,300]],shade(f.values[0]));let x=95,y=230,L=520,body=L*Math.tan(s.theta),shock=L*Math.tan(s.beta);inner+=poly([[x,y],[x+L,y-shock],[x+L,y-body]],shade(f.values[1]));inner+=poly([[x,y],[x+L,y-body],[x+L,300],[x,300]],'#cbd4c9');inner+=line(x,y,x+L,y-shock,'#d69b4c',2)+line(x,y,x+L,y-body,'#6a826d',2)+flow();inner+=txt(430,53,`β = ${fmt(deg(s.beta),4)}°`,'#ab7e38',13)+txt(495,259,`θ = ${fmt(inputs.theta)}°`,undefined,12)+txt(142,63,`M₁ = ${fmt(s.M)}`,undefined,16)+txt(390,144,`M₂ = ${fmt(s.M2)}`,undefined,16)+txt(390,168,`p₂/p₁ = ${fmt(s.p)}`);label='Equal geometric scale · uniform analytical downstream region';}
