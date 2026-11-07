@@ -1,6 +1,6 @@
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-cv';
 import {externalJet} from './jet.js?v=20261107-shock-states';
-import * as p from './physics.js?v=20261107-shock-states';
+import * as p from './physics.js?v=20261107-isentropic';
 import {cone} from './cone.js';
 const input=(key,label,value,min,max,step=1,unit='')=>({key,label,value,min,max,step,unit});
 const g=input('gamma','Specific heat ratio',1.4,1.1,1.67,.01,'γ');
@@ -38,7 +38,7 @@ export const chapters=[
  [10,'Conical flow','Taylor–Maccoll similarity solution',['cone']]
 ];
 export const labs={
- foundations:{chapter:1,title:'Stagnation properties',tag:'ISENTROPIC RELATIONS',description:'Explore how velocity changes static and stagnation properties in a calorically perfect gas.',inputs:[M('M',2),T,P,g],model:'Calorically perfect ideal gas · local isentropic deceleration to rest',equation:'T₀/T = 1 + (γ − 1)M²/2',limitations:'This relation defines stagnation properties. It does not assert that an entire flow field is isentropic.'},
+ foundations:{chapter:1,title:'Isentropic flow relations',tag:'ISENTROPIC RELATIONS',description:'Inspect static, stagnation and sonic-reference ratios, area ratio, Mach angle and Prandtl–Meyer angle for a calorically perfect gas.',inputs:[M('M',2),T,P,g],model:'Calorically perfect ideal gas · local isentropic deceleration to rest',equation:'T₀/T = 1 + (γ − 1)M²/2',limitations:'This relation defines stagnation properties. It does not assert that an entire flow field is isentropic.'},
  balances:{chapter:2,title:'Control-volume balance lab',tag:'MASS · MOMENTUM · ENERGY',description:'Change a proposed outlet state and inspect the mass, force and energy balances. Solve outlet speed from continuity or load a consistent example.',inputs:[
  {key:'balanceMode',label:'Experiment mode',value:'Check proposed outlet',options:['Check proposed outlet','Solve outlet speed']},
  {...M('M1',.3),section:'Inlet state'},T,{...P,value:200},input('A1','Inlet area',10,.1,100, .1,'cm²'),
@@ -94,7 +94,10 @@ export function nozzleInfo(x){
 
 export function defaults(id){return {...Object.fromEntries(labs[id].inputs.map(x=>[x.key,x.value])),...(id==='balances'?controlVolumePreset():{})};}
 export function calculate(id,x){let g=x.gamma??1.4,result,rows=[],chart,scene,checks={},notice=null,shockDetails=[];
- if(id==='foundations'){result=p.state(x.M,x.T1,x.p1*1000,g);rows=[row('Stagnation temperature',result.T0,'K'),row('Stagnation pressure',result.p0/1000,'kPa'),row('Speed of sound',result.a,'m/s'),row('Velocity',result.u,'m/s'),row('Density',result.rho,'kg/m³')];chart={title:'Static-to-stagnation ratios',xlabel:'Mach number',ylabel:'Ratio',series:[{name:'T₀/T',points:p.linspace(0,4).map(m=>[m,p.isentropic(m,g).T0T])},{name:'p₀/p',points:p.linspace(0,4).map(m=>[m,p.isentropic(m,g).p0p])}]};scene={kind:'state',s1:result};}
+ if(id==='foundations'){result=p.state(x.M,x.T1,x.p1*1000,g);result.relations=p.isentropicRelations(x.M,g);rows=[row('Stagnation temperature',result.T0,'K'),row('Stagnation pressure',result.p0/1000,'kPa'),row('Speed of sound',result.a,'m/s'),row('Velocity',result.u,'m/s'),row('Density',result.rho,'kg/m³')];const r=result.relations;rows.push(...[
+ row('Mach number M',r.M),row('Mach angle μ',r.machAngle,'°'),row('Prandtl–Meyer angle ν',r.pmAngle,'°'),
+ row('p/p₀',r.pP0),row('ρ/ρ₀',r.rhoRho0),row('T/T₀',r.TT0),row('p/p*',r.pPstar),row('ρ/ρ*',r.rhoRhostar),row('T/T*',r.TTstar),{...row('A/A*',r.areaRatio),display:r.areaUnbounded?'∞':null}
+ ].map(v=>({...v,panel:'isentropic'})));chart={title:'Static-to-stagnation ratios',xlabel:'Mach number',ylabel:'Ratio',series:[{name:'T₀/T',points:p.linspace(0,4).map(m=>[m,p.isentropic(m,g).T0T])},{name:'p₀/p',points:p.linspace(0,4).map(m=>[m,p.isentropic(m,g).p0p])}]};scene={kind:'state',s1:result};}
  else if(id==='balances'){
   result=controlVolume(x);const r=result;scene={kind:'balance',...r};
   rows=[row('Inlet mass flow',r.m1,'kg/s'),row('Outlet mass flow',r.m2,'kg/s'),row('Outlet Mach',r.b.M),row('Mass residual',r.terms.mass.residual,'kg/s'),row('Momentum residual',r.terms.momentum.residual,'N'),row('Energy residual',r.terms.energy.residual/1000,'kW'),row('Force on fluid required by momentum',r.forceRequired,'N'),row('Inlet stagnation temperature',r.a.T0,'K'),row('Outlet stagnation temperature',r.b.T0,'K')];

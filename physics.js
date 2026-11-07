@@ -1,6 +1,10 @@
 import {gas,positive,requireValue,finite,bisect,maximum,rad,deg,linspace,PhysicsError} from './numerics.js';
 export {rad,deg,linspace,PhysicsError};
 export function isentropic(M,g=1.4){gas(g);requireValue(finite(M)&&M>=0,'Mach number must be finite and nonnegative.');let t=1+(g-1)*M*M/2;return {T0T:t,p0p:t**(g/(g-1)),rho0rho:t**(1/(g-1))};}
+export function isentropicRelations(M,g=1.4){
+ const r=isentropic(M,g),tr=(g+1)/(2*r.T0T);
+ return {M,pP0:1/r.p0p,rhoRho0:1/r.rho0rho,TT0:1/r.T0T,pPstar:tr**(g/(g-1)),rhoRhostar:tr**(1/(g-1)),TTstar:tr,areaRatio:M===0?null:areaMach(M,g),areaUnbounded:M===0,machAngle:M>=1?deg(Math.asin(1/M)):null,pmAngle:M>=1?deg(prandtlMeyer(M,g)):null};
+}
 export function state(M,T,p,g=1.4,R=287){gas(g,R);positive(T,'Temperature');positive(p,'Pressure');let a=Math.sqrt(g*R*T),u=M*a,rho=p/(R*T),s=isentropic(M,g);return {M,T,p,rho,a,u,T0:T*s.T0T,p0:p*s.p0p};}
 export function normalShock(M,g=1.4){gas(g);requireValue(finite(M)&&M>=1,'A compression shock requires upstream normal Mach ≥ 1.');let m=M*M,p=1+2*g/(g+1)*(m-1),rho=(g+1)*m/((g-1)*m+2),M2=Math.sqrt((1+(g-1)*m/2)/(g*m-(g-1)/2));let p0=p*isentropic(M2,g).p0p/isentropic(M,g).p0p;return {M2,p,rho,T:p/rho,u:1/rho,p0,ds_R:-Math.log(p0)};}
 export function areaMach(M,g=1.4){gas(g);positive(M,'Mach');return (2/(g+1)*(1+(g-1)*M*M/2))**((g+1)/(2*(g-1)))/M;}
