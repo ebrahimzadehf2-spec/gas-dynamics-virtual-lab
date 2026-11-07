@@ -1,4 +1,4 @@
-import * as p from './physics.js';
+import * as p from './physics.js?v=20261107-shock';
 import {cone} from './cone.js';
 const input=(key,label,value,min,max,step=1,unit='')=>({key,label,value,min,max,step,unit});
 const g=input('gamma','Specific heat ratio',1.4,1.1,1.67,.01,'γ');
