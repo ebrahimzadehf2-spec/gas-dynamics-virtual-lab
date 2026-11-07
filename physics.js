@@ -40,7 +40,7 @@ export function shockTube({p1=5000,p4=200000,T1=298.15,T4=293.15,gamma1:g1=1.4,g
  let root=bisect(r=>{let x=evalP(r);return (x.u2-x.u3)/Math.max(a1,a4);},1,ratio),r=root.value,{Ms,n,u2,u3}=evalP(r),p=p1*r,T3=T4*(p/p4)**((g4-1)/g4),rho2=p/(R1*T1*n.T),rho3=p/(R4*T3);
  return {status:'ok',p2p1:r,p,Ms,shockSpeed:Ms*a1,u:u2,T2:T1*n.T,T3,rho2,rho3,a1,a4,head:-a4,tail:u3-Math.sqrt(g4*R4*T3),contact:u2,residual:u2-u3,iterations:root.iterations};
 }
-export function nozzle({areaRatio:Ae=2,backRatio:pb=.8,gamma:g=1.4}={}){
+function cdNozzle({areaRatio:Ae=2,backRatio:pb=.8,gamma:g=1.4}={}){
  gas(g);requireValue(finite(Ae,pb)&&Ae>1&&pb>0&&pb<=1,'Require Ae/At > 1 and 0 < pb/p01 ≤ 1.');let MeSub=machFromArea(Ae,'subsonic',g),MeSup=machFromArea(Ae,'supersonic',g),onset=1/isentropic(MeSub,g).p0p,design=1/isentropic(MeSup,g).p0p,exitShock=design*normalShock(MeSup,g).p;
  let regime,As=null,Astar1=1,Astar2=1,loss=1,Me,root;
  function shockAt(S){let M1=machFromArea(S,'supersonic',g),n=normalShock(M1,g),Ast2=S/areaMach(n.M2,g),me=machFromArea(Ae/Ast2,'subsonic',g);return {M1,n,Ast2,Me:me,pb:n.p0/isentropic(me,g).p0p};}
@@ -53,6 +53,42 @@ export function nozzle({areaRatio:Ae=2,backRatio:pb=.8,gamma:g=1.4}={}){
   points.push({x,A,M:m,p,h:half(A)});}
  let shockX=As===null?null:xt+(L-xt)*Math.sqrt((As-At)/(Ae-At));return {status:'ok',regime,Me,AsAt:As,shockX,p02p01:loss,onset,exitShock,design,points,residual:root?.residual??0,iterations:root?.iterations??0};
 }
+// Areas are normalized by the minimum geometric area. Dimensional inputs use SI.
+export function nozzle({nozzleType='cd',areaRatio=2,contractionRatio=2,backRatio=.8,MIn=.3,sonicBranch='supersonic',p0=500000,T0=400,minArea=.0006,gamma:g=1.4,R=287}={}){
+ const types={'Converging–diverging':'cd','Converging':'converging','Diverging':'diverging',cd:'cd',converging:'converging',diverging:'diverging'};
+ const type=types[nozzleType];requireValue(!!type,'Choose a nozzle geometry.');gas(g,R);positive(p0,'Stagnation pressure');positive(T0,'Stagnation temperature');positive(minArea,'Minimum area');
+ let s,astar=1,Ae=areaRatio;const critical=1/isentropic(1,g).p0p;
+ if(type==='cd'){
+  s=cdNozzle({areaRatio,backRatio,gamma:g});s.nozzleType=type;s.backRatio=backRatio;
+  // Add both one-sided shock states at exactly the same section, including at exit.
+  if(s.AsAt!==null){
+   const m1=machFromArea(s.AsAt,'supersonic',g),n=normalShock(m1,g),x=s.shockX;
+   s.points=s.points.filter(z=>Math.abs(z.x-x)>1e-12);
+   const before={x,A:s.AsAt,M:m1,p:1/isentropic(m1,g).p0p,h:.12*Math.sqrt(s.AsAt)};
+   const after={...before,M:n.M2,p:before.p*n.p};
+   s.points.push(before,after);s.points.sort((a,b)=>a.x-b.x);
+  }
+  s.minimumMach=backRatio>=s.onset?(backRatio===1?0:machFromArea(Math.max(1,1/(areaRatio/areaMach(s.Me,g))),'subsonic',g)):1;
+  s.choked=backRatio<=s.onset;s.exitAreaRatio=areaRatio;
+  s.points=s.points.filter(z=>Math.abs(z.x-.28)>1e-12);s.points.push({x:.28,A:1,M:s.minimumMach,p:1/isentropic(s.minimumMach,g).p0p,h:.12});s.points.sort((a,b)=>a.x-b.x);
+ }else if(type==='converging'){
+  requireValue(finite(contractionRatio)&&contractionRatio>1,'Require inlet-to-exit area ratio > 1.');requireValue(finite(backRatio)&&backRatio>0&&backRatio<=1,'Require 0 < back pressure / reservoir pressure ≤ 1.');
+  const choked=backRatio<=critical,Me=choked?1:Math.sqrt(2/(g-1)*(backRatio**(-(g-1)/g)-1));astar=Me===0?0:1/areaMach(Me,g);Ae=1;
+  s={status:'ok',nozzleType:type,regime:choked?(backRatio<critical?'Choked · underexpanded exit':'Choked · sonic exit'):'Unchoked · subsonic',Me,minimumMach:Me,choked,AsAt:null,shockX:null,p02p01:1,onset:critical,exitShock:null,design:null,critical,backRatio,exitAreaRatio:1,residual:0,iterations:0,points:[]};
+  for(const x of linspace(0,1,181)){const A=1+(contractionRatio-1)*(1-x)**2,m=Me===0?0:machFromArea(Math.max(1,A/astar),'subsonic',g);s.points.push({x,A,M:m,p:1/isentropic(m,g).p0p,h:.12*Math.sqrt(A)});}
+ }else{
+  requireValue(finite(areaRatio)&&areaRatio>1,'Require exit-to-inlet area ratio > 1.');requireValue(finite(MIn)&&MIn>0&&MIn<=20,'Require 0 < inlet Mach ≤ 20.');requireValue(['subsonic','supersonic'].includes(sonicBranch),'Choose the downstream branch for a sonic inlet.');
+  const branch=MIn===1?sonicBranch:MIn<1?'subsonic':'supersonic';astar=1/areaMach(MIn,g);const Me=machFromArea(areaRatio/astar,branch,g),pe=1/isentropic(Me,g).p0p;
+  s={status:'ok',nozzleType:type,regime:branch==='supersonic'?'Supersonic · accelerating':'Subsonic · decelerating',Me,minimumMach:MIn,choked:MIn===1,AsAt:null,shockX:null,p02p01:1,onset:null,exitShock:null,design:null,critical,backRatio:pe,exitAreaRatio:areaRatio,inletMach:MIn,residual:0,iterations:0,points:[]};
+  for(const x of linspace(0,1,181)){const A=1+(areaRatio-1)*x*x,m=x===0?MIn:machFromArea(Math.max(1,A/astar),branch,g);s.points.push({x,A,M:m,p:1/isentropic(m,g).p0p,h:.12*Math.sqrt(A)});}
+ }
+ for(const z of s.points){z.T=T0/isentropic(z.M,g).T0T;z.P=p0*z.p;z.area=minArea*z.A;z.rho=z.P/(R*z.T);z.u=z.M*Math.sqrt(g*R*z.T);z.massFlow=z.rho*z.u*z.area;}
+ const e=s.points.at(-1);s.exitPressure=e.P;s.exitTemperature=e.T;s.massFlow=e.massFlow;s.exitArea=minArea*s.exitAreaRatio;s.minArea=minArea;s.p0=p0;s.T0=T0;s.R=R;
+ s.massResidual=Math.max(...s.points.map(z=>Math.abs(z.massFlow-s.massFlow)))/Math.max(1e-30,s.massFlow);
+ s.pressureResidual=(type==='diverging'||!s.choked||s.AsAt!==null)?Math.abs(e.p-s.backRatio):0;
+ return s;
+}
+
 export function collision({M1=4,thetaUpper=10,thetaLower=20,gamma:g=1.4}={}){
  let t2=rad(thetaUpper),t3=rad(thetaLower),n2=obliqueShock(M1,t2,g),n3=obliqueShock(M1,t3,g);requireValue(n2.M2>1&&n3.M2>1,'Both incident post-shock streams must remain supersonic in this two-shock model.','unsupported-pattern');
  let lim2=shockLimit(n2.M2,g).theta,lim3=shockLimit(n3.M2,g).theta;
