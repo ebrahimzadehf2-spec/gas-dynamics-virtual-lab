@@ -25,16 +25,16 @@ function shockStateSection({kind,title,location,before,after,gamma,R,extra=[]}){
  return {kind,title,location,rows,extra:[...extra,{label:'Entropy rise Δs',value:ds,unit:'J/(kg·K)'}]};
 }
 export const chapters=[
- [1,'Foundations','مفاهیم پایه','Thermodynamics & stagnation properties',['foundations']],
- [2,'Conservation','معادلات بقا','Control-volume balances',['balances']],
- [3,'Normal shocks','شوک نرمال','Sound, compression & entropy',['normal']],
- [4,'Rayleigh flow','جریان ریلی','Heat transfer & thermal choking',['rayleigh']],
- [5,'Fanno flow','جریان فانو','Friction & sonic length',['fanno']],
- [6,'Waves & turning','شوک و انبساط','Oblique shocks, expansion & interaction',['oblique','expansion','collision']],
- [7,'Unsteady waves','امواج ناپایا','Shock-tube wave system',['tube']],
- [8,'Nozzle flow','جریان نازل','Quasi-1D regimes & shock position',['nozzle']],
- [9,'Linearized flow','جریان خطی‌شده','Thin-airfoil pressure & forces',['linear']],
- [10,'Conical flow','جریان مخروطی','Taylor–Maccoll similarity solution',['cone']]
+ [1,'Foundations','Thermodynamics & stagnation properties',['foundations']],
+ [2,'Conservation','Control-volume balances',['balances']],
+ [3,'Normal shocks','Sound, compression & entropy',['normal']],
+ [4,'Rayleigh flow','Heat transfer & thermal choking',['rayleigh']],
+ [5,'Fanno flow','Friction & sonic length',['fanno']],
+ [6,'Waves & turning','Oblique shocks, expansion & interaction',['oblique','expansion','collision']],
+ [7,'Unsteady waves','Shock-tube wave system',['tube']],
+ [8,'Nozzle flow','Quasi-1D regimes & shock position',['nozzle']],
+ [9,'Linearized flow','Thin-airfoil pressure & forces',['linear']],
+ [10,'Conical flow','Taylor–Maccoll similarity solution',['cone']]
 ];
 export const labs={
  foundations:{chapter:1,title:'Stagnation properties',tag:'ISENTROPIC RELATIONS',description:'Explore how velocity changes static and stagnation properties in a calorically perfect gas.',inputs:[M('M',2),T,P,g],model:'Calorically perfect ideal gas · local isentropic deceleration to rest',equation:'T₀/T = 1 + (γ − 1)M²/2',limitations:'This relation defines stagnation properties. It does not assert that an entire flow field is isentropic.'},

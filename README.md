@@ -19,8 +19,8 @@ This publication flattens the original source folders so GitHub Pages can serve 
 - `graphics.js`, `app.js`, `style.css`, `index.html`: interface, charts and labeled fields.
 - `guide.html`: scientific scope, assumptions and reference status.
 - `*.test.mjs`, `reference.json`, `independent_reference.py`: automated checks and independent references.
-- Audit, validation, roadmap and Persian Rayleigh report are included as Markdown files.
-- `Source_Project_v0.1.zip`: original modular project, tests, reports and optional GitHub Actions workflow.
+- Audit, validation and roadmap documents are included as Markdown files.
+- `Source_Project_v0.1.zip`: archived modular project and tests, with English documentation.
 
 ## Verification
 
