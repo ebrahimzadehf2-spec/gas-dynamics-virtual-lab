@@ -1,5 +1,5 @@
 // Playback of steady solutions: demo progress is not physical time.
-import {nozzle,shockLimit,normalShock} from './physics.js?v=20261107-pressure-sweep';
+import {nozzle,shockLimit,normalShock} from './physics.js?v=20261107-shock-states';
 export function pressureSweepPlan(x={}){
  const type=x.nozzleType??'Converging–diverging',g=x.gamma??1.4,inlet=x.MIn??.3;
  if(type==='Diverging'&&(inlet<1||inlet===1&&x.sonicBranch==='subsonic'))return {enabled:false,min:.001,max:1,milestones:[],message:'A fixed subsonic inlet admits one matched outlet pressure. Change the inlet state to study other pressures; this model cannot sweep it independently.'};

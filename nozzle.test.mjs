@@ -46,6 +46,23 @@ test('UI shows only relevant inputs and renders finite geometry and all three sc
 test('nozzle rejects invalid gas, geometry and boundary inputs',()=>{
  for(const args of [{nozzleType:'unknown'},{nozzleType:'converging',backRatio:0},{nozzleType:'converging',contractionRatio:1},{nozzleType:'diverging',MIn:0},{nozzleType:'diverging',areaRatio:1},{minArea:0},{p0:NaN},{T0:-1},{gamma:1}])assert.throws(()=>nozzle(args));
 });
+test('nozzle result sections report one-sided thermodynamic states for internal and external shocks',()=>{
+ const cd=calculate('nozzle',{...defaults('nozzle'),areaRatio:3,backRatio:.6745706});
+ assert.equal(cd.shockDetails.length,1);const normal=cd.shockDetails[0];assert.equal(normal.kind,'normal');
+ const pair=cd.result.points.filter(z=>Math.abs(z.x-cd.result.shockX)<1e-10).sort((a,b)=>b.M-a.M);
+ for(const [label,before,after] of [['Mach number M',pair[0].M,pair[1].M],['Static pressure p',pair[0].P/1000,pair[1].P/1000],['Static temperature T',pair[0].T,pair[1].T],['Density ρ',pair[0].rho,pair[1].rho],['Flow speed u',pair[0].u,pair[1].u]]){
+  const r=normal.rows.find(z=>z.label===label);near(r.before,before);near(r.after,after);
+ }
+ assert.ok(normal.extra.find(z=>z.label==='Entropy rise Δs').value>0);
+ const div=calculate('nozzle',{...defaults('nozzle'),nozzleType:'Diverging',areaRatio:2,MIn:2,outletCondition:'Specified back pressure',backRatio:.5});
+ assert.equal(div.shockDetails.length,1);assert.match(div.shockDetails[0].location,/Aₛ\/Aᵢ/);
+ const ext=calculate('nozzle',{...defaults('nozzle'),areaRatio:3,backRatio:.05,nozzleView:'External waves'});
+ assert.equal(ext.result.external.status,'shock');assert.equal(ext.shockDetails.length,1);const oblique=ext.shockDetails[0];assert.equal(oblique.kind,'oblique');
+ assert.ok(oblique.extra.some(z=>z.label==='Shock angle β'&&z.value>0));
+ assert.ok(oblique.extra.some(z=>z.label==='Upstream normal Mach Mₙ₁'&&z.value>1));
+ assert.ok(oblique.rows.find(z=>z.label==='Stagnation pressure p₀').after<oblique.rows.find(z=>z.label==='Stagnation pressure p₀').before);
+ const noShock=calculate('nozzle',{...defaults('nozzle'),areaRatio:3,backRatio:.02});assert.equal(noShock.shockDetails.length,0);
+});
 // References from an independent dimensional mass/momentum/energy jump solve
 // (downstream velocity quadratic + SciPy Brent inversion), not this engine.
 const shockReferences=[

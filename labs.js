@@ -1,5 +1,5 @@
-import {externalJet} from './jet.js?v=20261107-pressure-sweep';
-import * as p from './physics.js?v=20261107-pressure-sweep';
+import {externalJet} from './jet.js?v=20261107-shock-states';
+import * as p from './physics.js?v=20261107-shock-states';
 import {cone} from './cone.js';
 const input=(key,label,value,min,max,step=1,unit='')=>({key,label,value,min,max,step,unit});
 const g=input('gamma','Specific heat ratio',1.4,1.1,1.67,.01,'γ');
@@ -7,6 +7,23 @@ const M=(key='M1',value=2)=>input(key,'Inlet Mach number',value,.1,8,.01,'M');
 const T=input('T1','Inlet temperature',300,100,1500,1,'K');
 const P=input('p1','Inlet pressure',101,1,1000,1,'kPa');
 const row=(label,value,unit='')=>({label,value,unit});
+function shockStateSection({kind,title,location,before,after,gamma,R,extra=[]}){
+ const upstream=p.state(before.M,before.T,before.P??before.p,gamma,R);
+ const downstream=p.state(after.M,after.T,after.P??after.p,gamma,R);
+ const ratio=(a,b)=>b/a;
+ const rows=[
+  {label:'Mach number M',before:upstream.M,after:downstream.M,ratio:ratio(upstream.M,downstream.M),unit:''},
+  {label:'Static pressure p',before:upstream.p/1000,after:downstream.p/1000,ratio:ratio(upstream.p,downstream.p),unit:'kPa'},
+  {label:'Static temperature T',before:upstream.T,after:downstream.T,ratio:ratio(upstream.T,downstream.T),unit:'K'},
+  {label:'Density ρ',before:upstream.rho,after:downstream.rho,ratio:ratio(upstream.rho,downstream.rho),unit:'kg/m³'},
+  {label:'Flow speed u',before:upstream.u,after:downstream.u,ratio:ratio(upstream.u,downstream.u),unit:'m/s'},
+  {label:'Stagnation pressure p₀',before:upstream.p0/1000,after:downstream.p0/1000,ratio:ratio(upstream.p0,downstream.p0),unit:'kPa'},
+  {label:'Stagnation temperature T₀',before:upstream.T0,after:downstream.T0,ratio:ratio(upstream.T0,downstream.T0),unit:'K'}
+ ];
+ if(Number.isFinite(before.massFlow)&&Number.isFinite(after.massFlow))rows.push({label:'Mass flow rate ṁ',before:before.massFlow,after:after.massFlow,ratio:ratio(before.massFlow,after.massFlow),unit:'kg/s'});
+ const ds=R*(gamma/(gamma-1)*Math.log(downstream.T/upstream.T)-Math.log(downstream.p/upstream.p));
+ return {kind,title,location,rows,extra:[...extra,{label:'Entropy rise Δs',value:ds,unit:'J/(kg·K)'}]};
+}
 export const chapters=[
  [1,'Foundations','مفاهیم پایه','Thermodynamics & stagnation properties',['foundations']],
  [2,'Conservation','معادلات بقا','Control-volume balances',['balances']],
@@ -69,7 +86,7 @@ export function nozzleInfo(x){
 }
 
 export function defaults(id){return Object.fromEntries(labs[id].inputs.map(x=>[x.key,x.value]));}
-export function calculate(id,x){let g=x.gamma??1.4,result,rows=[],chart,scene,checks={},notice=null;
+export function calculate(id,x){let g=x.gamma??1.4,result,rows=[],chart,scene,checks={},notice=null,shockDetails=[];
  if(id==='foundations'){result=p.state(x.M,x.T1,x.p1*1000,g);rows=[row('Stagnation temperature',result.T0,'K'),row('Stagnation pressure',result.p0/1000,'kPa'),row('Speed of sound',result.a,'m/s'),row('Velocity',result.u,'m/s'),row('Density',result.rho,'kg/m³')];chart={title:'Static-to-stagnation ratios',xlabel:'Mach number',ylabel:'Ratio',series:[{name:'T₀/T',points:p.linspace(0,4).map(m=>[m,p.isentropic(m,g).T0T])},{name:'p₀/p',points:p.linspace(0,4).map(m=>[m,p.isentropic(m,g).p0p])}]};scene={kind:'state',s1:result};}
  else if(id==='normal'||id==='balances'){result=p.normalShock(x.M1,g);let s1=p.state(x.M1,x.T1,x.p1*1000,g),s2=p.state(result.M2,x.T1*result.T,x.p1*1000*result.p,g);checks=p.conservation(s1,s2,g);rows=[row('Downstream Mach',result.M2),row('Pressure ratio',result.p,'p₂/p₁'),row('Temperature ratio',result.T,'T₂/T₁'),row('Density ratio',result.rho,'ρ₂/ρ₁'),row('Total-pressure recovery',result.p0,'p₀₂/p₀₁'),row('Entropy increase',result.ds_R,'Δs/R'),row('Downstream pressure',s2.p/1000,'kPa'),row('Downstream temperature',s2.T,'K'),row('Upstream stagnation pressure',s1.p0/1000,'kPa'),row('Downstream stagnation pressure',s2.p0/1000,'kPa'),row('Specific entropy increase',287*result.ds_R/1000,'kJ/(kg·K)')];if(id==='balances')rows=[row('Mass flux · inlet',s1.rho*s1.u,'kg/(m²·s)'),row('Mass flux · outlet',s2.rho*s2.u,'kg/(m²·s)'),row('Momentum flux · inlet',s1.p+s1.rho*s1.u*s1.u,'Pa'),row('Momentum flux · outlet',s2.p+s2.rho*s2.u*s2.u,'Pa'),row('Total temperature · inlet',s1.T0,'K'),row('Total temperature · outlet',s2.T0,'K')];scene={kind:'normal',s1,s2};chart={title:'Normal-shock property map',xlabel:'Upstream Mach number',ylabel:'Property ratio',series:['p','T','rho'].map((key,i)=>({name:['p₂/p₁','T₂/T₁','ρ₂/ρ₁'][i],points:p.linspace(1,5).map(m=>[m,p.normalShock(m,g)[key]])}))};}
  else if(id==='rayleigh'||id==='fanno'){let params={...x,p1:x.p1*1000,q:(x.q??0)*1000};result=id==='rayleigh'?p.rayleigh(params):p.fanno(params);let {s1,s2}=result;notice=result.message;checks=result.checks??{};rows=[row(id==='rayleigh'?'Maximum heat to sonic state':'Available sonic friction length',id==='rayleigh'?result.qmax/1000:result.limit,id==='rayleigh'?'kJ/kg':'fᴅ L*/D')];if(s2)rows.unshift(row('Outlet Mach',s2.M),row('Outlet temperature',s2.T,'K'),row('Outlet pressure',s2.p/1000,'kPa'),row('Total-pressure ratio',s2.p0/s1.p0,'p₀₂/p₀₁'),row('Entropy change',result.ds_R,'Δs/R'));let fn=id==='rayleigh'?p.rayleighRatios:p.fannoRatios;chart={title:id==='rayleigh'?'Rayleigh temperature & stagnation temperature':'Fanno temperature & pressure',xlabel:'Mach number',ylabel:'Ratio to sonic state',series:(id==='rayleigh'?['T','T0']:['T','p']).map(k=>({name:k==='T'?'T/T*':k==='T0'?'T₀/T₀*':'p/p*',points:p.linspace(.12,Math.max(4,s1.M*1.1,(s2?.M??0)*1.1)).map(m=>[m,fn(m,g)[k]])})),markers:[{name:'Inlet',x:s1.M,y:fn(s1.M,g).T},...(s2?[{name:'Outlet',x:s2.M,y:fn(s2.M,g).T}]:[])]};scene={kind:'duct',s1,s2,process:id};}
@@ -88,6 +105,13 @@ export function calculate(id,x){let g=x.gamma??1.4,result,rows=[],chart,scene,ch
    if(!result.pressureMatched)notice='The internal flow remains supersonic to the exit. Exit pressure differs from back pressure; external jet adjustment is not resolved.';
   }
   else rows.push(row('Shock section Aₛ/Aₜ',result.AsAt),row('Choking onset',result.onset,'pᵦ/p₀'),row('Shock-at-exit threshold',result.exitShock,'pᵦ/p₀'),row('Design pressure ratio',result.design,'pₑ/p₀'));
+  if(result.shockX!==null&&result.shockX!==undefined){
+   const pair=result.points.filter(z=>Math.abs(z.x-result.shockX)<1e-10).sort((a,b)=>b.M-a.M);
+   if(pair.length>=2&&pair[0].M>pair[1].M+1e-9){
+    const areaRatioLabel=type==='Diverging'?'Aₛ/Aᵢ':'Aₛ/Aₜ';
+    shockDetails.push(shockStateSection({kind:'normal',title:'Internal normal shock · upstream and downstream states',location:`xₛ/L = ${Number(result.shockX.toPrecision(6))} · ${areaRatioLabel} = ${Number(result.AsAt.toPrecision(6))} · Aₛ = ${Number((pair[0].area*1e4).toPrecision(6))} cm²`,before:pair[0],after:pair[1],gamma:g,R:x.R??287}));
+   }
+  }
   scene={kind:'nozzle',...result};
   const prop=x.plotProperty??'Pressure',field=prop==='Mach number'?'M':prop==='Temperature'?'T':'p';
   chart={title:prop==='Pressure'?'Section-averaged pressure':prop==='Mach number'?'Section-averaged Mach number':'Section-averaged temperature',xlabel:'Axial position x/L',ylabel:prop==='Pressure'?'p/p₀':prop==='Mach number'?'Mach number':'Temperature (K)',series:[{name:prop,points:result.points.map(s=>[s.x,s[field]])}]};
@@ -102,6 +126,10 @@ export function calculate(id,x){let g=x.gamma??1.4,result,rows=[],chart,scene,ch
    if(jet.beta!==null)rows.push(row('External shock angle β',p.deg(jet.beta),'°'));
    if(jet.status==='expansion')rows.push(row('Fan head angle · upper lip',p.deg(jet.head),'°'),row('Fan tail angle · upper lip',p.deg(jet.tail),'°'));
    if(jet.weakPressureLimit)rows.push(row('Weak attached pressure limit',jet.weakPressureLimit,'pₐ/pₑ'));
+   if(jet.status==='shock'&&jet.outlet){
+    const mn1=jet.inlet.M*Math.sin(jet.beta),mn2=jet.outlet.M*Math.sin(jet.beta-Math.abs(jet.theta));
+    shockDetails.push(shockStateSection({kind:'oblique',title:'External oblique shock · upstream and downstream states',location:'At the upper nozzle lip · local planar model',before:jet.inlet,after:jet.outlet,gamma:g,R:result.R,extra:[{label:'Shock angle β',value:p.deg(jet.beta),unit:'°'},{label:'Flow-turn magnitude |θ|',value:p.deg(Math.abs(jet.theta)),unit:'°'},{label:'Upstream normal Mach Mₙ₁',value:mn1,unit:''},{label:'Downstream normal Mach Mₙ₂',value:mn2,unit:''}]}));
+   }
    scene={kind:x.nozzleView==='Nozzle + external waves'?'nozzleJet':'jet',...jet,...(x.nozzleView==='Nozzle + external waves'?{nozzle:{points:result.points,shockX:result.shockX,AsAt:result.AsAt,choked:result.choked,nozzleType:result.nozzleType,p0:result.p0,regime:result.regime}}:{})};notice=jet.message;checks={...checks,...Object.fromEntries(Object.entries(jet.checks).map(([k,v])=>['external'+k[0].toUpperCase()+k.slice(1),v]))};
    const val=z=>prop==='Pressure'?z.p/result.p0:prop==='Temperature'?z.T:z.M;
    let pts=jet.status==='expansion'?jet.samples.map(z=>[p.deg(z.theta),val(z)]):jet.status==='shock'?[[0,val(jet.inlet)],[.5,val(jet.inlet)],[.5,val(jet.outlet)],[1,val(jet.outlet)]]:[[0,val(jet.inlet)],[1,val(jet.inlet)]];
@@ -113,5 +141,5 @@ export function calculate(id,x){let g=x.gamma??1.4,result,rows=[],chart,scene,ch
  else if(id==='linear'){result=p.linearAirfoil(x);notice=result.warning;rows=[row('Lift coefficient',result.CL,'Cᴸ'),row('Wave-drag coefficient',result.CD,'Cᴰ,wave'),row('Upper front Cp',result.CpUF),row('Upper rear Cp',result.CpUR),row('Lower front Cp',result.CpLF),row('Lower rear Cp',result.CpLR)];scene={kind:'linear',...result,...x};chart={title:'Piecewise surface pressure',xlabel:'Chord position x/c',ylabel:'Pressure coefficient Cp',series:[{name:'Upper surface',points:[[0,result.CpUF],[.5,result.CpUF],[.5,result.CpUR],[1,result.CpUR]]},{name:'Lower surface',points:[[0,result.CpLF],[.5,result.CpLF],[.5,result.CpLR],[1,result.CpLR]]}]};}
  else if(id==='cone'){result=cone(x);checks={surfaceTangency:Math.abs(result.eventResidual),coneAngle:Math.abs(result.residual)};rows=[row('Conical shock angle β',p.deg(result.beta),'°'),row('Recovered cone angle',result.thetaConeDeg,'°'),row('Surface Mach',result.surface.M),row('Surface pressure',result.surface.p,'p꜀/p∞'),row('Surface temperature',result.surface.T,'T꜀/T∞'),row('Integration steps',result.iterations)];scene={kind:'cone',...result};chart={title:'Angular similarity solution',zeroBaseline:false,xlabel:'Polar angle θ (°)',ylabel:'Mach number',series:[{name:'M(θ)',points:result.history.map(s=>[p.deg(s.theta),s.M]).reverse()}]};}
  else throw new Error('Unknown laboratory.');
- return {id,inputs:x,model:id==='nozzle'?nozzleInfo(x).model:labs[id].model,result,rows,chart,scene,checks,notice,version:'0.1.0'};
+ return {id,inputs:x,model:id==='nozzle'?nozzleInfo(x).model:labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
 }
