@@ -46,4 +46,4 @@ footer{font-size:8px}
  .probe{font-size:8px}
 }
 
-.scene svg text{paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}.scene-caption{flex-wrap:wrap}
+.scene svg text{stroke:none;text-shadow:none;paint-order:normal}.scene[data-kind="state"] svg text{fill:#fff}.scene-caption{flex-wrap:wrap}
