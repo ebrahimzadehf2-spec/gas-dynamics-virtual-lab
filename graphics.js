@@ -1,4 +1,4 @@
-import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261107-shock';
+import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261107-external';
 export const colors=['#167c70','#dc9b52','#779bb7','#9c84b4'];
 export const fmt=(x,d=5)=>x===null||x===undefined?'—':!Number.isFinite(x)?'—':Math.abs(x)>1e5||Math.abs(x)>0&&Math.abs(x)<1e-4?x.toExponential(3):Number(x.toPrecision(d)).toString();
 const esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
@@ -25,6 +25,30 @@ export function sceneSVG(s,inputs,time=.001){let inner='',label='Schematic geome
   inner+=txt(320,280,s.regime,undefined,11,'middle');
   inner+=txt(40,18,s.nozzleType==='diverging'?`INLET M = ${fmt(s.inletMach)}`:'RESERVOIR',undefined,9)+txt(40,35,`p₀ = ${fmt(s.p0/1000)} kPa`,undefined,10)+txt(600,18,s.nozzleType==='diverging'&&s.outletCondition!=='Specified back pressure'?'MATCHED OUTLET':'BACK PRESSURE',undefined,9,'end')+txt(600,35,`p/p₀ = ${fmt(s.backRatio)}`,undefined,10,'end');
   label='Analytical section-averaged pressure · p/p₀ shading';meta='Area schematic · no external jet or separation';
+ }
+ else if(s.kind==='jet'){
+  const o=[100,135],extent=4000,ray=phi=>[o[0]+extent*Math.cos(phi),o[1]-extent*Math.sin(phi)],resolved=!!s.outlet;
+  const boundary=ray(s.theta),gasBoundary=[[25,135],o,boundary,[4100,4100],[25,4100]],maxp=Math.max(s.inlet.p,s.outlet?.p??s.inlet.p),color=p=>fieldColor(p/maxp);
+  inner+=`<defs><clipPath id="jetWindow"><rect x="25" y="80" width="590" height="162"/></clipPath><clipPath id="jetGas"><polygon points="${gasBoundary.map(p=>p.join(',')).join(' ')}"/></clipPath></defs>`;
+  inner+=`<g clip-path="url(#jetWindow)"><g clip-path="url(#jetGas)"><rect x="25" y="80" width="590" height="162" fill="${color(s.inlet.p)}"/>`;
+  if(s.status==='expansion'){
+   inner+=poly([o,boundary,ray(s.tail)],color(s.outlet.p));
+   for(let i=0;i<s.samples.length-1;i++){const a=s.samples[i],b=s.samples[i+1],phi=z=>z.theta-Math.asin(1/z.M);inner+=poly([o,ray(phi(a)),ray(phi(b))],color((a.p+b.p)/2),color((a.p+b.p)/2),.3);}
+   for(let i=0;i<s.samples.length;i+=8){const z=s.samples[i],e=ray(z.theta-Math.asin(1/z.M));inner+=line(...o,...e,'#729e8c',.8);}
+  }else if(s.status==='shock'){inner+=poly([o,boundary,ray(-s.beta)],color(s.outlet.p));}
+  inner+='</g>';
+  inner+=line(25,135,100,135,'#52745f',3);
+  if(resolved)inner+=line(...o,...boundary,'#5b8082',1.7,'5 4');
+  if(s.status==='shock')inner+=line(...o,...ray(-s.beta),'#d58f3b',2.5);
+  if(s.status==='expansion'){inner+=line(...o,...ray(s.head),'#387f71',1.2)+line(...o,...ray(s.tail),'#387f71',1.2);}
+  if(s.inlet.M>0)inner+=arrow(34,195,43);
+  inner+='</g>';
+  inner+=txt(28,22,'LOCAL UPPER LIP · PLANAR JET',undefined,10)+txt(28,45,`EXIT  M = ${fmt(s.inlet.M)} · p = ${fmt(s.inlet.p/1000)} kPa`,undefined,10)+txt(610,67,`AMBIENT ${fmt(s.inlet.p*s.ratio/1000)} kPa`,'#819380',9,'end');
+  inner+=txt(100,122,'LIP',undefined,9,'middle');
+  if(resolved)inner+=txt(28,263,`AFTER WAVE  M = ${fmt(s.outlet.M)} · p = ${fmt(s.outlet.p/1000)} kPa`,undefined,10)+txt(610,283,`UPPER BOUNDARY TURN ${fmt(deg(s.theta),4)}°`,undefined,9,'end');
+  else inner+=txt(320,266,'EXIT STATE ONLY · NO RESOLVED EXTERNAL WAVE','#a77944',10,'middle');
+  label=s.status==='expansion'?'Analytical Prandtl–Meyer fan · local pressure shading':s.status==='shock'?'Analytical oblique shock · uniform states':resolved?'Pressure-matched exit · no adjustment wave':'External model limit · exit state only';
+  meta='Angles to scale · local construction · reflections and mixing absent';
  }
  else if(s.kind==='cone'){let x=120,y=150,b=s.beta,c=s.thetaCone,L=Math.min(440,125/Math.tan(b));let h=s.history;for(let i=0;i<h.length-1;i++){let a=h[i],d=h[i+1];for(let sign of [-1,1])inner+=poly([[x,y],[x+L,y+sign*L*Math.tan(a.theta)],[x+L,y+sign*L*Math.tan(d.theta)]],fieldColor((a.p-1)/Math.max(.1,s.surface.p-1)));}inner+=poly([[x,y],[x+L,y-L*Math.tan(c)],[x+L,y+L*Math.tan(c)]],'#a5b6a2','#69816b',1.5);for(let sign of [-1,1])inner+=line(x,y,x+L,y+sign*L*Math.tan(b),'#d39846',2);inner+=arrow(20,126,65)+arrow(20,175,65)+dot(40,126)+dot(40,175,2);inner+=txt(385,54,`β = ${fmt(deg(b),5)}°`,'#ab7e38',12)+txt(385,90,`θc = ${fmt(deg(c),5)}°`,undefined,12)+txt(385,215,`M꜀ = ${fmt(s.surface.M)}`,undefined,15)+txt(385,242,`p꜀/p∞ = ${fmt(s.surface.p)}`);label='Taylor–Maccoll pressure field · meridional plane';meta='Zero incidence · equal geometric scale';}
  else if(s.kind==='tube'){const xmin=-1,xmax=1.8,X=x=>35+(x-xmin)/(xmax-xmin)*570;let head=s.head*time,tail=s.tail*time,contact=s.contact*time,shock=s.shockSpeed*time;
