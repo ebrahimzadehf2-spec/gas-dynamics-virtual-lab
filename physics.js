@@ -54,7 +54,7 @@ function cdNozzle({areaRatio:Ae=2,backRatio:pb=.8,gamma:g=1.4}={}){
  let shockX=As===null?null:xt+(L-xt)*Math.sqrt((As-At)/(Ae-At));return {status:'ok',regime,Me,AsAt:As,shockX,p02p01:loss,onset,exitShock,design,points,residual:root?.residual??0,iterations:root?.iterations??0};
 }
 // Areas are normalized by the minimum geometric area. Dimensional inputs use SI.
-export function nozzle({nozzleType='cd',areaRatio=2,contractionRatio=2,backRatio=.8,MIn=.3,sonicBranch='supersonic',p0=500000,T0=400,minArea=.0006,gamma:g=1.4,R=287}={}){
+export function nozzle({nozzleType='cd',areaRatio=2,contractionRatio=2,backRatio=.8,MIn=.3,sonicBranch='supersonic',outletCondition='Matched isentropic',p0=500000,T0=400,minArea=.0006,gamma:g=1.4,R=287}={}){
  const types={'Converging–diverging':'cd','Converging':'converging','Diverging':'diverging',cd:'cd',converging:'converging',diverging:'diverging'};
  const type=types[nozzleType];requireValue(!!type,'Choose a nozzle geometry.');gas(g,R);positive(p0,'Stagnation pressure');positive(T0,'Stagnation temperature');positive(minArea,'Minimum area');
  let s,astar=1,Ae=areaRatio;const critical=1/isentropic(1,g).p0p;
@@ -78,14 +78,47 @@ export function nozzle({nozzleType='cd',areaRatio=2,contractionRatio=2,backRatio
   for(const x of linspace(0,1,181)){const A=1+(contractionRatio-1)*(1-x)**2,m=Me===0?0:machFromArea(Math.max(1,A/astar),'subsonic',g);s.points.push({x,A,M:m,p:1/isentropic(m,g).p0p,h:.12*Math.sqrt(A)});}
  }else{
   requireValue(finite(areaRatio)&&areaRatio>1,'Require exit-to-inlet area ratio > 1.');requireValue(finite(MIn)&&MIn>0&&MIn<=20,'Require 0 < inlet Mach ≤ 20.');requireValue(['subsonic','supersonic'].includes(sonicBranch),'Choose the downstream branch for a sonic inlet.');
-  const branch=MIn===1?sonicBranch:MIn<1?'subsonic':'supersonic';astar=1/areaMach(MIn,g);const Me=machFromArea(areaRatio/astar,branch,g),pe=1/isentropic(Me,g).p0p;
-  s={status:'ok',nozzleType:type,regime:branch==='supersonic'?'Supersonic · accelerating':'Subsonic · decelerating',Me,minimumMach:MIn,choked:MIn===1,AsAt:null,shockX:null,p02p01:1,onset:null,exitShock:null,design:null,critical,backRatio:pe,exitAreaRatio:areaRatio,inletMach:MIn,residual:0,iterations:0,points:[]};
-  for(const x of linspace(0,1,181)){const A=1+(areaRatio-1)*x*x,m=x===0?MIn:machFromArea(Math.max(1,A/astar),branch,g);s.points.push({x,A,M:m,p:1/isentropic(m,g).p0p,h:.12*Math.sqrt(A)});}
+  requireValue(['Matched isentropic','Specified back pressure'].includes(outletCondition),'Choose an outlet condition.');
+  const branch=MIn===1?sonicBranch:MIn<1?'subsonic':'supersonic';astar=1/areaMach(MIn,g);
+  const meIso=machFromArea(areaRatio/astar,branch,g),peIso=1/isentropic(meIso,g).p0p;
+  const specified=outletCondition==='Specified back pressure';
+  if(specified)requireValue(finite(backRatio)&&backRatio>0&&backRatio<=1,'Require 0 < back pressure / inlet stagnation pressure ≤ 1.');
+  const pb=specified?backRatio:peIso;
+  let As=null,loss=1,astar2=astar,Me=meIso,shock=null,root=null,exitShock=null,inletShock=null;
+  let regime=branch==='supersonic'?'Supersonic · accelerating':'Subsonic · decelerating';
+  // S = As/Ai, not As/A*: the inlet Mach sets the upstream critical area.
+  const shockAt=S=>{const m1=S===1?MIn:machFromArea(S/astar,'supersonic',g),n=normalShock(m1,g),ast2=S/areaMach(n.M2,g),me=machFromArea(Math.max(1,areaRatio/ast2),'subsonic',g);return {m1,n,ast2,me,pb:n.p0/isentropic(me,g).p0p};};
+  if(branch==='supersonic'){
+   exitShock=shockAt(areaRatio).pb;inletShock=shockAt(1).pb;
+   if(specified){
+    requireValue(pb<=inletShock+1e-12,`Back pressure exceeds the shock-at-inlet limit (${inletShock.toFixed(8)} p₀). The prescribed inlet Mach cannot be maintained; upstream adjustment or unstart is outside this model.`,'unsupported-pattern');
+    if(pb>=exitShock-1e-12){
+     const target=Math.min(inletShock,Math.max(exitShock,pb));
+     root=bisect(S=>shockAt(S).pb-target,1,areaRatio,{ftol:1e-13});As=root.value;
+     const j=shockAt(As);loss=j.n.p0;astar2=j.ast2;Me=j.me;shock={upstreamMach:j.m1,downstreamMach:j.n.M2,pressureRatio:j.n.p,temperatureRatio:j.n.T};
+     regime=As===areaRatio?'Normal shock at exit':As===1?(MIn===1?'Sonic inlet · subsonic exit':'Normal shock at inlet'):'Internal normal shock';
+    }else regime=Math.abs(pb-peIso)<1e-10?'Ideally expanded':pb>peIso?'Overexpanded · external adjustment':'Underexpanded · external adjustment';
+   }
+  }else if(specified){
+   requireValue(Math.abs(pb-peIso)<=1e-10,`A subsonic inlet and area ratio fix pₑ/p₀ = ${peIso.toFixed(8)}. No normal shock is possible on this branch. Change the back pressure or use Matched isentropic; an incompatible pressure requires a different inlet state.`,'unsupported-pattern');
+  }
+  const shockX=As===null?null:Math.sqrt((As-1)/(areaRatio-1));
+  s={status:'ok',nozzleType:type,outletCondition,regime,Me,minimumMach:MIn,choked:MIn===1,AsAt:As,shockX,shock,p02p01:loss,onset:null,exitShock,inletShock,design:peIso,critical,backRatio:pb,exitAreaRatio:areaRatio,inletMach:MIn,residual:root?.residual??0,iterations:root?.iterations??0,pressureMatched:!specified||branch==='subsonic'||As!==null,points:[]};
+  const point=(x,A,m,p0ratio=1)=>({x,A,M:m,p:p0ratio/isentropic(m,g).p0p,h:.12*Math.sqrt(A)});
+  for(const x of linspace(0,1,181)){
+   if(shockX!==null&&Math.abs(x-shockX)<1e-12)continue;
+   const A=1+(areaRatio-1)*x*x,after=shockX!==null&&x>shockX,m=x===0?MIn:machFromArea(Math.max(1,A/(after?astar2:astar)),after?'subsonic':branch,g);
+   s.points.push(point(x,A,m,after?loss:1));
+  }
+  if(As!==null){s.points.push(point(shockX,As,shock.upstreamMach),point(shockX,As,shock.downstreamMach,loss));s.points.sort((a,b)=>a.x-b.x);}
+
  }
  for(const z of s.points){z.T=T0/isentropic(z.M,g).T0T;z.P=p0*z.p;z.area=minArea*z.A;z.rho=z.P/(R*z.T);z.u=z.M*Math.sqrt(g*R*z.T);z.massFlow=z.rho*z.u*z.area;}
  const e=s.points.at(-1);s.exitPressure=e.P;s.exitTemperature=e.T;s.massFlow=e.massFlow;s.exitArea=minArea*s.exitAreaRatio;s.minArea=minArea;s.p0=p0;s.T0=T0;s.R=R;
  s.massResidual=Math.max(...s.points.map(z=>Math.abs(z.massFlow-s.massFlow)))/Math.max(1e-30,s.massFlow);
- s.pressureResidual=(type==='diverging'||!s.choked||s.AsAt!==null)?Math.abs(e.p-s.backRatio):0;
+ s.pressureMatched??=!s.choked||s.AsAt!==null;
+ s.pressureResidual=s.pressureMatched?Math.abs(e.p-s.backRatio):0;
+ if(s.shock){const pair=s.points.filter(z=>z.x===s.shockX);s.shockChecks=conservation(state(pair[0].M,pair[0].T,pair[0].P,g,R),state(pair[1].M,pair[1].T,pair[1].P,g,R),g,R);}
  return s;
 }
 

@@ -32,9 +32,10 @@ export const labs={
   {key:'nozzleType',label:'Nozzle geometry',value:'Converging–diverging',options:['Converging–diverging','Converging','Diverging']},
   input('areaRatio','Exit-to-throat area',2,1.01,12,.01,'Aₑ/Aₜ'),
   input('contractionRatio','Inlet-to-exit area',2,1.01,12,.01,'Aᵢ/Aₑ'),
-  input('backRatio','Back-to-reservoir pressure',.8,.001,1,.001,'pᵦ/p₀'),
+  {key:'outletCondition',label:'Outlet condition',value:'Matched isentropic',options:['Matched isentropic','Specified back pressure']},
   input('MIn','Inlet Mach number',.3,.01,8,.01,'Mᵢ'),
   {key:'sonicBranch',label:'Flow after sonic inlet',value:'supersonic',options:['supersonic','subsonic']},
+  input('backRatio','Back-to-reservoir pressure',.8,.001,1,.001,'pᵦ/p₀'),
   input('p0','Stagnation pressure',500,1,10000,1,'kPa'),input('T0','Stagnation temperature',400,100,3000,1,'K'),
   input('minAreaCm2','Minimum flow area',6,.01,10000,.01,'cm²'),g,input('R','Gas constant',287,100,2200,1,'J/(kg·K)'),
   {key:'plotProperty',label:'Chart property',value:'Pressure',options:['Pressure','Mach number','Temperature']}
@@ -48,16 +49,17 @@ export function inputDefinitions(id,x={}){
  return labs.nozzle.inputs.filter(f=>{
   if(f.key==='areaRatio')return type!=='Converging';
   if(f.key==='contractionRatio')return type==='Converging';
-  if(f.key==='backRatio')return type!=='Diverging';
+  if(f.key==='backRatio')return type!=='Diverging'||x.outletCondition==='Specified back pressure';
+  if(f.key==='outletCondition')return type==='Diverging';
   if(f.key==='MIn')return type==='Diverging';
   if(f.key==='sonicBranch')return type==='Diverging'&&x.MIn===1;
   return true;
- }).map(f=>f.key==='areaRatio'&&type==='Diverging'?{...f,label:'Exit-to-inlet area',unit:'Aₑ/Aᵢ'}:f.key==='minAreaCm2'?{...f,label:type==='Converging'?'Exit area':type==='Diverging'?'Inlet area':'Throat area'}:f);
+ }).map(f=>f.key==='backRatio'&&type==='Diverging'?{...f,label:'Back-to-inlet stagnation pressure'}:f.key==='areaRatio'&&type==='Diverging'?{...f,label:'Exit-to-inlet area',unit:'Aₑ/Aᵢ'}:f.key==='minAreaCm2'?{...f,label:type==='Converging'?'Exit area':type==='Diverging'?'Inlet area':'Throat area'}:f);
 }
 export function nozzleInfo(x){
  const base=labs.nozzle,type=x.nozzleType??'Converging–diverging';
  if(type==='Converging')return {description:'Accelerate reservoir air through a converging nozzle and find its sonic exit-pressure limit.',model:'Converging nozzle · reservoir inlet · isentropic internal flow',equation:'p*/p₀ = [2/(γ + 1)]^[γ/(γ − 1)]   ·   pₑ = max(pᵦ, p*)',limitations:'The minimum area is the exit. Once choked, reducing back pressure changes the external jet, not the internal exit Mach or pressure. External expansion is not resolved.'};
- if(type==='Diverging')return {description:'Prescribe the inlet Mach number: a diverging passage decelerates subsonic flow and accelerates supersonic flow.',model:'Diverging passage · prescribed inlet Mach and stagnation state · isentropic branch',equation:'Aₑ/A* = (Aₑ/Aᵢ)(Aᵢ/A*)   ·   choose the inlet Mach branch',limitations:'The inlet Mach and area ratio fix the matched outlet pressure shown in the results. A separate back pressure is not imposed. Internal shocks and separation are outside this diverging-passage mode; a sonic inlet requires a downstream branch.'};
+ if(type==='Diverging')return x.outletCondition==='Specified back pressure'?{description:'Prescribe the inlet Mach and back pressure to locate a normal shock or identify external pressure adjustment.',model:'Diverging passage · prescribed inlet state and back pressure · isentropic sections with up to one normal shock',equation:'pₑ(Aₛ/Aᵢ) = pᵦ   ·   T₀₂ = T₀₁   ·   p₀₂ < p₀₁ across a shock',limitations:'A normal shock requires a supersonic upstream stream. Pressure above the shock-at-inlet limit cannot preserve the prescribed inlet Mach. A subsonic inlet permits only its matched outlet pressure. External waves, separation and unstart are not resolved; x/L follows the schematic area distribution.'}:{description:'Prescribe the inlet Mach number: a diverging passage decelerates subsonic flow and accelerates supersonic flow.',model:'Diverging passage · prescribed inlet Mach and stagnation state · isentropic branch',equation:'Aₑ/A* = (Aₑ/Aᵢ)(Aᵢ/A*)   ·   choose the inlet Mach branch',limitations:'The inlet Mach and area ratio fix the matched outlet pressure. Select Specified back pressure to test a normal shock on the supersonic branch. External waves and separation are not resolved; a sonic inlet requires a downstream branch.'};
  return {description:'Vary back pressure to find subsonic flow, choking, an internal normal shock and external pressure adjustment.',model:'Converging–diverging nozzle · reservoir inlet · isentropic sections with up to one normal shock',equation:base.equation,limitations:'The divergent area increases monotonically. Shock location Aₛ/Aₜ is calculated; x/L uses the displayed schematic area distribution. External jets and flow separation are not resolved.'};
 }
 
@@ -74,13 +76,18 @@ export function calculate(id,x){let g=x.gamma??1.4,result,rows=[],chart,scene,ch
   result=p.nozzle({...x,p0:x.p0===undefined?500000:x.p0*1000,minArea:x.minAreaCm2===undefined?.0006:x.minAreaCm2*1e-4});
   rows=[row('Exit Mach',result.Me),row('Exit static pressure',result.exitPressure/1000,'kPa'),row('Exit temperature',result.exitTemperature,'K'),row('Mass flow rate',result.massFlow,'kg/s'),row(type==='Converging'||type==='Diverging'?'Inlet Mach':'Throat Mach',type==='Converging'?result.points[0].M:result.minimumMach),row('Total-pressure recovery',result.p02p01,'p₀₂/p₀₁')];
   if(type==='Converging')rows.push(row('Critical exit pressure',result.onset*result.p0/1000,'kPa'),row('Choking pressure ratio',result.onset,'pᵦ/p₀'));
-  else if(type==='Diverging')rows.push(row('Matched outlet pressure',result.backRatio,'pₑ/p₀'),row('Exit area',result.exitArea*1e4,'cm²'));
+  else if(type==='Diverging'){
+   rows.push(row(result.outletCondition==='Specified back pressure'?'Specified back pressure':'Matched outlet pressure',result.backRatio,result.outletCondition==='Specified back pressure'?'pᵦ/p₀':'pₑ/p₀'),row('Exit area',result.exitArea*1e4,'cm²'));
+   if(result.exitShock!==null)rows.push(row('Shock-at-exit pressure',result.exitShock,'pᵦ/p₀'),row('Shock-at-inlet pressure',result.inletShock,'pᵦ/p₀'));
+   if(result.shock){rows.push(row('Shock section Aₛ/Aᵢ',result.AsAt),row('Shock position xₛ/L',result.shockX),row('Mach before shock',result.shock.upstreamMach),row('Mach after shock',result.shock.downstreamMach),row('Shock pressure jump',result.shock.pressureRatio,'p₂/p₁'));}
+   if(!result.pressureMatched)notice='The internal flow remains supersonic to the exit. Exit pressure differs from back pressure; external jet adjustment is not resolved.';
+  }
   else rows.push(row('Shock section Aₛ/Aₜ',result.AsAt),row('Choking onset',result.onset,'pᵦ/p₀'),row('Shock-at-exit threshold',result.exitShock,'pᵦ/p₀'),row('Design pressure ratio',result.design,'pₑ/p₀'));
   scene={kind:'nozzle',...result};
   const prop=x.plotProperty??'Pressure',field=prop==='Mach number'?'M':prop==='Temperature'?'T':'p';
   chart={title:prop==='Pressure'?'Section-averaged pressure':prop==='Mach number'?'Section-averaged Mach number':'Section-averaged temperature',xlabel:'Axial position x/L',ylabel:prop==='Pressure'?'p/p₀':prop==='Mach number'?'Mach number':'Temperature (K)',series:[{name:prop,points:result.points.map(s=>[s.x,s[field]])}]};
-  if(prop==='Pressure')chart.series.push({name:type==='Diverging'?'Matched outlet pressure':'Back pressure',points:[[0,result.backRatio],[1,result.backRatio]]});
-  checks={massConservation:result.massResidual,pressureClosure:result.pressureResidual};
+  if(prop==='Pressure')chart.series.push({name:type==='Diverging'&&result.outletCondition!=='Specified back pressure'?'Matched outlet pressure':'Back pressure',points:[[0,result.backRatio],[1,result.backRatio]]});
+  checks={massConservation:result.massResidual,...(result.pressureMatched?{pressureClosure:result.pressureResidual}:{}),...(result.shockChecks?{shockMass:result.shockChecks.mass,shockMomentum:result.shockChecks.momentum,shockEnergy:result.shockChecks.energy}:{})};
  }
  else if(id==='linear'){result=p.linearAirfoil(x);notice=result.warning;rows=[row('Lift coefficient',result.CL,'Cᴸ'),row('Wave-drag coefficient',result.CD,'Cᴰ,wave'),row('Upper front Cp',result.CpUF),row('Upper rear Cp',result.CpUR),row('Lower front Cp',result.CpLF),row('Lower rear Cp',result.CpLR)];scene={kind:'linear',...result,...x};chart={title:'Piecewise surface pressure',xlabel:'Chord position x/c',ylabel:'Pressure coefficient Cp',series:[{name:'Upper surface',points:[[0,result.CpUF],[.5,result.CpUF],[.5,result.CpUR],[1,result.CpUR]]},{name:'Lower surface',points:[[0,result.CpLF],[.5,result.CpLF],[.5,result.CpLR],[1,result.CpLR]]}]};}
  else if(id==='cone'){result=cone(x);checks={surfaceTangency:Math.abs(result.eventResidual),coneAngle:Math.abs(result.residual)};rows=[row('Conical shock angle β',p.deg(result.beta),'°'),row('Recovered cone angle',result.thetaConeDeg,'°'),row('Surface Mach',result.surface.M),row('Surface pressure',result.surface.p,'p꜀/p∞'),row('Surface temperature',result.surface.T,'T꜀/T∞'),row('Integration steps',result.iterations)];scene={kind:'cone',...result};chart={title:'Angular similarity solution',zeroBaseline:false,xlabel:'Polar angle θ (°)',ylabel:'Mach number',series:[{name:'M(θ)',points:result.history.map(s=>[p.deg(s.theta),s.M]).reverse()}]};}

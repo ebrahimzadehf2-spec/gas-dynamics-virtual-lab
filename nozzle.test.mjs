@@ -46,3 +46,34 @@ test('UI shows only relevant inputs and renders finite geometry and all three sc
 test('nozzle rejects invalid gas, geometry and boundary inputs',()=>{
  for(const args of [{nozzleType:'unknown'},{nozzleType:'converging',backRatio:0},{nozzleType:'converging',contractionRatio:1},{nozzleType:'diverging',MIn:0},{nozzleType:'diverging',areaRatio:1},{minArea:0},{p0:NaN},{T0:-1},{gamma:1}])assert.throws(()=>nozzle(args));
 });
+// References from an independent dimensional mass/momentum/energy jump solve
+// (downstream velocity quadratic + SciPy Brent inversion), not this engine.
+const shockReferences=[
+ {MIn:2,areaRatio:2,backRatio:.5,AsAt:1.4201407191593298,shockX:.6481826279370112,Me:.3390597957264831,loss:.5414062869332802,M1:2.39700961069961,M2:.523437638763345},
+ {MIn:1.5,areaRatio:3,backRatio:.75,AsAt:1.3045885054896862,shockX:.3902489625160368,Me:.217649219693001,loss:.7751657966572388,M1:1.8830156534333575,M2:.5989657825556574},
+ {MIn:3,areaRatio:2,backRatio:.2,AsAt:1.5755560433154565,shockX:.7586540999134299,Me:.33782095636479526,loss:.2164382788711487,M1:3.48122288673589,M2:.4518894134457347}
+];
+const shockCase=x=>nozzle({nozzleType:'diverging',outletCondition:'Specified back pressure',MIn:2,areaRatio:2,backRatio:.5,...x});
+test('diverging internal shock agrees with three independent dimensional jump references',()=>{
+ for(const r of shockReferences){const s=shockCase(r);for(const k of ['AsAt','shockX','Me'])near(s[k],r[k],2e-9);near(s.p02p01,r.loss,2e-9);near(s.shock.upstreamMach,r.M1,2e-9);near(s.shock.downstreamMach,r.M2,2e-9);near(s.exitPressure/s.p0,r.backRatio,1e-10);balances(s);assert.ok(Object.values(s.shockChecks).every(v=>v<1e-10));}
+});
+test('shock traverses the diverging passage as back pressure rises, including inlet and exit boundaries',()=>{
+ const base=shockCase({});let prev=2;
+ for(const f of [0,.2,.5,.8,1]){const s=shockCase({backRatio:base.exitShock+f*(base.inletShock-base.exitShock)});assert.ok(s.shockX<prev);prev=s.shockX;balances(s);near(s.points.at(-1).p,s.backRatio,1e-10);}
+ const atExit=shockCase({backRatio:base.exitShock}),atInlet=shockCase({backRatio:base.inletShock});near(atExit.shockX,1);near(atInlet.shockX,0);
+ for(const s of [atExit,atInlet]){const pair=s.points.filter(z=>z.x===s.shockX);assert.equal(pair.length,2);assert.ok(pair[0].M>1&&pair[1].M<1);assert.ok(pair[1].P>pair[0].P);}
+ assert.throws(()=>shockCase({backRatio:base.inletShock+.001}),/prescribed inlet Mach cannot be maintained/);
+});
+test('external supersonic adjustment is distinct from internal pressure matching',()=>{
+ const base=shockCase({});for(const pb of [base.design*.5,base.design,(base.design+base.exitShock)/2]){let s=shockCase({backRatio:pb});assert.equal(s.AsAt,null);assert.equal(s.pressureMatched,false);near(s.p02p01,1);near(s.points.at(-1).p,base.design,1e-10);balances(s);}
+});
+test('subsonic inlet compatibility and sonic branch boundaries are enforced',()=>{
+ const sub=nozzle({nozzleType:'diverging',MIn:.3});const matched=shockCase({MIn:.3,backRatio:sub.backRatio});assert.equal(matched.shock,null);assert.ok(matched.Me<.3);assert.throws(()=>shockCase({MIn:.3}),/No normal shock/);
+ for(const gamma of [1.2,1.4,5/3]){const iso=nozzle({nozzleType:'diverging',MIn:1,gamma});const b=(iso.exitShock+iso.inletShock)/2,s=shockCase({MIn:1,gamma,backRatio:b});assert.ok(s.shock.upstreamMach>1&&s.shock.downstreamMach<1);assert.ok(s.massResidual<1e-9);const limit=shockCase({MIn:1,gamma,backRatio:iso.inletShock});near(limit.shockX,0);near(limit.shock.upstreamMach,1);near(limit.p02p01,1);}
+ assert.throws(()=>shockCase({outletCondition:'guess'}));assert.throws(()=>shockCase({backRatio:NaN}));
+});
+test('back-pressure mode updates visible inputs, plots, shock outputs and physical checks',()=>{
+ const x={...defaults('nozzle'),nozzleType:'Diverging',outletCondition:'Specified back pressure',MIn:2,backRatio:.5};assert.ok(inputDefinitions('nozzle',x).some(f=>f.key==='backRatio'));
+ for(const plotProperty of ['Pressure','Mach number','Temperature']){const d=calculate('nozzle',{...x,plotProperty});assert.ok(d.rows.some(r=>r.label==='Shock section Aₛ/Aᵢ'));assert.ok(d.checks.shockMomentum<1e-10);for(const svg of [sceneSVG(d.scene,x).svg,chartSVG(d.chart).svg])assert.ok(!/NaN|Infinity|undefined/.test(svg));}
+ const external=calculate('nozzle',{...x,backRatio:.1});assert.ok(external.notice.includes('external jet'));assert.ok(!('pressureClosure' in external.checks));
+});
