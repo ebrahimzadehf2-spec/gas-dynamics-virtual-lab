@@ -97,3 +97,6 @@ h1{font-weight:650;letter-spacing:-.7px}h2{font-size:16px;font-weight:650}h3{fon
 .segment-editor table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px;color:#17212b}.segment-editor th,.segment-editor td{padding:5px 2px;text-align:center}.segment-editor th:first-child{width:34px}.segment-editor th:last-child{width:23px}.segment-editor input{width:100%;min-width:0;padding:8px 3px;border:1px solid #c7d5dc;border-radius:4px;background:#fff;color:#17212b;font-size:13px;font-variant-numeric:tabular-nums}.segment-editor button{border:1px solid #c7d5dc;border-radius:4px;background:#fff;color:#245b60;padding:3px 6px}.segment-editor .segment-auto{background:#eef4f6;font-variant-numeric:tabular-nums}.segment-editor .segment-auto td{font-size:11px;overflow-wrap:anywhere}.segment-editor .segment-add{margin-top:7px;padding:6px 9px;font-size:12px}.segment-editor input::-webkit-inner-spin-button{appearance:none}.segment-editor input[type=number]{appearance:textfield}
 
 .airfoil-panel{display:grid;gap:20px}.airfoil-empty{padding:0 16px 16px;color:#465463;font-size:13px}.airfoil-scroll tbody th{font-weight:500;text-align:left}
+
+/* Keep wide regional tables inside their scroll containers. */
+.visual-column,.airfoil-panel{min-width:0}

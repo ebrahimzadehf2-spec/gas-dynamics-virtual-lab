@@ -1,4 +1,4 @@
-import {airfoilTables} from './airfoil-tables.js?v=20261108-pressure-coefficients';
+import {airfoilTables} from './airfoil-tables.js?v=20261108-airfoil-refined';
 import {airfoilGeometry,segmentSurface,surfaceSegments,presetSegments} from './airfoil.js?v=20261108-segment-editor';
 import {nearestChartPoint} from './chart-probe.js?v=20261108-chart-tooltip';
 import {probeCone} from './cone-probe.js?v=20261108-cone-hover';
@@ -7,7 +7,7 @@ import {selectGas,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {pressureSweepPlan,advancePressure} from './sweep.js?v=20261107-shock-states';
 import {labs,chapters,defaults,inputDefinitions,nozzleInfo} from './labs.js?v=20261108-segment-editor';
-import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261108-airfoil3';
+import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261108-airfoil-refined';
 const $=id=>document.getElementById(id);let id='rayleigh',inputs={},request=0,current=null,pinned=null,timer,animation=false,frame,lastFrame=0,sceneTime=.001,fieldQuantity='pressure';
 let displayedChart=null,chartChoices=[],plotSelection={};
 const worker=new Worker(new URL('./worker.js?v=20261108-segment-editor',import.meta.url),{type:'module'});
