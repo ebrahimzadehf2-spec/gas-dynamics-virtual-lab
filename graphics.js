@@ -1,3 +1,4 @@
+import {readableSceneLabels} from './scene-labels.js?v=20261108-readable-labels';
 import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261107-shock-states';
 export const colors=['#167c70','#dc9b52','#779bb7','#9c84b4'];
 export const fmt=(x,d=5)=>x===null||x===undefined?'—':!Number.isFinite(x)?'—':Math.abs(x)>1e5||Math.abs(x)>0&&Math.abs(x)<1e-4?x.toExponential(3):Number(x.toPrecision(d)).toString();
@@ -18,7 +19,7 @@ const fieldValues=(s,kind,key)=>{
 const quantityLabel=(key,kind)=>({pressure:kind==='nozzle'?'Static pressure p/p₀':'Static pressure p/p∞',mach:'Mach number M',temperature:kind==='nozzle'?'Temperature T/T₀':'Temperature T/T∞',density:kind==='nozzle'?'Density ρ/ρ₀':'Density ρ/ρ∞'}[key]??'Static pressure');
 const allQuantities=['pressure','mach','temperature','density'];
 function regionalField(s,inputs,quantity){
- const full=['balance','state','normal','duct','oblique','expansion','nozzle','cone'].includes(s.kind);
+ const full=['balance','state','normal','duct','oblique','expansion','nozzle','cone','collision'].includes(s.kind);
  const options=s.kind==='linear'?['cp']:full?allQuantities:['pressure'];
  const key=options.includes(quantity)?quantity:options[0],g=inputs.gamma??1.4;
  let values=[],units='',note='Analytical uniform regions';
@@ -34,7 +35,7 @@ function regionalField(s,inputs,quantity){
   const at=m=>{const t=(1+(g-1)*s.M*s.M/2)/(1+(g-1)*m*m/2);return key==='mach'?m:key==='temperature'?t:key==='density'?t**(1/(g-1)):t**(g/(g-1));};
   values=linspace(s.M,s.M2,45).map(at);units=key==='mach'?'M':key==='temperature'?'T/T₁':key==='density'?'ρ/ρ₁':'p/p₁';return {key,options,values,units,note:'Analytical centered expansion',at,read};
  }else if(s.kind==='linear'){values=[s.CpUF,s.CpUR,s.CpLF,s.CpLR];units='Cp';note='Surface pressure only · linearized theory';
- }else if(s.kind==='collision'){values=[1,s.n2.p,s.n3.p,s.p4,s.p5];units='p/p₁';note='Solved regional pressures · wave geometry schematic';
+ }else if(s.kind==='collision'){values=s.geometry.fields.map(c=>read(c.state));units=key==='mach'?'M':key==='temperature'?'K':key==='density'?'kg/m³':'Pa';note='Analytical states · sampled centered fans · equal geometric scale';
  }else if(s.kind==='tube'){values=[inputs.p1*1000,inputs.p4*1000,s.p];units='Pa';note='Analytical pressure · before wall reflection';
  }else if(['jet','nozzleJet'].includes(s.kind)){values=[s.inlet.p,s.outlet?.p??s.inlet.p,...(s.samples??[]).map(z=>z.p),...(s.nozzle?.points??[]).map(z=>z.P)];units='Pa';note='Local analytical pressure · unresolved regions hatched';}
  return {key,options,values,units,note,read};
@@ -145,7 +146,28 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
  else if(s.kind==='tube'){const xmin=-1,xmax=1.8,X=x=>35+(x-xmin)/(xmax-xmin)*570;let head=s.head*time,tail=s.tail*time,contact=s.contact*time,shock=s.shockSpeed*time;
   inner+=poly([[35,92],[X(head),92],[X(head),213],[35,213]],shade(inputs.p4*1000));for(let i=0;i<50;i++){let a=head+(tail-head)*i/50,b=head+(tail-head)*(i+1)/50,xi=(a+b)/(2*time),sound=2*s.a4/(inputs.gamma+1)-(inputs.gamma-1)*xi/(inputs.gamma+1),pressure=inputs.p4*1000*(sound/s.a4)**(2*inputs.gamma/(inputs.gamma-1));inner+=poly([[X(a),92],[X(b),92],[X(b),213],[X(a),213]],shade(pressure));}inner+=poly([[X(tail),92],[X(shock),92],[X(shock),213],[X(tail),213]],shade(s.p))+poly([[X(shock),92],[605,92],[605,213],[X(shock),213]],shade(inputs.p1*1000));for(let [x,name,col,dash] of [[head,'head','#7a9a80',''],[tail,'tail','#7a9a80',''],[contact,'contact','#62858e','5 4'],[shock,'shock','#000000','']]){inner+=line(X(x),83,X(x),223,col,1.5,dash)+txt(X(x),name==='contact'?250:69,name,col,9,'middle');}inner+=line(35,92,605,92,'#819783',2)+line(35,213,605,213,'#819783',2)+txt(320,34,`t = ${fmt(time*1000,3)} ms · before wall reflection`,undefined,11,'middle')+txt(320,162,`u₂ = u₃ = ${fmt(s.u)} m/s`,'#ffffff',14,'middle')+txt(35,281,'x = −1 m',undefined,9)+txt(605,281,'x = 1.8 m',undefined,9,'end');label='Analytical similarity field · pressure shading';meta='Expansion fan + uniform regions';}
  else if(s.kind==='linear'){let t=inputs.thickness*440/2,x=90,y=150;inner+=poly([[x,y],[x+220,y-t],[x+440,y],[x+220,y+t]],'#b4c7ad','#66806a',2);for(const [a,b,v] of [[[x,y],[x+220,y-t],s.CpUF],[[x+220,y-t],[x+440,y],s.CpUR],[[x,y],[x+220,y+t],s.CpLF],[[x+220,y+t],[x+440,y],s.CpLR]])inner+=line(...a,...b,shade(v),9);inner+=flow()+txt(320,65,`UPPER  Cₚ,f ${fmt(s.CpUF)}   Cₚ,r ${fmt(s.CpUR)}`,undefined,11,'middle')+txt(320,234,`LOWER  Cₚ,f ${fmt(s.CpLF)}   Cₚ,r ${fmt(s.CpLR)}`,undefined,11,'middle')+txt(320,267,`α = ${inputs.alpha}° · t/c = ${inputs.thickness}`,undefined,10,'middle');label='Piecewise analytical Cp · geometry drawn at zero incidence';meta='Linearized supersonic approximation';}
- else if(s.kind==='collision'){let x=310,y=150,L=245;inner+=poly([[25,40],[610,40],[610,260],[25,260]],shade(1))+poly([[45,40],[x,y],[45,y]],shade(s.n2.p))+poly([[45,y],[x,y],[45,260]],shade(s.n3.p));inner+=poly([[x,y],[610,y-L*Math.tan(s.a.beta+(-s.delta))],[610,y]],shade(s.p4))+poly([[x,y],[610,y],[610,y+L*Math.tan(s.b.beta+s.delta)]],shade(s.p5));inner+=line(45,40,x,y,'#000000',2)+line(45,260,x,y,'#000000',2)+line(x,y,610,35,'#000000',2)+line(x,y,610,265,'#000000',2)+line(x,y,610,y-300*Math.tan(s.delta),'#6e9197',1.7,'6 4');inner+=txt(78,145,'M₁','#ffffff',19)+txt(441,98,`p₄/p₁ ${fmt(s.p4)}`,'#ffffff',12)+txt(441,227,`p₅/p₁ ${fmt(s.p5)}`,'#ffffff',12)+txt(320,284,`Slip angle magnitude ${fmt(Math.abs(s.slipAngle))}°`,undefined,10,'middle');label='Schematic wave topology · solved pressures and slip angle';meta='Wave positions and lengths schematic';}
+ else if(s.kind==='collision'){
+  const z=s.geometry,points=z.domain,x0=z.startX,x1=z.endX,y0=Math.min(...points.map(p=>p[1])),y1=Math.max(...points.map(p=>p[1])),scale=Math.min(580/(x1-x0),190/(y1-y0));
+  const ox=320-(x0+x1)*scale/2,oy=153+(y0+y1)*scale/2,V=([x,y])=>[ox+x*scale,oy-y*scale];
+  for(const c of z.fields){const color=shade(f.read(c.state));inner+=poly(c.poly.map(V),color,color,.35);}
+  for(const wall of Object.values(z.walls))for(let i=1;i<wall.length;i++)inner+=line(...V(wall[i-1]),...V(wall[i]),'#52616c',3);
+  for(const w of z.incident)inner+=line(...V(w.origin),...V(w.end),'#000000',2.2);
+  for(const w of z.outgoing)if(w.kind!=='No wave')inner+=line(...V(w.origin),...V(w.end),w.kind==='Oblique shock'?'#000000':'#52616c',w.kind==='Oblique shock'?2.2:.65);
+  inner+=line(...V(z.slip.origin),...V(z.slip.end),'#000000',1.8,'6 4');
+  // Put each state label in its largest visible polygon; omit cramped cells.
+  for(const [n,state] of Object.entries(s.regions)){
+   const cells=z.fields.filter(c=>c.state===state).map(c=>({...c,area:Math.abs(c.poly.reduce((v,a,i)=>{const b=c.poly[(i+1)%c.poly.length];return v+a[0]*b[1]-a[1]*b[0];},0))})).sort((a,b)=>b.area-a.area);
+   if(!cells.length||cells[0].area*scale*scale<2200)continue;
+   const c=cells[0],center=c.poly.reduce((v,p)=>[v[0]+p[0]/c.poly.length,v[1]+p[1]/c.poly.length],[0,0]),[xx,yy]=V(center);
+   inner+=txt(xx,yy,`${n}`,undefined,18,'middle');
+  }
+  const [bx,by]=V(z.B);inner+=`<circle cx="${bx}" cy="${by}" r="3" fill="#000000"/>`;
+  inner+=txt(24,24,s.same?'SAME-DIRECTION INTERACTION':'OPPOSING SHOCK INTERACTION',undefined,14)+txt(616,24,`φ = ${fmt(s.slipAngle,6)}°`,undefined,17,'end');
+  inner+=txt(24,273,`B: x = ${fmt(z.B[0],5)}, y = ${fmt(z.B[1],5)} ${s.geometryMode==='Custom geometry'?'m':'(normalized)'}`,undefined,14)+txt(616,273,s.a.kind,undefined,14,'end');
+  label='Analytical wave interaction · signed slip angle · equal geometric scale';meta='Dashed: slip line · solid black: shocks · view ends before wall reflections';
+ }
+
+ inner=readableSceneLabels(inner);
  if(field){field.options??=f.options;field.note??='Range scaled to this solution';}
  return {label,meta,field,svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}"><title>${esc(label)}</title><defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#e4ece1" stroke-width=".5"/></pattern></defs><rect width="640" height="300" fill="#f8fbf6"/><rect width="640" height="300" fill="url(#grid)"/>${inner}</svg>`};
 }

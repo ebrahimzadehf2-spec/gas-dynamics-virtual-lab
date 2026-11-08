@@ -41,7 +41,7 @@ footer{font-size:8px}
  .probe{font-size:8px}
 }
 
-.scene svg text{stroke:none;text-shadow:none;paint-order:normal}.scene[data-kind="state"] svg text{fill:#fff}.scene-caption{flex-wrap:wrap}
+.scene svg text{stroke:none;text-shadow:none;paint-order:normal}.scene-caption{flex-wrap:wrap}
 
 /* Readable, neutral interface typography */
 :root{--ink:#17212b;--muted:#4b5563;--text-secondary:#4b5563}

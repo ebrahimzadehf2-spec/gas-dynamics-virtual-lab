@@ -44,7 +44,7 @@ export function plotOptions(d,time=.001){
   for(const s of d.chart.series)add('surface-'+s.name,s.name,'Chord position x/c','Cp',s.points);
   family('airfoil-','Angle of attack α (°)',linspace(-10,10,121).map(a=>[a,linearAirfoil({...x,alpha:a})]),[['CL','Lift coefficient','CL',s=>s.CL],['CD','Wave-drag coefficient','CD,wave',s=>s.CD],['UF','Upper-front pressure coefficient','Cp',s=>s.CpUF],['UR','Upper-rear pressure coefficient','Cp',s=>s.CpUR],['LF','Lower-front pressure coefficient','Cp',s=>s.CpLF],['LR','Lower-rear pressure coefficient','Cp',s=>s.CpLR]]);
  }else if(id==='collision'){
-  const a=r.n2,b=r.n3,samples=[[2,{M:a.M2,p:a.p,T:a.T,rho:a.rho,p0:a.p0}],[3,{M:b.M2,p:b.p,T:b.T,rho:b.rho,p0:b.p0}],[4,{M:r.a.M2,p:r.p4,T:a.T*r.a.T,rho:a.rho*r.a.rho,p0:a.p0*r.a.p0}],[5,{M:r.b.M2,p:r.p5,T:b.T*r.b.T,rho:b.rho*r.b.rho,p0:b.p0*r.b.p0}]];
+  const samples=Object.entries(r.regions).map(([n,z])=>[Number(n),{M:z.M,p:z.p/r.regions[1].p,T:z.T/r.regions[1].T,rho:z.rho/r.regions[1].rho,p0:z.p0/r.regions[1].p0}]);
   family('regions-','Region number · comparison only',samples,[['M','Region Mach numbers','M',s=>s.M],['p','Region pressure ratios','p/p₁',s=>s.p],['T','Region temperature ratios','T/T₁',s=>s.T],['rho','Region density ratios','ρ/ρ₁',s=>s.rho],['p0','Region stagnation-pressure recovery','p₀/p₀₁',s=>s.p0]]);
   options.filter(o=>o.key.startsWith('regions-')).forEach(o=>{o.chart.scatter=true;o.note='Independent uniform regions are compared; points do not represent a spatial path.';});
  }else if(id==='tube'){
