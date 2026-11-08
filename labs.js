@@ -1,4 +1,4 @@
-import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-airfoil';
+import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-segment-editor';
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
 import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-airfoil';
@@ -81,6 +81,9 @@ export const labs={
  airfoil:{chapter:9,title:'Supersonic Airfoil Lab',tag:'CHAPTERS 6 + 9 · TWO METHODS',description:'Compare shock–expansion and linearized predictions on the same sharp airfoil, inspect panel states and recover the linearized surface potential.',inputs:[
  {key:'airfoilMethod',label:'Solution method',value:'Compare both',options:['Compare both','Shock–Expansion','Linearized theory']},
  {key:'airfoilShape',label:'Airfoil geometry',value:'Diamond',options:['Flat plate','Diamond','Asymmetric double wedge','Custom panels']},
+ {key:'geometryInput',label:'Geometry definition',value:'Angles & lengths',options:['Angles & lengths','Dimensions']},
+ {key:'upperSegments',label:'Upper surface segments',type:'segments',value:[{angle:4.573921259900861,length:0.5015974481593781}]},
+ {key:'lowerSegments',label:'Lower surface segments',type:'segments',value:[{angle:-4.573921259900861,length:0.5015974481593781}]},
  input('M','Freestream Mach',3,1.1,20,.01,'M∞'),input('alpha','Angle of attack α',4,-10,10,.1,'°'),
  input('thickness','Maximum thickness',.08,0,.2,.001,'t/c'),input('peak','Peak location',.5,.15,.85,.01,'x/c'),input('camber','Peak camber',0,-.08,.08,.001,'y/c'),
  {key:'upperProfile',label:'Upper vertices · x/c,y/c',type:'textarea',value:'0,0; 0.3,0.04; 0.7,0.03; 1,0'},
@@ -90,7 +93,17 @@ export const labs={
  cone:{chapter:10,title:'Taylor–Maccoll cone',tag:'AXISYMMETRIC SIMILARITY',description:'Solve the conical-flow ODE, locate the cone surface and recover the attached weak shock.',inputs:[input('M','Freestream Mach',2,1.2,6,.0001,'M∞'),input('thetaCone','Cone half-angle',10,1,35,.1,'°'),g],model:'Steady, inviscid, axisymmetric sharp cone · zero angle of attack',equation:'dVᵣ/dθ = Vθ   ·   Vθ(θc) = 0',limitations:'Adaptive RK4 step doubling and a bracketed shock-angle search. Strong branches and detached cones are outside this release. Full book-example acceptance is pending.'}
 };
 function experimentInputs(id,x={}){
- if(id==='airfoil')return labs.airfoil.inputs.filter(f=>!['thickness','peak'].includes(f.key)||!['Flat plate','Custom panels'].includes(x.airfoilShape)).filter(f=>f.key!=='camber'||x.airfoilShape==='Asymmetric double wedge').filter(f=>!['upperProfile','lowerProfile'].includes(f.key)||x.airfoilShape==='Custom panels').map(f=>f.key==='T1'?{...f,label:'Freestream temperature'}:f.key==='p1'?{...f,label:'Freestream pressure'}:f);
+ if(id==='airfoil')return labs.airfoil.inputs.filter(f=>{
+  const flat=x.airfoilShape==='Flat plate',custom=x.airfoilShape==='Custom panels',angles=x.geometryInput==='Angles & lengths';
+  if(f.key==='geometryInput')return custom;
+  if(f.key==='upperSegments')return !flat&&angles;
+  if(f.key==='lowerSegments')return !flat&&angles&&x.airfoilShape!=='Diamond';
+  if(['thickness','peak'].includes(f.key))return false;
+  if(f.key==='camber')return false;
+  if(['upperProfile','lowerProfile'].includes(f.key))return custom&&!angles;
+  return true;
+ }).map(f=>f.key==='upperSegments'&&x.airfoilShape==='Diamond'?{...f,label:'Upper segments · lower mirrored'}:f.key==='geometryInput'?{...f,options:x.airfoilShape==='Custom panels'?['Angles & lengths','Coordinates']:['Angles & lengths','Dimensions']}:f.key==='T1'?{...f,label:'Freestream temperature'}:f.key==='p1'?{...f,label:'Freestream pressure'}:f);
+
  if(id==='collision')return labs.collision.inputs.filter(f=>!['channelHeight','cornerSpacing'].includes(f.key)||x.geometryMode==='Custom geometry').map(f=>f.key==='thetaUpper'?{...f,label:x.interactionType==='Same-direction shocks'?'First wall angle θ₁':'Lower-wall angle θₗ'}:f.key==='thetaLower'?{...f,label:x.interactionType==='Same-direction shocks'?'Additional second turn':'Upper-wall downward angle θᵤ',help:'Positive magnitude. The second turn is additional, not an absolute wall angle.'}:f.key==='cornerSpacing'?{...f,help:x.interactionType==='Same-direction shocks'?'Axial distance between the two lower-wall corners.':'Upper corner x minus lower corner x. The lower corner is at x = 0.'}:f);
  if(id==='balances')return labs.balances.inputs.filter(f=>f.key!=='M2'||x.balanceMode!=='Solve outlet speed').map(f=>f.key==='T2'&&x.balanceMode==='Solve outlet speed'?{...f,section:'Outlet state'}:f);
  if(id!=='nozzle')return ['oblique','expansion'].includes(id)?[...labs[id].inputs,cornerView]:labs[id].inputs;
@@ -194,7 +207,7 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
   for(const model of result.models){const z=result[model];if(z.status!=='ok')continue;const name=model==='linear'?'Linearized':'Shock–Expansion';rows.push(row(`${name} · lift coefficient`,z.CL,'CL'),row(`${name} · wave-drag coefficient`,z.CD,'CD,w'),row(`${name} · quarter-chord moment`,z.CM,'CM,c/4'));if(Math.abs(z.CD)>1e-12)rows.push(row(`${name} · lift-to-drag ratio`,z.CL/z.CD,'L/D'));}
   if(result.models.length===2&&result.nonlinear.status==='ok')rows.push(row('Lift coefficient difference',result.nonlinear.CL-result.linear.CL,'ΔCL · SE − linear'),row('Drag coefficient difference',result.nonlinear.CD-result.linear.CD,'ΔCD · SE − linear'));
   for(const model of result.models)if(result[model].status==='ok')for(const panel of result[model].panels){
-   const values=[['x start',panel.a.x,'x/c'],['x end',panel.b.x,'x/c'],['Flow angle',p.deg(panel.theta),'°'],['Pressure coefficient',panel.Cp,'Cp'],...(model==='nonlinear'?[['Mach',panel.M,'M'],['Pressure',panel.p/1000,'kPa'],['Temperature',panel.T,'K'],['Density',panel.rho,'kg/m³'],['Speed',panel.u,'m/s'],['Stagnation pressure',panel.p0/1000,'kPa']]:[])];
+   const values=[['x start',panel.a.x,'x/c'],['x end',panel.b.x,'x/c'],['Flow angle',p.deg(panel.theta),'°'],['Segment length',panel.length,'L/c'],['Pressure coefficient',panel.Cp,'Cp'],...(model==='nonlinear'?[['Mach',panel.M,'M'],['Pressure',panel.p/1000,'kPa'],['Temperature',panel.T,'K'],['Density',panel.rho,'kg/m³'],['Speed',panel.u,'m/s'],['Stagnation pressure',panel.p0/1000,'kPa']]:[])];
    rows.push(...values.map(([label,value,unit])=>({...row(`${model} · ${panel.id} · ${label}`,value,unit),panel:'airfoil'})));
   }
   if(result.models.includes('linear'))for(const panel of result.linear.potential)rows.push({...row(`Linear potential · ${panel.id} · derivative`,panel.derivative,'dψ/dξ'),panel:'airfoil'},{...row(`Linear potential · ${panel.id} · intercept`,panel.intercept,'ψ'),panel:'airfoil'});

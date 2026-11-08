@@ -21,7 +21,7 @@ test('Piecewise surface potentials integrate Cp with corner continuity and leadi
  assert.notEqual(r.linear.potential[1].phi1,r.linear.potential[3].phi1);
 });
 test('Custom geometries, method selection and unsupported surface states are explicit',()=>{
- const x=defaults('airfoil'),custom={...x,airfoilShape:'Custom panels'};assert.equal(airfoilGeometry(custom).panels.length,6);assert.equal(solveAirfoil(custom).nonlinear.status,'ok');
+ const x=defaults('airfoil'),custom={...x,airfoilShape:'Custom panels',geometryInput:'Coordinates'};assert.equal(airfoilGeometry(custom).panels.length,6);assert.equal(solveAirfoil(custom).nonlinear.status,'ok');
  assert.throws(()=>solveAirfoil({...custom,upperProfile:'0,0; .5,-.2; 1,0'}),/cross/);assert.throws(()=>solveAirfoil({...custom,lowerProfile:'0,0; .5,-.02; .4,-.03; 1,0'}),/increase/);
  const out=solveAirfoil({...x,M:1.1,alpha:10,thickness:.2});assert.equal(out.nonlinear.status,'unsupported');assert.equal(out.nonlinear.panels.length,0);assert.ok(out.warning);assert.ok(airfoilPlots(out).every(o=>!o.key.includes('airfoil-M')));
  const only=solveAirfoil({...x,M:1.1,alpha:10,thickness:.2,airfoilMethod:'Shock–Expansion'});assert.equal(only.status,'unsupported');assert.equal(airfoilPlots(only).length,0);
@@ -36,5 +36,5 @@ test('Airfoil scenes, charts and shock reports are finite for every geometry',()
 
 test('Nonlinear surface states and integrated forces match independent SciPy references',async()=>{
  const {readFileSync}=await import('node:fs'),refs=JSON.parse(readFileSync(new URL('./airfoil-reference.json',import.meta.url)));
- for(const ref of refs){const x={...defaults('airfoil'),...ref,airfoilShape:ref.thickness?'Asymmetric double wedge':'Flat plate'},r=solveAirfoil(x);assert.equal(r.nonlinear.status,'ok');for(const key of ['CL','CD','CM'])near(r.nonlinear[key],ref[key],2e-9);r.nonlinear.panels.forEach((p,i)=>{near(p.Cp,ref.panels[i].Cp,2e-9);near(p.M,ref.panels[i].M,2e-9);near(p.p/r.freestream.p,ref.panels[i].p,2e-9);near(p.T/r.freestream.T,ref.panels[i].T,2e-9);});}
+ for(const ref of refs){const x={...defaults('airfoil'),...ref,geometryInput:'Dimensions',airfoilShape:ref.thickness?'Asymmetric double wedge':'Flat plate'},r=solveAirfoil(x);assert.equal(r.nonlinear.status,'ok');for(const key of ['CL','CD','CM'])near(r.nonlinear[key],ref[key],2e-9);r.nonlinear.panels.forEach((p,i)=>{near(p.Cp,ref.panels[i].Cp,2e-9);near(p.M,ref.panels[i].M,2e-9);near(p.p/r.freestream.p,ref.panels[i].p,2e-9);near(p.T/r.freestream.T,ref.panels[i].T,2e-9);});}
 });
