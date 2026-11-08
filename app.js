@@ -1,5 +1,5 @@
 import {probeCone} from './cone-probe.js?v=20261108-cone-hover';
-import {plotOptions} from './plot-options.js?v=20261108-cone-profiles';
+import {plotOptions} from './plot-options.js?v=20261108-postshock-plots';
 import {selectGas,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {pressureSweepPlan,advancePressure} from './sweep.js?v=20261107-shock-states';

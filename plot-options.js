@@ -32,14 +32,14 @@ export function plotOptions(d,time=.001){
   if(id==='oblique')add('beta','Shock angle',xlabel,'β (°)',samples.map(([t,s])=>[t,deg(s.beta)]));
  }else if(id==='cone'){
   const samples=r.history.map(s=>[deg(s.theta),s]).reverse();
-  const velocity=s=>Math.hypot(s.vr,s.vt)/Math.sqrt(x.M*x.M/(x.M*x.M+2/(g-1)));
-  const properties=[['M','Mach number','M',s=>s.M],['p','Static pressure ratio','p/p∞',s=>s.p],['T','Static temperature ratio','T/T∞',s=>s.T],['rho','Density ratio','ρ/ρ∞',s=>s.rho],['u','Flow speed ratio','u/u∞',velocity],['a','Speed of sound ratio','a/a∞',s=>Math.sqrt(s.T)],['vr','Radial velocity component','Vᵣ/Vmax',s=>s.vr],['vt','Polar velocity component','Vθ/Vmax',s=>s.vt],['turn','Flow direction','δ (°)',s=>deg(s.theta+Math.atan2(s.vt,s.vr))],['p0','Stagnation-pressure ratio','p₀/p₀∞',s=>s.p*isentropic(s.M,g).p0p/isentropic(x.M,g).p0p],['T0','Stagnation-temperature ratio','T₀/T₀∞',s=>s.T*isentropic(s.M,g).T0T/isentropic(x.M,g).T0T]];
+  const post=r.history[0],postSpeed=Math.hypot(post.vr,post.vt);
+  const properties=[['M','Mach number ratio','M/M₂',s=>s.M/post.M],['p','Static pressure ratio','p/p₂',s=>s.p/post.p],['T','Static temperature ratio','T/T₂',s=>s.T/post.T],['rho','Density ratio','ρ/ρ₂',s=>s.rho/post.rho],['u','Flow speed ratio','u/u₂',s=>Math.hypot(s.vr,s.vt)/postSpeed],['vr','Radial velocity component ratio','Vᵣ/Vᵣ₂',s=>s.vr/post.vr],['vt','Polar velocity component ratio','Vθ/Vθ₂',s=>s.vt/post.vt],['turn','Flow direction','δ (°)',s=>deg(s.theta+Math.atan2(s.vt,s.vr))],['p0','Stagnation-pressure ratio','p₀/p₀₂',s=>s.p*isentropic(s.M,g).p0p/(post.p*isentropic(post.M,g).p0p)],['T0','Stagnation-temperature ratio','T₀/T₀₂',s=>s.T*isentropic(s.M,g).T0T/(post.T*isentropic(post.M,g).T0T)]];
   // Plot the integrated field from the cone surface to the downstream side of the shock.
   options.shift();
   for(const [key,label,unit,value] of properties){
    const points=samples.map(([theta,z])=>[theta,value(z)]);
    add('cone-'+key,label+' · cone to shock','Polar angle θ (°)',unit,points,{markers:[{name:'Cone surface',x:points[0][0],y:points[0][1]},{name:'Shock · downstream',x:points.at(-1)[0],y:points.at(-1)[1],anchor:'end'}]});
-   options.at(-1).note='Cone surface → downstream side of shock';
+   options.at(-1).note='Cone surface → downstream side of shock · reference state 2: immediately behind shock';
   }
  }else if(id==='nozzle'){
   if(r.external){const j=r.external,exp=j.status==='expansion',samples=exp?j.samples.map(z=>[deg(z.theta),z]):j.outlet?[[0,j.inlet],[.5,j.inlet],[.5,j.outlet],[1,j.outlet]]:[[0,j.inlet],[1,j.inlet]];
