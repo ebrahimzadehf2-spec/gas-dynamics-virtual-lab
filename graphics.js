@@ -1,4 +1,4 @@
-import {airfoilDrawing} from './airfoil-graphics.js?v=20261108-inward-rainbow';
+import {airfoilDrawing} from './airfoil-graphics.js?v=20261108-colored-edges';
 import {coneGeometry} from './cone-probe.js?v=20261108-cone-hover';
 import {diagramFontFamily,diagramFontStyle} from './diagram-font.js?v=20261108-scientific-font';
 import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261108-flow-arrows';
