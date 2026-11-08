@@ -1,3 +1,4 @@
+import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-wave-geometry';
 import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261107-matched-sliders';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
@@ -177,5 +178,9 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
  else if(id==='linear'){result=p.linearAirfoil(x);notice=result.warning;rows=[row('Lift coefficient',result.CL,'Cᴸ'),row('Wave-drag coefficient',result.CD,'Cᴰ,wave'),row('Upper front Cp',result.CpUF),row('Upper rear Cp',result.CpUR),row('Lower front Cp',result.CpLF),row('Lower rear Cp',result.CpLR)];scene={kind:'linear',...result,...x};chart={title:'Piecewise surface pressure',xlabel:'Chord position x/c',ylabel:'Pressure coefficient Cp',series:[{name:'Upper surface',points:[[0,result.CpUF],[.5,result.CpUF],[.5,result.CpUR],[1,result.CpUR]]},{name:'Lower surface',points:[[0,result.CpLF],[.5,result.CpLF],[.5,result.CpLR],[1,result.CpLR]]}]};}
  else if(id==='cone'){result=cone(x);checks={surfaceTangency:Math.abs(result.eventResidual),coneAngle:Math.abs(result.residual)};rows=[row('Conical shock angle β',p.deg(result.beta),'°'),row('Recovered cone angle',result.thetaConeDeg,'°'),row('Surface Mach',result.surface.M),row('Surface pressure',result.surface.p,'p꜀/p∞'),row('Surface temperature',result.surface.T,'T꜀/T∞'),row('Integration steps',result.iterations)];scene={kind:'cone',...result};chart={title:'Angular similarity solution',zeroBaseline:false,xlabel:'Polar angle θ (°)',ylabel:'Mach number',series:[{name:'M(θ)',points:result.history.map(s=>[p.deg(s.theta),s.M]).reverse()}]};}
  else throw new Error('Unknown laboratory.');
+ if(id==='rayleigh'||id==='fanno')result.referenceTable=ductReferenceTable(id,result,g);
+ if(id==='cone'){result.relations=conicalRelations(result,x.M,g);result.referenceTable=coneReferenceTable(result.relations);}
+ if(result.referenceTable)for(const r of result.referenceTable.rows)r.values.forEach((v,i)=>rows.push({...row(`${result.referenceTable.title} · ${r.label} · ${result.referenceTable.columns[i]}`,v),panel:'reference'}));
+
  return {id,inputs:x,gas:workingGas,model:id==='nozzle'?nozzleInfo(x).model:labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
 }

@@ -1,3 +1,4 @@
+import {sonicRelations} from './reference-relations.js?v=20261108-reference-relations';
 import {linspace,deg,rad,isentropic,isentropicRelations,state,normalShock,obliqueShock,expansion,rayleighRatios,fannoRatios,linearAirfoil} from './physics.js';
 // Each selectable property has its own units and axis. Unavailable states are omitted.
 export function plotOptions(d,time=.001){
@@ -20,6 +21,7 @@ export function plotOptions(d,time=.001){
   family(id+'-dim-','Mach number M',samples.map(([m,s])=>[m,physical(s)]),[['p','Static pressure','p (kPa)',s=>s.p/1000],['T','Static temperature','T (K)',s=>s.T],['rho','Density','ρ (kg/m³)',s=>s.rho],['u','Flow speed','u (m/s)',s=>s.u],['T0','Stagnation temperature','T₀ (K)',s=>s.T0],['p0','Stagnation pressure','p₀ (kPa)',s=>s.p0/1000]]);
   if(id==='rayleigh')add('rayleigh-heat','Heat relative to inlet','Mach number M','q (kJ/kg)',samples.map(([m,s])=>[m,cp*(physical(s).T0-r.s1.T0)/1000]));
   options.forEach(o=>o.note='Theoretical locus anchored to the inlet state. Not every plotted point is reachable from that inlet; branch and choking constraints still apply.');
+  add('entropy-star','Entropy deficit to sonic reference','Mach number M','(s* − s)/R',ms.map(m=>[m,sonicRelations(id,m,g).entropyToStar]));
   if(id==='fanno')add('friction','Available friction length','Mach number M','fᴅL*/D',ms.map(m=>[m,fn(m,g).F]));
  }else if(id==='oblique'||id==='expansion'){
   let samples,xlabel;

@@ -1,2 +1,2 @@
-import {calculate} from './labs.js?v=20261108-wave-geometry';
+import {calculate} from './labs.js?v=20261108-reference-relations';
 self.onmessage=({data})=>{try{self.postMessage({request:data.request,ok:true,data:calculate(data.id,data.inputs)});}catch(e){self.postMessage({request:data.request,ok:false,error:e.message,code:e.code??'solver-error'});}};
