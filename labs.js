@@ -9,6 +9,7 @@ import {cone} from './cone.js?v=20261108-incidence';
 const input=(key,label,value,min,max,step=1,unit='')=>({key,label,value,min,max,step,unit});
 const g=input('gamma','Specific heat ratio',1.4,1.1,1.67,.01,'γ');
 const M=(key='M1',value=2)=>input(key,'Inlet Mach number',value,.1,8,.01,'M');
+const cornerView={key:'cornerView',label:'Drawing style',value:'Textbook schematic',options:['Textbook schematic','Analytical contours']};
 const incidence=input('alpha','Angle of attack α',0,-20,20,.1,'°');
 const T=input('T1','Inlet temperature',300,100,1500,1,'K');
 const P=input('p1','Inlet pressure',101,1,1000,1,'kPa');
@@ -82,7 +83,7 @@ export const labs={
 function experimentInputs(id,x={}){
  if(id==='collision')return labs.collision.inputs.filter(f=>!['channelHeight','cornerSpacing'].includes(f.key)||x.geometryMode==='Custom geometry').map(f=>f.key==='thetaUpper'?{...f,label:x.interactionType==='Same-direction shocks'?'First wall angle θ₁':'Lower-wall angle θₗ'}:f.key==='thetaLower'?{...f,label:x.interactionType==='Same-direction shocks'?'Additional second turn':'Upper-wall downward angle θᵤ',help:'Positive magnitude. The second turn is additional, not an absolute wall angle.'}:f.key==='cornerSpacing'?{...f,help:x.interactionType==='Same-direction shocks'?'Axial distance between the two lower-wall corners.':'Upper corner x minus lower corner x. The lower corner is at x = 0.'}:f);
  if(id==='balances')return labs.balances.inputs.filter(f=>f.key!=='M2'||x.balanceMode!=='Solve outlet speed').map(f=>f.key==='T2'&&x.balanceMode==='Solve outlet speed'?{...f,section:'Outlet state'}:f);
- if(id!=='nozzle')return labs[id].inputs;
+ if(id!=='nozzle')return ['oblique','expansion'].includes(id)?[...labs[id].inputs,cornerView]:labs[id].inputs;
  const type=x.nozzleType??'Converging–diverging';
  return labs.nozzle.inputs.filter(f=>{
   if(f.key==='ambientRatio')return ['External waves','Nozzle + external waves'].includes(x.nozzleView)&&type==='Diverging'&&x.outletCondition!=='Specified back pressure';
@@ -104,7 +105,7 @@ export function nozzleInfo(x){
  return {description:'Vary back pressure to find subsonic flow, choking, an internal normal shock and external pressure adjustment.',model:'Converging–diverging nozzle · reservoir inlet · isentropic sections with up to one normal shock',equation:base.equation,limitations:'The divergent area increases monotonically. Shock location Aₛ/Aₜ is calculated; x/L uses the displayed schematic area distribution. Use External waves for local lip adjustment. Full jets and flow separation are not resolved.'};
 }
 
-export function defaults(id){return {...Object.fromEntries(labs[id].inputs.map(x=>[x.key,x.value])),...(id==='balances'?controlVolumePreset():{}),fluid:'Air',gamma:1.4,R:287};}
+export function defaults(id){return {...Object.fromEntries(labs[id].inputs.map(x=>[x.key,x.value])),...(id==='balances'?controlVolumePreset():{}),fluid:'Air',gamma:1.4,R:287,...(['oblique','expansion'].includes(id)?{cornerView:'Textbook schematic'}:{})};}
 export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(id,x);let g=workingGas.gamma,R=workingGas.R,result,rows=[],chart,scene,checks={},notice=null,shockDetails=[];
  if(['oblique','expansion','collision'].includes(id)&&(!Number.isFinite(x.alpha??0)||Math.abs(x.alpha??0)>20))throw new p.PhysicsError('invalid-input','Angle of attack must be finite and between −20° and +20°.');
  if(id==='foundations'){result=p.state(x.M,x.T1,x.p1*1000,g,R);result.relations=p.isentropicRelations(x.M,g);rows=[row('Stagnation temperature',result.T0,'K'),row('Stagnation pressure',result.p0/1000,'kPa'),row('Speed of sound',result.a,'m/s'),row('Velocity',result.u,'m/s'),row('Density',result.rho,'kg/m³')];const r=result.relations;rows.push(...[

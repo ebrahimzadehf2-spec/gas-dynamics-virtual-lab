@@ -1,3 +1,4 @@
+import {cornerDrawing} from './corner-graphics.js?v=20261108-simple-corners';
 import {regionLabelPosition} from './region-labels.js?v=20261108-interior-labels';
 import {readableSceneLabels} from './scene-labels.js?v=20261108-readable-labels';
 import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261107-shock-states';
@@ -70,28 +71,9 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
  else if(s.kind==='state'){inner+=poly([[95,80],[360,80],[360,220],[95,220]],shade(f.values[0]))+poly([[360,80],[590,80],[590,220],[360,220]],shade(f.values[1]));inner+=flow();inner+=txt(120,112,'STATIC STATE',undefined,9)+txt(120,151,`M = ${fmt(s.s1.M)}`,undefined,21)+txt(120,183,`T = ${fmt(s.s1.T)} K  ·  p = ${fmt(s.s1.p/1000)} kPa`);inner+=line(360,105,360,205,'#a4bbab',1,'4 4')+txt(390,131,'AT REST',undefined,9)+txt(390,163,`T₀ = ${fmt(s.s1.T0)} K`,undefined,17)+txt(390,193,`p₀ = ${fmt(s.s1.p0/1000)} kPa`);}
  else if(s.kind==='normal'){inner+=poly([[20,70],[315,70],[315,230],[20,230]],shade(f.values[0]))+poly([[315,70],[620,70],[620,230],[315,230]],shade(f.values[1]));inner+=flow()+line(315,53,315,245,'#000000',3)+txt(324,48,'NORMAL SHOCK', '#000000',9);inner+=txt(110,118,'UPSTREAM','#ffffff',9)+txt(110,151,`M₁ ${fmt(s.s1.M)}`,'#ffffff',22)+txt(110,184,`${fmt(s.s1.p/1000)} kPa`,'#ffffff',12)+txt(375,118,'DOWNSTREAM','#ffffff',9)+txt(375,151,`M₂ ${fmt(s.s2.M)}`,'#ffffff',22)+txt(375,184,`${fmt(s.s2.p/1000)} kPa`,'#ffffff',12);label='Uniform analytical regions · pressure jump';}
  else if(s.kind==='duct'){inner+=poly([[40,85],[600,85],[600,215],[40,215]],'#e5efe2');if(s.s2){inner+=poly([[40,86],[320,86],[320,214],[40,214]],shade(f.values[0]))+poly([[320,86],[600,86],[600,214],[320,214]],shade(f.values[1]));inner+=txt(68,130,'INLET',undefined,9)+txt(68,158,`M₁ = ${fmt(s.s1.M)}`,undefined,19)+txt(398,130,'OUTLET',undefined,9)+txt(398,158,`M₂ = ${fmt(s.s2.M)}`,undefined,19);for(let x=90;x<590;x+=80)inner+=arrow(x,187,35)+dot(x+10,187,x);if(s.process==='rayleigh'){for(let x=220;x<420;x+=42)inner+=line(x,44,x,77,'#cb9b60',1.4)+(inputs.q>=0?poly([[x,79],[x-3,73],[x+3,73]],'#cb9b60'):poly([[x,42],[x-3,48],[x+3,48]],'#cb9b60'));inner+=txt(320,33,`${inputs.q>=0?'HEATING':'COOLING'}  q = ${fmt(inputs.q)} kJ/kg`,'#a77944',10,'middle');}else inner+=txt(320,50,`WALL FRICTION · fᴅL/D = ${fmt(inputs.lambda)}`,'#8a7862',10,'middle');label='Illustration of endpoint states · shading is schematic';}else inner+=txt(320,152,'NO STEADY OUTLET FOR THIS INLET','#a3784c',14,'middle');inner+=line(40,85,600,85,'#819a85',3)+line(40,215,600,215,'#819a85',3);}
- else if(s.kind==='oblique'){
-  const alpha=s.alpha??0,x=110,y=230,bodyAngle=s.bodyAngle??s.theta,wallEnd=[635,y-525*Math.tan(bodyAngle)],shockEnd=rayEnd(x,y,alpha+s.beta);
-  inner+=poly([[0,45],[640,45],[640,300],[0,300]],shade(f.values[0]));
-  inner+=poly([[x,y],shockEnd,[635,shockEnd[1]],wallEnd],shade(f.values[1]));
-  inner+=poly([[x,y],wallEnd,[640,300],[x,300]],'#cbd4c9');
-  inner+=line(x,y,...shockEnd,'#000000',2.2)+line(x,y,...wallEnd,'#52616c',2)+incidenceGlyph(alpha,26,130,65,'#ffffff');
-  inner+=txt(140,65,`M₁ = ${fmt(s.M)}`,undefined,17)+txt(415,65,`β = ${fmt(deg(s.beta),5)}°`,undefined,15)+txt(320,20,`M₂ = ${fmt(s.M2)}`,undefined,18,'middle')+txt(320,42,`p₂/p₁ = ${fmt(s.p)}`,undefined,15,'middle')+txt(350,281,`Wall θ = ${fmt(deg(bodyAngle),4)}° · turn = ${fmt(deg(s.theta),4)}°`,undefined,14,'middle');
-  label='Analytical oblique shock · incidence included in flow turning';meta='α positive upward from body axis · β relative to incident flow';
- }
- else if(s.kind==='expansion'){
-  const alpha=s.alpha??0,x=160,y=160,wallAngle=s.bodyAngle??-s.theta,wallEnd=[635,y-475*Math.tan(wallAngle)];
-  inner+=poly([[0,45],[640,45],[640,300],[0,300]],shade(f.values[0]));
-  let previous=null,last=null;
-  for(const m of linspace(s.M,s.M2,45)){
-   const turn=prandtlMeyer(m,inputs.gamma)-s.nu1,a=alpha-turn+Math.asin(1/m),end=rayEnd(x,y,a);
-   if(previous)inner+=poly([[x,y],previous,end],shade(f.at(m)));
-   inner+=line(x,y,...end,'#73929d',.6);previous=end;last=end;
-  }
-  if(last)inner+=poly([[x,y],last,[635,last[1]],wallEnd],shade(f.values.at(-1)));
-  inner+=poly([[x,y],wallEnd,[640,300],[x,300]],'#cbd4c9')+line(x,y,...wallEnd,'#52616c',2)+incidenceGlyph(alpha,25,120,75,'#ffffff');
-  inner+=txt(25,55,`M₁ = ${fmt(s.M)}`,undefined,17)+txt(400,237,`M₂ = ${fmt(s.M2)}`,undefined,18)+txt(365,65,'EXPANSION FAN',undefined,14)+txt(320,281,`Wall θ = ${fmt(deg(wallAngle),4)}° · turn = ${fmt(deg(s.theta),4)}°`,undefined,14,'middle');
-  label='Analytical centered fan · incidence included in flow turning';meta='α positive upward from body axis · lower-face expansion';
+ else if(s.kind==='oblique'||s.kind==='expansion'){
+  const view=cornerDrawing(s,{...inputs,_cornerQuantity:quantity,_cornerUp:f.values[0],_cornerDown:f.values.at(-1)},{txt,line,poly,shade,fmt});inner+=view.inner;label=view.label;meta=view.meta;
+  if(inputs.cornerView!=='Analytical contours')field=null;
  }
  else if(s.kind==='nozzle'){
   const a=s.points,scale=104/Math.max(...a.map(z=>z.h)),top=a.map(z=>[35+570*z.x,150-scale*z.h]),bottom=a.map(z=>[35+570*z.x,150+scale*z.h]);

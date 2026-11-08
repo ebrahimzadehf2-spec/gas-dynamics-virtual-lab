@@ -27,7 +27,7 @@ test('Incident shock geometry uses global angles; slip pressure and direction st
 });
 test('Angle-of-attack inputs and drawn inlet vectors are synchronized in chapters 6, 9 and 10',()=>{
  for(const id of ['oblique','expansion','collision','linear']){
-  const x={...defaults(id),alpha:3},d=calculate(id,x),v=sceneSVG(d.scene,x);assert.ok(inputDefinitions(id,x).some(f=>f.key==='alpha'));assert.match(v.svg,/data-incidence="3(?:\.0*)?"/);assert.match(v.svg,/data-flow-angle="3(?:\.0*)?"/);assert.ok(!/NaN|Infinity/.test(v.svg));for(const p of plotOptions(d))assert.ok(!/NaN|Infinity/.test(chartSVG(p.chart).svg));
+  const x={...defaults(id),alpha:3},d=calculate(id,x),v=sceneSVG(d.scene,x);assert.ok(inputDefinitions(id,x).some(f=>f.key==='alpha'));assert.match(v.svg,/data-incidence="3(?:\.0*)?"/);assert.match(v.svg,['oblique','expansion'].includes(id)?/data-flow-angle="0"/:/data-flow-angle="3(?:\.0*)?"/);assert.ok(!/NaN|Infinity/.test(v.svg));for(const p of plotOptions(d))assert.ok(!/NaN|Infinity/.test(chartSVG(p.chart).svg));
  }
  const a=calculate('linear',{...defaults('linear'),alpha:3}),b=calculate('linear',{...defaults('linear'),alpha:-3});near(a.result.CL,-b.result.CL);near(a.result.CD,b.result.CD);near(a.result.CpUF,b.result.CpLF);
 });
