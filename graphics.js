@@ -1,3 +1,4 @@
+import {regionLabelPosition} from './region-labels.js?v=20261108-interior-labels';
 import {readableSceneLabels} from './scene-labels.js?v=20261108-readable-labels';
 import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261107-shock-states';
 export const colors=['#167c70','#dc9b52','#779bb7','#9c84b4'];
@@ -154,12 +155,18 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
   for(const w of z.incident)inner+=line(...V(w.origin),...V(w.end),'#000000',2.2);
   for(const w of z.outgoing)if(w.kind!=='No wave')inner+=line(...V(w.origin),...V(w.end),w.kind==='Oblique shock'?'#000000':'#52616c',w.kind==='Oblique shock'?2.2:.65);
   inner+=line(...V(z.slip.origin),...V(z.slip.end),'#000000',1.8,'6 4');
-  // Put each state label in its largest visible polygon; omit cramped cells.
+  const callouts=[];
   for(const [n,state] of Object.entries(s.regions)){
-   const cells=z.fields.filter(c=>c.state===state).map(c=>({...c,area:Math.abs(c.poly.reduce((v,a,i)=>{const b=c.poly[(i+1)%c.poly.length];return v+a[0]*b[1]-a[1]*b[0];},0))})).sort((a,b)=>b.area-a.area);
-   if(!cells.length||cells[0].area*scale*scale<2200)continue;
-   const c=cells[0],center=c.poly.reduce((v,p)=>[v[0]+p[0]/c.poly.length,v[1]+p[1]/c.poly.length],[0,0]),[xx,yy]=V(center);
-   inner+=txt(xx,yy,`${n}`,undefined,18,'middle');
+   const polygons=z.fields.filter(c=>c.state===state).map(c=>c.poly.map(V));
+   const position=regionLabelPosition(polygons);if(!position)continue;
+   const [xx,yy]=position.point;
+   if(position.callout){callouts.push({n,point:position.point});continue;}
+   inner+=`<g data-region-label="${n}" data-clearance="${position.clearance}">${txt(xx,yy+6,n,undefined,18,'middle')}</g>`;
+  }
+  const used=[];
+  for(const {n,point:[xx,yy]} of callouts){
+   let lx=Math.max(48,Math.min(592,xx));while(used.some(x=>Math.abs(x-lx)<30))lx=lx>320?lx-32:lx+32;used.push(lx);
+   inner+=line(lx,49,xx,yy,'#455766',1)+`<circle cx="${xx}" cy="${yy}" r="2" fill="#455766"/>`+`<g data-region-callout="${n}">${txt(lx,45,n,undefined,18,'middle')}</g>`;
   }
   const [bx,by]=V(z.B);inner+=`<circle cx="${bx}" cy="${by}" r="3" fill="#000000"/>`;
   inner+=txt(24,24,s.same?'SAME-DIRECTION INTERACTION':'OPPOSING SHOCK INTERACTION',undefined,14)+txt(616,24,`φ = ${fmt(s.slipAngle,6)}°`,undefined,17,'end');

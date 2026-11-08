@@ -3,7 +3,7 @@ import {selectGas,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {pressureSweepPlan,advancePressure} from './sweep.js?v=20261107-shock-states';
 import {labs,chapters,defaults,inputDefinitions,nozzleInfo} from './labs.js?v=20261108-wave-geometry';
-import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261108-wave-geometry';
+import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261108-interior-labels';
 const $=id=>document.getElementById(id);let id='rayleigh',inputs={},request=0,current=null,pinned=null,timer,animation=false,frame,lastFrame=0,sceneTime=.001,fieldQuantity='pressure';
 let displayedChart=null,chartChoices=[],plotSelection={};
 const worker=new Worker(new URL('./worker.js?v=20261108-wave-geometry',import.meta.url),{type:'module'});
