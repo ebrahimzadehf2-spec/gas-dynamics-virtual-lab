@@ -30,3 +30,9 @@ Run `npm test` using Node22 or newer. Twenty test groups cover reference values,
 For local use run `python -m http.server 8080` and open http://localhost:8080. Native module workers need HTTP(S); do not open index.html through file://.
 
 Full experimental validation, all worked-book-example acceptance, all-input cross-browser coverage and mobile-device QA are not claimed. See VALIDATION.md and ROADMAP.md.
+
+## Supersonic Airfoil Lab
+
+The shared Chapter 6/9 experiment is available at `#airfoil`; the earlier `#linear` interface redirects there. It supports flat plates, diamonds, asymmetric double wedges and editable sharp polygonal profiles. Select shock–expansion, linearized theory or a comparison of both. The app integrates surface pressure into lift, pressure/wave drag and quarter-chord moment, compares panel Cp, reports nonlinear surface states and one-sided shock data, and provides piecewise linearized perturbation and total surface-potential profiles. Custom vertices use chord-normalized coordinates. Colored strips represent surface panel Cp, not an exterior CFD field.
+
+`airfoil-reference.py` independently checks shock–expansion panel states and pressure forces using SciPy. `airfoil.test.mjs` checks those references, symmetry, flat-plate force resolution, linear-theory recovery, shock conservation, potential continuity and unsupported domains. See the site guide for conventions and validity limits.

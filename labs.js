@@ -1,6 +1,7 @@
+import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-airfoil';
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-detachment';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-airfoil';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
@@ -37,10 +38,10 @@ export const chapters=[
  [3,'Normal shocks','Sound, compression & entropy',['normal']],
  [4,'Rayleigh flow','Heat transfer & thermal choking',['rayleigh']],
  [5,'Fanno flow','Friction & sonic length',['fanno']],
- [6,'Waves & turning','Oblique shocks, expansion & interaction',['oblique','expansion','collision']],
+ [6,'Waves & turning','Oblique shocks, expansion & interaction',['oblique','expansion','collision','airfoil']],
  [7,'Unsteady waves','Shock-tube wave system',['tube']],
  [8,'Nozzle flow','Quasi-1D regimes & shock position',['nozzle']],
- [9,'Linearized flow','Thin-airfoil pressure & forces',['linear']],
+ [9,'Supersonic airfoils','Linearized and shock–expansion methods',['airfoil']],
  [10,'Conical flow','Taylor–Maccoll similarity solution',['cone']]
 ];
 export const labs={
@@ -77,10 +78,19 @@ export const labs={
   input('minAreaCm2','Minimum flow area',6,.01,10000,.01,'cm²'),g,input('R','Gas constant',287,100,2200,1,'J/(kg·K)'),
   {key:'plotProperty',label:'Chart property',value:'Pressure',options:['Pressure','Mach number','Temperature']}
  ],model:'Steady, adiabatic quasi-1D ideal-gas flow · isentropic sections',equation:'A/A* = M⁻¹ [2(1 + (γ − 1)M²/2)/(γ + 1)]^[(γ + 1)/(2(γ − 1))]',limitations:'Cross-section-averaged analytical model. Full external jets and flow separation are not resolved.'},
+ airfoil:{chapter:9,title:'Supersonic Airfoil Lab',tag:'CHAPTERS 6 + 9 · TWO METHODS',description:'Compare shock–expansion and linearized predictions on the same sharp airfoil, inspect panel states and recover the linearized surface potential.',inputs:[
+ {key:'airfoilMethod',label:'Solution method',value:'Compare both',options:['Compare both','Shock–Expansion','Linearized theory']},
+ {key:'airfoilShape',label:'Airfoil geometry',value:'Diamond',options:['Flat plate','Diamond','Asymmetric double wedge','Custom panels']},
+ input('M','Freestream Mach',3,1.1,20,.01,'M∞'),input('alpha','Angle of attack α',4,-10,10,.1,'°'),
+ input('thickness','Maximum thickness',.08,0,.2,.001,'t/c'),input('peak','Peak location',.5,.15,.85,.01,'x/c'),input('camber','Peak camber',0,-.08,.08,.001,'y/c'),
+ {key:'upperProfile',label:'Upper vertices · x/c,y/c',type:'textarea',value:'0,0; 0.3,0.04; 0.7,0.03; 1,0'},
+ {key:'lowerProfile',label:'Lower vertices · x/c,y/c',type:'textarea',value:'0,0; 0.3,-0.04; 0.7,-0.03; 1,0'},T,P,g
+ ],model:'Steady 2D sharp airfoil · sequential weak shocks and centered expansions · small-disturbance comparison',equation:'Cp = (p − p∞)/q∞ · φ/(U∞c) = −½ ∫ Cp d(x/c)',limitations:'Surface-panel solution; wave interactions and the trailing-edge wake are not resolved. Shock–expansion requires attached shocks and supersonic surface states. Linearized potential is first order and uses zero perturbation potential at the leading edge.'},
  linear:{chapter:9,title:'Linearized diamond airfoil',tag:'SMALL-DISTURBANCE THEORY',description:'Inspect surface pressure, lift and wave drag for a thin, symmetric double-wedge airfoil.',inputs:[input('M','Freestream Mach',3,1.1,8,.01,'M∞'),input('alpha','Angle of attack',4,-10,10,.1,'°'),input('thickness','Thickness-to-chord ratio',.08,0,.2,.005,'t/c')],model:'Linearized supersonic flow · small slopes and angle of attack',equation:'Cᴸ = 4α/√(M∞² − 1)   ·   Cᴰ = 4[α² + (t/c)²]/√(M∞² − 1)',limitations:'Angles in the equations are radians. This is an approximation, especially near Mach 1. Viscous drag and finite-span effects are absent.'},
  cone:{chapter:10,title:'Taylor–Maccoll cone',tag:'AXISYMMETRIC SIMILARITY',description:'Solve the conical-flow ODE, locate the cone surface and recover the attached weak shock.',inputs:[input('M','Freestream Mach',2,1.2,6,.0001,'M∞'),input('thetaCone','Cone half-angle',10,1,35,.1,'°'),g],model:'Steady, inviscid, axisymmetric sharp cone · zero angle of attack',equation:'dVᵣ/dθ = Vθ   ·   Vθ(θc) = 0',limitations:'Adaptive RK4 step doubling and a bracketed shock-angle search. Strong branches and detached cones are outside this release. Full book-example acceptance is pending.'}
 };
 function experimentInputs(id,x={}){
+ if(id==='airfoil')return labs.airfoil.inputs.filter(f=>!['thickness','peak'].includes(f.key)||!['Flat plate','Custom panels'].includes(x.airfoilShape)).filter(f=>f.key!=='camber'||x.airfoilShape==='Asymmetric double wedge').filter(f=>!['upperProfile','lowerProfile'].includes(f.key)||x.airfoilShape==='Custom panels').map(f=>f.key==='T1'?{...f,label:'Freestream temperature'}:f.key==='p1'?{...f,label:'Freestream pressure'}:f);
  if(id==='collision')return labs.collision.inputs.filter(f=>!['channelHeight','cornerSpacing'].includes(f.key)||x.geometryMode==='Custom geometry').map(f=>f.key==='thetaUpper'?{...f,label:x.interactionType==='Same-direction shocks'?'First wall angle θ₁':'Lower-wall angle θₗ'}:f.key==='thetaLower'?{...f,label:x.interactionType==='Same-direction shocks'?'Additional second turn':'Upper-wall downward angle θᵤ',help:'Positive magnitude. The second turn is additional, not an absolute wall angle.'}:f.key==='cornerSpacing'?{...f,help:x.interactionType==='Same-direction shocks'?'Axial distance between the two lower-wall corners.':'Upper corner x minus lower corner x. The lower corner is at x = 0.'}:f);
  if(id==='balances')return labs.balances.inputs.filter(f=>f.key!=='M2'||x.balanceMode!=='Solve outlet speed').map(f=>f.key==='T2'&&x.balanceMode==='Solve outlet speed'?{...f,section:'Outlet state'}:f);
  if(id!=='nozzle')return ['oblique','expansion'].includes(id)?[...labs[id].inputs,cornerView]:labs[id].inputs;
@@ -178,6 +188,18 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
    if(prop==='Pressure')chart.series.push({name:'Ambient pressure',points:[[pts[0][0],ambient/result.p0],[pts.at(-1)[0],ambient/result.p0]]});
   }
 
+ }
+ else if(id==='airfoil'){
+  result=solveAirfoil({...x,gamma:g,R});notice=result.warning;rows=[];
+  for(const model of result.models){const z=result[model];if(z.status!=='ok')continue;const name=model==='linear'?'Linearized':'Shock–Expansion';rows.push(row(`${name} · lift coefficient`,z.CL,'CL'),row(`${name} · wave-drag coefficient`,z.CD,'CD,w'),row(`${name} · quarter-chord moment`,z.CM,'CM,c/4'));if(Math.abs(z.CD)>1e-12)rows.push(row(`${name} · lift-to-drag ratio`,z.CL/z.CD,'L/D'));}
+  if(result.models.length===2&&result.nonlinear.status==='ok')rows.push(row('Lift coefficient difference',result.nonlinear.CL-result.linear.CL,'ΔCL · SE − linear'),row('Drag coefficient difference',result.nonlinear.CD-result.linear.CD,'ΔCD · SE − linear'));
+  for(const model of result.models)if(result[model].status==='ok')for(const panel of result[model].panels){
+   const values=[['x start',panel.a.x,'x/c'],['x end',panel.b.x,'x/c'],['Flow angle',p.deg(panel.theta),'°'],['Pressure coefficient',panel.Cp,'Cp'],...(model==='nonlinear'?[['Mach',panel.M,'M'],['Pressure',panel.p/1000,'kPa'],['Temperature',panel.T,'K'],['Density',panel.rho,'kg/m³'],['Speed',panel.u,'m/s'],['Stagnation pressure',panel.p0/1000,'kPa']]:[])];
+   rows.push(...values.map(([label,value,unit])=>({...row(`${model} · ${panel.id} · ${label}`,value,unit),panel:'airfoil'})));
+  }
+  if(result.models.includes('linear'))for(const panel of result.linear.potential)rows.push({...row(`Linear potential · ${panel.id} · derivative`,panel.derivative,'dψ/dξ'),panel:'airfoil'},{...row(`Linear potential · ${panel.id} · intercept`,panel.intercept,'ψ'),panel:'airfoil'});
+  scene={kind:'airfoil',...result};chart=airfoilPlots(result)[0]?.chart??{title:'No accepted surface solution',xlabel:'x/c',ylabel:'Cp',series:[]};
+  if(result.models.includes('nonlinear')&&result.nonlinear.status==='ok')for(const w of result.nonlinear.waves.filter(w=>w.kind==='Oblique shock'))shockDetails.push(shockStateSection({kind:'Oblique shock',title:`${w.id} · ${w.side.toLowerCase()} surface shock`,location:`x/c = ${w.origin.x}`,before:w.before,after:w.after,gamma:g,R,extra:[{label:'Turn magnitude',value:Math.abs(w.turn),unit:'°'},{label:'Shock angle β',value:p.deg(w.beta),unit:'°'}]}));
  }
  else if(id==='linear'){result=p.linearAirfoil(x);notice=result.warning;rows=[row('Lift coefficient',result.CL,'Cᴸ'),row('Wave-drag coefficient',result.CD,'Cᴰ,wave'),row('Upper front Cp',result.CpUF),row('Upper rear Cp',result.CpUR),row('Lower front Cp',result.CpLF),row('Lower rear Cp',result.CpLR)];scene={kind:'linear',...result,...x};chart={title:'Piecewise surface pressure',xlabel:'Chord position x/c',ylabel:'Pressure coefficient Cp',series:[{name:'Upper surface',points:[[0,result.CpUF],[.5,result.CpUF],[.5,result.CpUR],[1,result.CpUR]]},{name:'Lower surface',points:[[0,result.CpLF],[.5,result.CpLF],[.5,result.CpLR],[1,result.CpLR]]}]};}
 
