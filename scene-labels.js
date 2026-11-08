@@ -30,6 +30,6 @@ export function readableSceneLabels(svg){
   const size=Math.max(+(a['font-size']??12),mach?24:numeric?16:14),width=[...plain].length*size*.51,x=+(a.x??0),y=+(a.y??0)-size*.36;
   const center=a['text-anchor']==='middle'?x:a['text-anchor']==='end'?x-width/2:x+width/2;
   const samples=[background(center-width*.25,y),background(center,y),background(center+width*.25,y)],white=samples.reduce((sum,b)=>sum+Math.log(textContrast('#ffffff',b)),0),black=samples.reduce((sum,b)=>sum+Math.log(textContrast('#000000',b)),0),ink=white>=black?'#ffffff':'#000000';
-  return tag.replace(/fill="[^"]*"/,`fill="${ink}"`).replace(/font-size="[^"]*"/,`font-size="${size}"`).replace(/>$/,` font-weight="${numeric?600:500}" font-variant-numeric="tabular-nums">`);
+  return tag.replace(/fill="[^"]*"/,`fill="${ink}"`).replace(/font-size="[^"]*"/,`font-size="${size}"`).replace(/>$/,` font-weight="400" font-variant-numeric="tabular-nums">`);
  });
 }
