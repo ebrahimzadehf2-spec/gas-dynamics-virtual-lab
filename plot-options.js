@@ -1,4 +1,4 @@
-import {airfoilPlots} from './airfoil.js?v=20261108-airfoil';
+import {airfoilPlots} from './airfoil.js?v=20261108-airfoil3';
 import {sonicRelations} from './reference-relations.js?v=20261108-reference-relations';
 import {linspace,deg,rad,isentropic,isentropicRelations,state,normalShock,obliqueShock,expansion,rayleighRatios,fannoRatios,linearAirfoil} from './physics.js';
 // Each selectable property has its own units and axis. Unavailable states are omitted.

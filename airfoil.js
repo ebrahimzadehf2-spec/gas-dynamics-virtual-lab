@@ -65,5 +65,6 @@ export function airfoilPlots(r){
  if(r.models.includes('nonlinear')&&r.nonlinear.status==='ok')for(const [key,label,unit,value]of [['M','Surface Mach number','M',p=>p.M],['p','Static pressure','p (kPa)',p=>p.p/1000],['T','Static temperature','T (K)',p=>p.T],['rho','Density','ρ (kg/m³)',p=>p.rho],['u','Flow speed','u (m/s)',p=>p.u],['p0','Stagnation pressure','p₀ (kPa)',p=>p.p0/1000]])add('airfoil-'+key,label,unit,['Upper','Lower'].map(side=>({name:side,points:step(r.nonlinear.panels.filter(p=>p.side===side),value)})));
  if(r.models.includes('linear'))add('airfoil-potential','Surface perturbation potential · linearized','φ/(U∞c)',['Upper','Lower'].map(side=>({name:side,points:r.linear.potential.filter(p=>p.side===side).flatMap(p=>Array.from({length:41},(_,i)=>{const x=p.x0+(p.x1-p.x0)*i/40;return [x,p.derivative*x+p.intercept];}))})));
  if(r.models.includes('linear'))add('airfoil-total-potential','Total surface potential · first order','Φ/(U∞c)',['Upper','Lower'].map(side=>({name:side,points:r.linear.potential.filter(p=>p.side===side).flatMap(p=>Array.from({length:41},(_,i)=>{const x=p.x0+(p.x1-p.x0)*i/40;return [x,x+p.derivative*x+p.intercept];}))})));
+ for(const p of plots)if(p.key.includes('potential'))p.chart.leftMargin=86;
  return plots;
 }
