@@ -26,7 +26,7 @@ test('Custom geometries, method selection and unsupported surface states are exp
  const out=solveAirfoil({...x,M:1.1,alpha:10,thickness:.2});assert.equal(out.nonlinear.status,'unsupported');assert.equal(out.nonlinear.panels.length,0);assert.ok(out.warning);assert.ok(airfoilPlots(out).every(o=>!o.key.includes('airfoil-M')));
  const only=solveAirfoil({...x,M:1.1,alpha:10,thickness:.2,airfoilMethod:'Shock–Expansion'});assert.equal(only.status,'unsupported');assert.equal(airfoilPlots(only).length,0);
  assert.ok(inputDefinitions('airfoil',custom).some(f=>f.key==='upperProfile'));assert.ok(!inputDefinitions('airfoil',x).some(f=>f.key==='upperProfile'));
- assert.ok(chapters.find(c=>c[0]===6)[3].includes('airfoil')&&chapters.find(c=>c[0]===9)[3].includes('airfoil'));
+ assert.ok(!chapters.find(c=>c[0]===6)[3].includes('airfoil')&&chapters.find(c=>c[0]===9)[3].includes('airfoil'));
 });
 test('Airfoil scenes, charts and shock reports are finite for every geometry',()=>{
  for(const airfoilShape of ['Flat plate','Diamond','Asymmetric double wedge','Custom panels']){

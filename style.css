@@ -100,3 +100,5 @@ h1{font-weight:650;letter-spacing:-.7px}h2{font-size:16px;font-weight:650}h3{fon
 
 /* Keep wide regional tables inside their scroll containers. */
 .visual-column,.airfoil-panel{min-width:0}
+
+.tabs{flex-wrap:wrap}

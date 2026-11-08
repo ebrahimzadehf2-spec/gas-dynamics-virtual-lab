@@ -1,7 +1,8 @@
+import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261108-wave-geometry';
 import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-airfoil';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-wave-geometry';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
@@ -38,7 +39,7 @@ export const chapters=[
  [3,'Normal shocks','Sound, compression & entropy',['normal']],
  [4,'Rayleigh flow','Heat transfer & thermal choking',['rayleigh']],
  [5,'Fanno flow','Friction & sonic length',['fanno']],
- [6,'Waves & turning','Oblique shocks, expansion & interaction',['oblique','expansion','collision','airfoil']],
+ [6,'Waves & turning','Oblique shocks, expansion & interaction',['wall','oblique','expansion','collision']],
  [7,'Unsteady waves','Shock-tube wave system',['tube']],
  [8,'Nozzle flow','Quasi-1D regimes & shock position',['nozzle']],
  [9,'Supersonic airfoils','Linearized and shock–expansion methods',['airfoil']],
@@ -55,6 +56,11 @@ export const labs={
  normal:{chapter:3,title:'Normal shock wave',tag:'RANKINE–HUGONIOT',description:'Resolve the jump in pressure, temperature, density and Mach number across a compression shock.',inputs:[M(),T,P,g],model:'Stationary normal shock · calorically perfect gas',equation:'M₂² = [1 + (γ − 1)M₁²/2] / [γM₁² − (γ − 1)/2]',limitations:'Shock thickness is schematic. Molecular structure, viscosity and real-gas effects are not resolved.'},
  rayleigh:{chapter:4,title:'Rayleigh heat-transfer lab',tag:'THERMAL CHOKING',description:'Add or remove heat, follow the correct Mach branch, and locate the sonic heat limit.',inputs:[M('M1',.5),T,P,input('q','Specific heat added',100,-100,1000,1,'kJ/kg'),g],model:'Steady, constant-area, frictionless flow · fixed inlet · q positive for heating',equation:'T₀₂ = T₀₁ + q/cₚ   ·   qmax = cₚ(T₀* − T₀₁)',limitations:'The numerical reference is authoritative. Neural-network predictions are not enabled. A sonic inlet under cooling requires an explicit branch; use a slightly subsonic/supersonic inlet here.'},
  fanno:{chapter:5,title:'Fanno friction lab',tag:'FRICTIONAL CHOKING',description:'Explore how wall friction drives either Mach branch toward the sonic state.',inputs:[M('M1',.5),T,P,input('lambda','Friction length fᴅ L / D',.2,0,3,.01,''),g],model:'Steady, adiabatic, constant-area flow · Darcy friction convention',equation:'F(M₂) = F(M₁) − fᴅL/D   ·   fᴅ = 4fꜰ',limitations:'Momentum flux decreases through wall shear. Constant gas properties and an imposed total friction parameter are assumed.'},
+ wall:{chapter:6,title:'Wave Geometry Lab',tag:'BUILD · TURN · INSPECT',description:'Build a piecewise-straight wall from segment angles and lengths, then inspect its compression shocks, expansion fans and local flow states.',inputs:[
+ {key:'wallShape',label:'Wall template',value:'Compression ramp',options:['Compression ramp','Expansion corner','Custom wall']},
+ {key:'wallSide',label:'Gas side',value:'Gas above wall',options:['Gas above wall','Gas below wall']},
+ {key:'wallSegments',label:'Wall segments',type:'wall-segments',value:[{angle:12,length:1}]},M('M1',3),T,P,g
+ ],model:'Steady 2D piecewise wall · weak attached shocks and centered expansions · horizontal inlet',equation:'δᵢ = θᵢ − θᵢ₋₁ · ν₂ − ν₁ = |δ| for expansion',limitations:'Local surface marching stops at the first sampled wave intersection or encounter with a later wall. Subsequent reflected waves, detached shocks and subsonic continuation are not solved. Lengths are actual segment lengths in metres; angles are signed absolute directions from horizontal. Gas side reverses compression/expansion selection.'},
  oblique:{chapter:6,title:'Oblique shock wave',tag:'COMPRESSION CORNER',description:'Change the wedge angle and watch the shock geometry and post-shock state respond.',inputs:[M('M1',3),input('theta','Ramp turn angle θ',15,0,40,.1,'°'),g,{key:'branch',label:'Shock branch',value:'weak',options:['weak','strong']}],model:'Attached, two-dimensional oblique shock · uniform downstream region',equation:'tan θ = 2 cot β (M₁² sin²β − 1) / [M₁²(γ + cos 2β) + 2]',limitations:'The attached-shock limit is checked. Detached-shock geometry is not approximated by a normal line.'},
  expansion:{chapter:6,title:'Prandtl–Meyer expansion',tag:'CENTERED EXPANSION FAN',description:'Turn a supersonic flow away from a wall through an isentropic expansion fan.',inputs:[M('M1',2),input('theta','Expansion turn angle θ',15,0,60,.1,'°'),g],model:'Steady, isentropic, centered expansion · calorically perfect gas',equation:'ν(M₂) = ν(M₁) + |θ|   ·   p₀₂ = p₀₁',limitations:'The infinite-Mach expansion limit is enforced. Displayed rays sample the continuous analytical fan.'},
  collision:{chapter:6,title:'Wave Interaction Calculator',tag:'PRESSURE · DIRECTION · SLIP LINE',description:'Solve opposing or same-direction shock interactions, including reflected expansion fans. Choose an educational layout or specify the corner geometry.',inputs:[
@@ -78,7 +84,7 @@ export const labs={
   input('minAreaCm2','Minimum flow area',6,.01,10000,.01,'cm²'),g,input('R','Gas constant',287,100,2200,1,'J/(kg·K)'),
   {key:'plotProperty',label:'Chart property',value:'Pressure',options:['Pressure','Mach number','Temperature']}
  ],model:'Steady, adiabatic quasi-1D ideal-gas flow · isentropic sections',equation:'A/A* = M⁻¹ [2(1 + (γ − 1)M²/2)/(γ + 1)]^[(γ + 1)/(2(γ − 1))]',limitations:'Cross-section-averaged analytical model. Full external jets and flow separation are not resolved.'},
- airfoil:{chapter:9,title:'Supersonic Airfoil Lab',tag:'CHAPTERS 6 + 9 · TWO METHODS',description:'Compare shock–expansion and linearized predictions on the same sharp airfoil, inspect panel states and recover the linearized surface potential.',inputs:[
+ airfoil:{chapter:9,title:'Supersonic Airfoil Lab',tag:'CHAPTER 9 · TWO METHODS',description:'Compare shock–expansion and linearized predictions on the same sharp airfoil, inspect panel states and recover the linearized surface potential.',inputs:[
  {key:'airfoilMethod',label:'Solution method',value:'Compare both',options:['Compare both','Shock–Expansion','Linearized theory']},
  {key:'airfoilShape',label:'Airfoil geometry',value:'Diamond',options:['Flat plate','Diamond','Asymmetric double wedge','Custom panels']},
  {key:'geometryInput',label:'Geometry definition',value:'Angles & lengths',options:['Angles & lengths','Dimensions']},
@@ -93,6 +99,7 @@ export const labs={
  cone:{chapter:10,title:'Taylor–Maccoll cone',tag:'AXISYMMETRIC SIMILARITY',description:'Solve the conical-flow ODE, locate the cone surface and recover the attached weak shock.',inputs:[input('M','Freestream Mach',2,1.2,6,.0001,'M∞'),input('thetaCone','Cone half-angle',10,1,35,.1,'°'),g],model:'Steady, inviscid, axisymmetric sharp cone · zero angle of attack',equation:'dVᵣ/dθ = Vθ   ·   Vθ(θc) = 0',limitations:'Adaptive RK4 step doubling and a bracketed shock-angle search. Strong branches and detached cones are outside this release. Full book-example acceptance is pending.'}
 };
 function experimentInputs(id,x={}){
+ if(id==='wall')return labs.wall.inputs.filter(f=>f.key!=='wallShape');
  if(id==='airfoil')return labs.airfoil.inputs.filter(f=>{
   const flat=x.airfoilShape==='Flat plate',custom=x.airfoilShape==='Custom panels',angles=x.geometryInput==='Angles & lengths';
   if(f.key==='geometryInput')return custom;
@@ -201,6 +208,13 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
    if(prop==='Pressure')chart.series.push({name:'Ambient pressure',points:[[pts[0][0],ambient/result.p0],[pts.at(-1)[0],ambient/result.p0]]});
   }
 
+ }
+ else if(id==='wall'){
+  result=solveWaveWall({...x,gamma:g,R});notice=result.reason;
+  for(const [n,z]of Object.entries(result.regions))rows.push(...[['Mach',z.M,''],['Pressure',z.p/1000,'kPa'],['Temperature',z.T,'K'],['Density',z.rho,'kg/m³'],['Speed',z.u,'m/s'],['Flow angle',p.deg(z.theta),'°'],['Stagnation pressure',z.p0/1000,'kPa'],['Stagnation temperature',z.T0,'K']].map(([label,value,unit])=>({...row(`Region ${n} · ${label}`,value,unit),panel:'wall'})));
+  for(const w of result.waves)if(w.kind==='Oblique shock')shockDetails.push(shockStateSection({kind:'oblique',title:`Wall shock · ${Number(w.id)-1} → ${w.id}`,location:`x = ${w.origin.x.toPrecision(6)} m`,before:w.before,after:w.after,gamma:g,R,extra:[{label:'Shock angle β',value:p.deg(w.beta),unit:'°'},{label:'Flow turn',value:w.turn,unit:'°'}]}));
+  if(result.limitX!==null)rows.push(row('Local-solution limit',result.limitX,'m'));
+  scene={kind:'wall',...result};chart=wallPlots(result)[0].chart;
  }
  else if(id==='airfoil'){
   result=solveAirfoil({...x,gamma:g,R});notice=result.warning;rows=[];
