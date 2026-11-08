@@ -8,6 +8,15 @@ const txt=(x,y,s,fill='#24313c',size=11,anchor='start')=>`<text x="${x}" y="${y}
 const line=(x1,y1,x2,y2,color='#739889',width=1,dash='')=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${width}" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
 const poly=(pts,fill,stroke='none',width=1)=>`<polygon points="${pts.map(p=>p.join(',')).join(' ')}" fill="${fill}" stroke="${stroke}" stroke-width="${width}"/>`;
 const arrow=(x,y,l=50)=>line(x,y,x+l,y,'#6f9a88',1.4)+poly([[x+l,y],[x+l-6,y-3],[x+l-6,y+3]],'#6f9a88');
+const directedArrow=(x,y,length,angle,color='#344e61')=>{
+ const dx=Math.cos(angle),dy=-Math.sin(angle),ex=x+length*dx,ey=y+length*dy;
+ return `<g data-flow-angle="${deg(angle)}">${line(x,y,ex,ey,color,1.8)}${poly([[ex,ey],[ex-7*dx-3*dy,ey-7*dy+3*dx],[ex-7*dx+3*dy,ey-7*dy-3*dx]],color)}</g>`;
+};
+const incidenceGlyph=(alpha,x=32,y=115,length=68,color='#344e61')=>{
+ const arc=linspace(0,alpha,20).map(a=>[x+25*Math.cos(a),y-25*Math.sin(a)]);
+ return `<g data-incidence="${deg(alpha)}">${line(x,y,x+length,y,color,1,'4 3')}${directedArrow(x,y,length,alpha,color)}<polyline points="${arc.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${color}" stroke-width="1.2"/>${txt(x,y-28,`α = ${fmt(deg(alpha),4)}°`,'#17212b',14)}</g>`;
+};
+const rayEnd=(x,y,a)=>{const dx=Math.cos(a),dy=-Math.sin(a),hits=[];if(dx>1e-12)hits.push((635-x)/dx);if(dx< -1e-12)hits.push((5-x)/dx);if(dy>1e-12)hits.push((295-y)/dy);if(dy< -1e-12)hits.push((45-y)/dy);const t=Math.min(...hits.filter(t=>t>0));return [x+t*dx,y+t*dy];};
 const dot=(x,y,i=0)=>`<circle class="flow-particle" cx="${x}" cy="${y}" r="2" fill="#427b63" style="animation-delay:${i*.25}s"/>`;
 const ramp=['#1834b8','#007fff','#00c9e8','#20c75a','#e6e529','#ff961f','#db2525'];
 const clamp=x=>Math.min(1,Math.max(0,x));
@@ -43,7 +52,7 @@ function regionalField(s,inputs,quantity){
 }
 export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',label='Schematic geometry · analytical states',meta='Ideal gas · no CFD',field=null;
  const f=regionalField(s,inputs,quantity);quantity=f.key;const vals=f.values.filter(Number.isFinite),lo=Math.min(...vals),hi=Math.max(...vals),shade=v=>contourColor(hi-lo<1e-14?.5:(v-lo)/(hi-lo));if(vals.length)field={quantity,options:f.options,label:quantity==='cp'?'Surface pressure coefficient':quantity,units:f.units,min:lo,max:hi,note:f.note};
- const W=640,H=300;let flow=()=>{let r='';for(let y of [85,125,165,205])r+=arrow(27,y,56)+dot(45,y,y);return r;};
+ const W=640,H=300;let flow=(angle=0)=>{let r='';for(let y of [85,125,165,205])r+=directedArrow(27,y,56,angle,'#ffffff');return r;};
  if(s.kind==='balance'){
   const H=55,ratio=Math.sqrt(s.A2/s.A1),h1=H/Math.max(1,ratio),h2=h1*ratio;
   inner+=`<defs><pattern id="cvInterior" width="9" height="9" patternUnits="userSpaceOnUse"><path d="M0 9 L9 0" stroke="#ccd3da" stroke-width=".8"/></pattern></defs>`;
@@ -61,8 +70,29 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
  else if(s.kind==='state'){inner+=poly([[95,80],[360,80],[360,220],[95,220]],shade(f.values[0]))+poly([[360,80],[590,80],[590,220],[360,220]],shade(f.values[1]));inner+=flow();inner+=txt(120,112,'STATIC STATE',undefined,9)+txt(120,151,`M = ${fmt(s.s1.M)}`,undefined,21)+txt(120,183,`T = ${fmt(s.s1.T)} K  ·  p = ${fmt(s.s1.p/1000)} kPa`);inner+=line(360,105,360,205,'#a4bbab',1,'4 4')+txt(390,131,'AT REST',undefined,9)+txt(390,163,`T₀ = ${fmt(s.s1.T0)} K`,undefined,17)+txt(390,193,`p₀ = ${fmt(s.s1.p0/1000)} kPa`);}
  else if(s.kind==='normal'){inner+=poly([[20,70],[315,70],[315,230],[20,230]],shade(f.values[0]))+poly([[315,70],[620,70],[620,230],[315,230]],shade(f.values[1]));inner+=flow()+line(315,53,315,245,'#000000',3)+txt(324,48,'NORMAL SHOCK', '#000000',9);inner+=txt(110,118,'UPSTREAM','#ffffff',9)+txt(110,151,`M₁ ${fmt(s.s1.M)}`,'#ffffff',22)+txt(110,184,`${fmt(s.s1.p/1000)} kPa`,'#ffffff',12)+txt(375,118,'DOWNSTREAM','#ffffff',9)+txt(375,151,`M₂ ${fmt(s.s2.M)}`,'#ffffff',22)+txt(375,184,`${fmt(s.s2.p/1000)} kPa`,'#ffffff',12);label='Uniform analytical regions · pressure jump';}
  else if(s.kind==='duct'){inner+=poly([[40,85],[600,85],[600,215],[40,215]],'#e5efe2');if(s.s2){inner+=poly([[40,86],[320,86],[320,214],[40,214]],shade(f.values[0]))+poly([[320,86],[600,86],[600,214],[320,214]],shade(f.values[1]));inner+=txt(68,130,'INLET',undefined,9)+txt(68,158,`M₁ = ${fmt(s.s1.M)}`,undefined,19)+txt(398,130,'OUTLET',undefined,9)+txt(398,158,`M₂ = ${fmt(s.s2.M)}`,undefined,19);for(let x=90;x<590;x+=80)inner+=arrow(x,187,35)+dot(x+10,187,x);if(s.process==='rayleigh'){for(let x=220;x<420;x+=42)inner+=line(x,44,x,77,'#cb9b60',1.4)+(inputs.q>=0?poly([[x,79],[x-3,73],[x+3,73]],'#cb9b60'):poly([[x,42],[x-3,48],[x+3,48]],'#cb9b60'));inner+=txt(320,33,`${inputs.q>=0?'HEATING':'COOLING'}  q = ${fmt(inputs.q)} kJ/kg`,'#a77944',10,'middle');}else inner+=txt(320,50,`WALL FRICTION · fᴅL/D = ${fmt(inputs.lambda)}`,'#8a7862',10,'middle');label='Illustration of endpoint states · shading is schematic';}else inner+=txt(320,152,'NO STEADY OUTLET FOR THIS INLET','#a3784c',14,'middle');inner+=line(40,85,600,85,'#819a85',3)+line(40,215,600,215,'#819a85',3);}
- else if(s.kind==='oblique'){inner+=poly([[0,45],[640,45],[640,300],[0,300]],shade(f.values[0]));let x=95,y=230,L=520,body=L*Math.tan(s.theta),shock=L*Math.tan(s.beta);inner+=poly([[x,y],[x+L,y-shock],[x+L,y-body]],shade(f.values[1]));inner+=poly([[x,y],[x+L,y-body],[x+L,300],[x,300]],'#cbd4c9');inner+=line(x,y,x+L,y-shock,'#000000',2)+line(x,y,x+L,y-body,'#6a826d',2)+flow();inner+=txt(430,53,`β = ${fmt(deg(s.beta),4)}°`,'#ab7e38',13)+txt(495,259,`θ = ${fmt(inputs.theta)}°`,undefined,12)+txt(142,63,`M₁ = ${fmt(s.M)}`,undefined,16)+txt(390,144,`M₂ = ${fmt(s.M2)}`,undefined,16)+txt(390,168,`p₂/p₁ = ${fmt(s.p)}`);label='Equal geometric scale · uniform analytical downstream region';}
- else if(s.kind==='expansion'){inner+=poly([[0,45],[640,45],[640,300],[0,300]],shade(f.values[0]));let x=150,y=145,L=470,t=s.theta;inner+=poly([[0,y],[x,y],[x+L,y+L*Math.tan(t)],[640,300],[0,300]],'#cbd4c9');let last=null;for(let m of linspace(s.M,s.M2,45)){let phi=prandtlMeyer(m,inputs.gamma)-s.nu1-Math.asin(1/m),yy=y+L*Math.tan(phi);if(last!==null)inner+=poly([[x,y],[x+L,last],[x+L,yy]],shade(f.at(m)));inner+=line(x,y,x+L,yy,'#83ab84',.7);last=yy;}inner+=poly([[x,y],[x+L,last],[x+L,y+L*Math.tan(t)]],shade(f.values.at(-1)));inner+=line(0,y,x,y,'#6a826d',2)+line(x,y,x+L,y+L*Math.tan(t),'#6a826d',2)+arrow(38,93,65)+dot(60,93);inner+=txt(33,53,`M₁ ${fmt(s.M)}`,undefined,16)+txt(420,231,`M₂ ${fmt(s.M2)}`,undefined,16)+txt(360,64,'CENTERED EXPANSION FAN',undefined,10);label='Analytical fan rays · equal geometric scale';}
+ else if(s.kind==='oblique'){
+  const alpha=s.alpha??0,x=110,y=230,bodyAngle=s.bodyAngle??s.theta,wallEnd=[635,y-525*Math.tan(bodyAngle)],shockEnd=rayEnd(x,y,alpha+s.beta);
+  inner+=poly([[0,45],[640,45],[640,300],[0,300]],shade(f.values[0]));
+  inner+=poly([[x,y],shockEnd,[635,shockEnd[1]],wallEnd],shade(f.values[1]));
+  inner+=poly([[x,y],wallEnd,[640,300],[x,300]],'#cbd4c9');
+  inner+=line(x,y,...shockEnd,'#000000',2.2)+line(x,y,...wallEnd,'#52616c',2)+incidenceGlyph(alpha,26,130,65,'#ffffff');
+  inner+=txt(140,65,`M₁ = ${fmt(s.M)}`,undefined,17)+txt(415,65,`β = ${fmt(deg(s.beta),5)}°`,undefined,15)+txt(320,20,`M₂ = ${fmt(s.M2)}`,undefined,18,'middle')+txt(320,42,`p₂/p₁ = ${fmt(s.p)}`,undefined,15,'middle')+txt(350,281,`Wall θ = ${fmt(deg(bodyAngle),4)}° · turn = ${fmt(deg(s.theta),4)}°`,undefined,14,'middle');
+  label='Analytical oblique shock · incidence included in flow turning';meta='α positive upward from body axis · β relative to incident flow';
+ }
+ else if(s.kind==='expansion'){
+  const alpha=s.alpha??0,x=160,y=160,wallAngle=s.bodyAngle??-s.theta,wallEnd=[635,y-475*Math.tan(wallAngle)];
+  inner+=poly([[0,45],[640,45],[640,300],[0,300]],shade(f.values[0]));
+  let previous=null,last=null;
+  for(const m of linspace(s.M,s.M2,45)){
+   const turn=prandtlMeyer(m,inputs.gamma)-s.nu1,a=alpha-turn+Math.asin(1/m),end=rayEnd(x,y,a);
+   if(previous)inner+=poly([[x,y],previous,end],shade(f.at(m)));
+   inner+=line(x,y,...end,'#73929d',.6);previous=end;last=end;
+  }
+  if(last)inner+=poly([[x,y],last,[635,last[1]],wallEnd],shade(f.values.at(-1)));
+  inner+=poly([[x,y],wallEnd,[640,300],[x,300]],'#cbd4c9')+line(x,y,...wallEnd,'#52616c',2)+incidenceGlyph(alpha,25,120,75,'#ffffff');
+  inner+=txt(25,55,`M₁ = ${fmt(s.M)}`,undefined,17)+txt(400,237,`M₂ = ${fmt(s.M2)}`,undefined,18)+txt(365,65,'EXPANSION FAN',undefined,14)+txt(320,281,`Wall θ = ${fmt(deg(wallAngle),4)}° · turn = ${fmt(deg(s.theta),4)}°`,undefined,14,'middle');
+  label='Analytical centered fan · incidence included in flow turning';meta='α positive upward from body axis · lower-face expansion';
+ }
  else if(s.kind==='nozzle'){
   const a=s.points,scale=104/Math.max(...a.map(z=>z.h)),top=a.map(z=>[35+570*z.x,150-scale*z.h]),bottom=a.map(z=>[35+570*z.x,150+scale*z.h]);
   const vals=fieldValues(s,'nozzle',quantity),lo=Math.min(...vals),hi=Math.max(...vals),norm=v=>hi-lo<1e-14?.5:(v-lo)/(hi-lo);
@@ -143,10 +173,17 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
   label=s.status==='expansion'?'Analytical Prandtl–Meyer fan · local pressure shading':s.status==='shock'?'Analytical oblique shock · uniform states':resolved?'Pressure-matched exit · no adjustment wave':'External model limit · exit state only';
   meta='Angles to scale · local construction · reflections and mixing absent';
  }
- else if(s.kind==='cone'){let x=120,y=150,b=s.beta,c=s.thetaCone,L=Math.min(440,125/Math.tan(b));let h=s.history,vals=fieldValues(s,'cone',quantity),lo=Math.min(...vals),hi=Math.max(...vals),norm=v=>hi-lo<1e-14?.5:(v-lo)/(hi-lo);field={quantity,label:quantityLabel(quantity,'cone'),min:lo,max:hi,units:quantity==='mach'?'M':quantity==='pressure'?'p/p∞':quantity==='temperature'?'T/T∞':'ρ/ρ∞'};for(let i=0;i<h.length-1;i++){let a=h[i],d=h[i+1],v=vals[i];for(let sign of [-1,1])inner+=poly([[x,y],[x+L,y+sign*L*Math.tan(a.theta)],[x+L,y+sign*L*Math.tan(d.theta)]],contourColor(norm(v)));}inner+=poly([[x,y],[x+L,y-L*Math.tan(c)],[x+L,y+L*Math.tan(c)]],'#d7d9d5','#56636b',1.5);for(let sign of [-1,1])inner+=line(x,y,x+L,y+sign*L*Math.tan(b),'#000000',2);inner+=arrow(20,126,65)+arrow(20,175,65)+dot(40,126)+dot(40,175,2);inner+=txt(385,54,`β = ${fmt(deg(b),5)}°`,'#ab7e38',12)+txt(385,90,`θc = ${fmt(deg(c),5)}°`,undefined,12)+txt(385,215,`M꜀ = ${fmt(s.surface.M)}`,undefined,15)+txt(385,242,`p꜀/p∞ = ${fmt(s.surface.p)}`);label=`Taylor–Maccoll analytical field · ${field.label}`;meta='Conical similarity · meridional plane · no CFD';}
+ else if(s.kind==='coneIncidence'){
+  const x=170,y=160,L=Math.min(400,95/Math.tan(s.thetaCone)),h=L*Math.tan(s.thetaCone);
+  inner+=line(120,y,620,y,'#7a8790',1,'5 4')+poly([[x,y],[x+L,y-h],[x+L,y+h]],'#d7d9d5','#52616c',2);
+  inner+=incidenceGlyph(s.alpha,35,130,95)+directedArrow(35,200,95,s.alpha);
+  inner+=txt(400,55,`θ꜀ = ${fmt(deg(s.thetaCone),4)}°`,undefined,16)+txt(30,55,`M∞ = ${fmt(s.M)}`,undefined,17)+txt(320,282,'INCIDENCE GEOMETRY · FLOW FIELD UNAVAILABLE',undefined,14,'middle');
+  label='Cone at nonzero incidence · geometry only';meta='No axisymmetric Taylor–Maccoll contours or states';
+ }
+ else if(s.kind==='cone'){let x=120,y=150,b=s.beta,c=s.thetaCone,L=Math.min(440,125/Math.tan(b));let h=s.history,vals=fieldValues(s,'cone',quantity),lo=Math.min(...vals),hi=Math.max(...vals),norm=v=>hi-lo<1e-14?.5:(v-lo)/(hi-lo);field={quantity,label:quantityLabel(quantity,'cone'),min:lo,max:hi,units:quantity==='mach'?'M':quantity==='pressure'?'p/p∞':quantity==='temperature'?'T/T∞':'ρ/ρ∞'};for(let i=0;i<h.length-1;i++){let a=h[i],d=h[i+1],v=vals[i];for(let sign of [-1,1])inner+=poly([[x,y],[x+L,y+sign*L*Math.tan(a.theta)],[x+L,y+sign*L*Math.tan(d.theta)]],contourColor(norm(v)));}inner+=poly([[x,y],[x+L,y-L*Math.tan(c)],[x+L,y+L*Math.tan(c)]],'#d7d9d5','#56636b',1.5);for(let sign of [-1,1])inner+=line(x,y,x+L,y+sign*L*Math.tan(b),'#000000',2);inner+=incidenceGlyph(0,20,126,65)+directedArrow(20,175,65,0);inner+=txt(385,54,`β = ${fmt(deg(b),5)}°`,'#ab7e38',12)+txt(385,90,`θc = ${fmt(deg(c),5)}°`,undefined,12)+txt(385,215,`M꜀ = ${fmt(s.surface.M)}`,undefined,15)+txt(385,242,`p꜀/p∞ = ${fmt(s.surface.p)}`);label=`Taylor–Maccoll analytical field · ${field.label}`;meta='Conical similarity · meridional plane · no CFD';}
  else if(s.kind==='tube'){const xmin=-1,xmax=1.8,X=x=>35+(x-xmin)/(xmax-xmin)*570;let head=s.head*time,tail=s.tail*time,contact=s.contact*time,shock=s.shockSpeed*time;
   inner+=poly([[35,92],[X(head),92],[X(head),213],[35,213]],shade(inputs.p4*1000));for(let i=0;i<50;i++){let a=head+(tail-head)*i/50,b=head+(tail-head)*(i+1)/50,xi=(a+b)/(2*time),sound=2*s.a4/(inputs.gamma+1)-(inputs.gamma-1)*xi/(inputs.gamma+1),pressure=inputs.p4*1000*(sound/s.a4)**(2*inputs.gamma/(inputs.gamma-1));inner+=poly([[X(a),92],[X(b),92],[X(b),213],[X(a),213]],shade(pressure));}inner+=poly([[X(tail),92],[X(shock),92],[X(shock),213],[X(tail),213]],shade(s.p))+poly([[X(shock),92],[605,92],[605,213],[X(shock),213]],shade(inputs.p1*1000));for(let [x,name,col,dash] of [[head,'head','#7a9a80',''],[tail,'tail','#7a9a80',''],[contact,'contact','#62858e','5 4'],[shock,'shock','#000000','']]){inner+=line(X(x),83,X(x),223,col,1.5,dash)+txt(X(x),name==='contact'?250:69,name,col,9,'middle');}inner+=line(35,92,605,92,'#819783',2)+line(35,213,605,213,'#819783',2)+txt(320,34,`t = ${fmt(time*1000,3)} ms · before wall reflection`,undefined,11,'middle')+txt(320,162,`u₂ = u₃ = ${fmt(s.u)} m/s`,'#ffffff',14,'middle')+txt(35,281,'x = −1 m',undefined,9)+txt(605,281,'x = 1.8 m',undefined,9,'end');label='Analytical similarity field · pressure shading';meta='Expansion fan + uniform regions';}
- else if(s.kind==='linear'){let t=inputs.thickness*440/2,x=90,y=150;inner+=poly([[x,y],[x+220,y-t],[x+440,y],[x+220,y+t]],'#b4c7ad','#66806a',2);for(const [a,b,v] of [[[x,y],[x+220,y-t],s.CpUF],[[x+220,y-t],[x+440,y],s.CpUR],[[x,y],[x+220,y+t],s.CpLF],[[x+220,y+t],[x+440,y],s.CpLR]])inner+=line(...a,...b,shade(v),9);inner+=flow()+txt(320,65,`UPPER  Cₚ,f ${fmt(s.CpUF)}   Cₚ,r ${fmt(s.CpUR)}`,undefined,11,'middle')+txt(320,234,`LOWER  Cₚ,f ${fmt(s.CpLF)}   Cₚ,r ${fmt(s.CpLR)}`,undefined,11,'middle')+txt(320,267,`α = ${inputs.alpha}° · t/c = ${inputs.thickness}`,undefined,10,'middle');label='Piecewise analytical Cp · geometry drawn at zero incidence';meta='Linearized supersonic approximation';}
+ else if(s.kind==='linear'){let t=inputs.thickness*440/2,x=90,y=150;inner+=poly([[x,y],[x+220,y-t],[x+440,y],[x+220,y+t]],'#b4c7ad','#66806a',2);for(const [a,b,v] of [[[x,y],[x+220,y-t],s.CpUF],[[x+220,y-t],[x+440,y],s.CpUR],[[x,y],[x+220,y+t],s.CpLF],[[x+220,y+t],[x+440,y],s.CpLR]])inner+=line(...a,...b,shade(v),9);inner+=incidenceGlyph(rad(inputs.alpha??0),20,150,60)+txt(320,65,`UPPER  Cₚ,f ${fmt(s.CpUF)}   Cₚ,r ${fmt(s.CpUR)}`,undefined,11,'middle')+txt(320,234,`LOWER  Cₚ,f ${fmt(s.CpLF)}   Cₚ,r ${fmt(s.CpLR)}`,undefined,11,'middle')+txt(320,267,`α = ${inputs.alpha}° · t/c = ${inputs.thickness}`,undefined,10,'middle');label='Linearized surface Cp · specified angle of attack';meta='Body-fixed chord · incident arrows at α · linearized theory';}
  else if(s.kind==='collision'){
   const z=s.geometry,points=z.domain,x0=z.startX,x1=z.endX,y0=Math.min(...points.map(p=>p[1])),y1=Math.max(...points.map(p=>p[1])),scale=Math.min(500/(x1-x0),190/(y1-y0));
   const ox=285-(x0+x1)*scale/2,oy=153+(y0+y1)*scale/2,V=([x,y])=>[ox+x*scale,oy-y*scale];
@@ -171,6 +208,7 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
    const ly=downstream?(n==='5'?110:200):45;
    inner+=line(lx-(downstream?12:0),ly+(downstream?-6:4),xx,yy,'#263c4d',1.3)+`<circle cx="${xx}" cy="${yy}" r="2.4" fill="#263c4d"/>`+`<g data-region-callout="${n}" data-target-x="${xx}" data-target-y="${yy}">${txt(lx,ly,n,'#17212b',20,'middle')}</g>`;
   }
+  const [gx,gy]=V([z.startX+.04*z.H,z.H*.6]);inner+=incidenceGlyph(s.alpha??0,gx,gy,55,'#ffffff');
   const [bx,by]=V(z.B);inner+=`<circle cx="${bx}" cy="${by}" r="3" fill="#000000"/>`;
   inner+=txt(24,24,s.same?'SAME-DIRECTION INTERACTION':'OPPOSING SHOCK INTERACTION',undefined,14)+txt(616,24,`φ = ${fmt(s.slipAngle,6)}°`,undefined,17,'end');
   inner+=txt(24,273,`B: x = ${fmt(z.B[0],5)}, y = ${fmt(z.B[1],5)} ${s.geometryMode==='Custom geometry'?'m':'(normalized)'}`,undefined,14)+txt(616,273,s.a.kind,undefined,14,'end');

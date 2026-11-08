@@ -19,8 +19,10 @@ export function solveInteraction(x={}){
  requireValue(['Opposing shocks','Same-direction shocks'].includes(interactionType),'Choose an interaction type.');
  requireValue(['Educational','Custom geometry'].includes(geometryMode),'Choose a geometry mode.');
  requireValue(finite(thetaUpper,thetaLower)&&thetaUpper>0&&thetaLower>0&&thetaUpper<=30&&thetaLower<=30,'Both corner turns must be greater than 0° and at most 30°.');
- const same=interactionType==='Same-direction shocks',t1=rad(thetaUpper),t2=rad(thetaLower),s1={...state(M1,T1,p1*1000,gamma,R),theta:0,gamma,R};
- const n2=obliqueShock(M1,t1,gamma),s2=apply(s1,n2,t1),n3=obliqueShock(same?s2.M:M1,t2,gamma),s3=apply(same?s2:s1,n3,same?t1+t2:-t2);
+ const alpha=rad(x.alpha??0);requireValue(finite(alpha)&&Math.abs(alpha)<=rad(20),'Angle of attack must be within ±20°.');
+ const same=interactionType==='Same-direction shocks',t1=rad(thetaUpper),t2=rad(thetaLower),s1={...state(M1,T1,p1*1000,gamma,R),theta:alpha,gamma,R};
+ requireValue(t1-alpha>0&&(same||t2+alpha>0),'Both prescribed incident waves must remain compression shocks at this incidence.','unsupported-pattern');
+ const n2=obliqueShock(M1,t1-alpha,gamma),s2=apply(s1,n2,t1),n3=obliqueShock(same?s2.M:M1,same?t2:t2+alpha,gamma),s3=apply(same?s2:s1,n3,same?t1+t2:-t2);
  const lower=same?s3:s2,upper=same?s1:s3;
  requireValue(lower.M>1&&upper.M>1,'The streams entering the interaction must remain supersonic. This regular attached-wave model does not resolve a Mach reflection.','unsupported-pattern');
  const maxNu=(Math.sqrt((gamma+1)/(gamma-1))-1)*Math.PI/2;
@@ -32,7 +34,7 @@ export function solveInteraction(x={}){
  const root=bisect(f,lo,hi),phi=root.value,{a,b}=interactionPair(context,phi),s4=a.after,s5=b.after;
  const waves=[{...n2,kind:'Oblique shock',before:s1,after:s2,title:'Incident shock · 1 → 2'}, { ...n3,kind:'Oblique shock',before:same?s2:s1,after:s3,title:same?'Second incident shock · 2 → 3':'Incident shock · 1 → 3'}, {...a,title:same?'Reflected wave · 3 → 4':'Outgoing wave · 2 → 4'}, {...b,title:same?'Resultant shock · 1 → 5':'Outgoing wave · 3 → 5'}];
  const regions={1:s1,2:s2,3:s3,4:s4,5:s5};
- const r={status:'ok',same,interactionType,geometryMode,lower,upper,n2,n3,a,b,delta:phi,slipAngle:deg(phi),p4:s4.p/s1.p,p5:s5.p/s1.p,regions,waves,residual:root.residual,iterations:root.iterations,interval:[lo,hi]};
+ const r={status:'ok',alpha,same,interactionType,geometryMode,lower,upper,n2,n3,a,b,delta:phi,slipAngle:deg(phi),p4:s4.p/s1.p,p5:s5.p/s1.p,regions,waves,residual:root.residual,iterations:root.iterations,interval:[lo,hi]};
  r.geometry=interactionGeometry(r,x);return r;
 }
 function intersection(a,ma,b,mb){const dx=(b[1]-a[1]+ma*a[0]-mb*b[0])/(ma-mb);return [dx,a[1]+ma*(dx-a[0])];}
@@ -42,11 +44,12 @@ export function interactionGeometry(r,x){
  let H=custom?x.channelHeight:1,d=custom?x.cornerSpacing:r.same?1:0;
  requireValue(finite(H,d)&&H>0&&d>=0,'Geometry requires a positive height and a nonnegative corner spacing.');
  requireValue(!r.same||d>0,'Same-direction corners require a positive separation.');
- const A=[0,0],C=r.same?[d,d*Math.tan(t1)]:[d,H],ma=Math.tan(r.n2.beta),mc=Math.tan(r.same?t1+r.n3.beta:-r.n3.beta);
+ const A=[0,0],C=r.same?[d,d*Math.tan(t1)]:[d,H],ma=Math.tan(r.alpha+r.n2.beta),mc=Math.tan(r.same?t1+r.n3.beta:r.alpha-r.n3.beta);
  const B=intersection(A,ma,C,mc);
  if(r.same&&!custom)H=Math.max(1,B[1]*1.6);
- const lowerSegments=r.same?[[0,0], [Math.tan(t1),0],[Math.tan(t1+t2),C[1]-Math.tan(t1+t2)*d]]:[[0,0],[Math.tan(t1),0]];
- const upperSegments=r.same?[[0,H]]:[[0,H],[-Math.tan(t2),H+Math.tan(t2)*d]];
+ const incomingSlope=Math.tan(r.alpha);
+ const lowerSegments=r.same?[[incomingSlope,0], [Math.tan(t1),0],[Math.tan(t1+t2),C[1]-Math.tan(t1+t2)*d]]:[[incomingSlope,0],[Math.tan(t1),0]];
+ const upperSegments=r.same?[[incomingSlope,H]]:[[incomingSlope,H-incomingSlope*d],[-Math.tan(t2),H+Math.tan(t2)*d]];
  const bottom=z=>Math.max(...lowerSegments.map(([m,c])=>m*z+c)),top=z=>Math.min(...upperSegments.map(([m,c])=>m*z+c));
  requireValue(finite(...B)&&B[0]>Math.max(0,d)+1e-9&&B[1]>bottom(B[0])+1e-9&&B[1]<top(B[0])-1e-9,'The incident waves do not meet inside this geometry before a wall encounter. Change the height, corner spacing or turns.','geometry-limit');
  const hits=[];
@@ -56,7 +59,7 @@ export function interactionGeometry(r,x){
  let domain=[[startX,-H],[endX,-H],[endX,H*2],[startX,H*2]];
  for(const [m,c] of lowerSegments)domain=clipPolygon(domain,([xx,yy])=>yy-m*xx-c);
  for(const [m,c] of upperSegments)domain=clipPolygon(domain,([xx,yy])=>m*xx+c-yy);
- const lines=[{origin:A,angle:r.n2.beta},{origin:C,angle:r.same?t1+r.n3.beta:-r.n3.beta},...[r.a,r.b].flatMap(w=>w.rays.map(ray=>({origin:B,angle:ray.angle}))),{origin:B,angle:r.delta}];
+ const lines=[{origin:A,angle:r.alpha+r.n2.beta},{origin:C,angle:r.same?t1+r.n3.beta:r.alpha-r.n3.beta},...[r.a,r.b].flatMap(w=>w.rays.map(ray=>({origin:B,angle:ray.angle}))),{origin:B,angle:r.delta}];
  let cells=[domain];for(const l of lines){const m=Math.tan(l.angle),fn=([xx,yy])=>yy-l.origin[1]-m*(xx-l.origin[0]);cells=cells.flatMap(poly=>[clipPolygon(poly,fn),clipPolygon(poly,p=>-fn(p))]).filter(p=>p.length>=3&&Math.abs(p.reduce((v,a,i)=>{const b=p[(i+1)%p.length];return v+a[0]*b[1]-a[1]*b[0];},0))>1e-12*H*H);}
  const classify=([xx,yy])=>{
   if(xx<B[0]){if(yy>ma*xx)return r.same?r.regions[1]:yy>C[1]+mc*(xx-d)?r.regions[3]:r.regions[1];return r.same?(yy>C[1]+mc*(xx-d)?r.regions[2]:r.regions[3]):r.regions[2];}

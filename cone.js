@@ -18,7 +18,8 @@ export function coneFromShock(M,beta,g=1.4,{step=.002,tolerance=1e-10}={}){
  }
  throw new Error('No cone-surface event was found within the physical integration interval.');
 }
-export function cone({M=2,thetaCone=10,gamma:g=1.4}={}){
+export function cone({M=2,thetaCone=10,gamma:g=1.4,alpha=0}={}){
+ requireValue(finite(alpha)&&Math.abs(alpha)<=1e-12,'Taylor–Maccoll requires zero angle of attack. Nonzero incidence is not axisymmetric.','unsupported-incidence');
  gas(g);requireValue(finite(M,thetaCone)&&M>1&&thetaCone>0&&thetaCone<70,'Require M > 1 and a positive cone half-angle below 70°.');let target=rad(thetaCone),mu=Math.asin(1/M),last=null,bracket=null;
  // First physical crossing selects the weak conical-shock branch.
  for(let b of linspace(mu+1e-5,Math.PI/2-1e-4,120)){let s;try{s=coneFromShock(M,b,g,{step:.004,tolerance:3e-9});}catch{last=null;continue;}let f=s.thetaCone-target;if(last&&last.f*f<=0){bracket=[last.b,b];break;}last={b,f};}
