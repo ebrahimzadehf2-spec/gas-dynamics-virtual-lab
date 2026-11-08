@@ -40,3 +40,5 @@ The Chapter 9 experiment is available at `#airfoil`; the earlier `#linear` inter
 ## Chapter 6 geometry builder
 
 `#wall` opens the Wave Geometry Lab. A Geometry selector in the input column offers compression, expansion, editable multi-corner walls and the existing opposing/same-direction interaction calculators. Single walls accept up to eight absolute angles and true segment lengths; gas can lie above or below. The local solution stops at the first sampled wave crossing or later-wall encounter. It reports uniform surface states and one-sided shock values without inventing subsequent interactions. Chapter 6 no longer lists the Chapter 9 airfoil tool.
+
+Custom wall also provides Boundary layout = Channel: independent upper/lower angle-length editors, inlet gap, crossing validation, separate wall-stream properties and charts, and clipping at the first wave interaction or opposite-wall encounter. The shared displayed domain ends at the shorter axial wall extent. Subsequent reflection trains are not solved.

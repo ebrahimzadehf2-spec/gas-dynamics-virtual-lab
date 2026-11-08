@@ -1,8 +1,9 @@
-import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261108-wave-geometry';
+import {solveWaveChannel} from './wave-channel.js?v=20261108-custom-channel';
+import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261108-custom-channel';
 import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-wave-geometry';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-custom-channel';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
@@ -58,6 +59,9 @@ export const labs={
  fanno:{chapter:5,title:'Fanno friction lab',tag:'FRICTIONAL CHOKING',description:'Explore how wall friction drives either Mach branch toward the sonic state.',inputs:[M('M1',.5),T,P,input('lambda','Friction length fᴅ L / D',.2,0,3,.01,''),g],model:'Steady, adiabatic, constant-area flow · Darcy friction convention',equation:'F(M₂) = F(M₁) − fᴅL/D   ·   fᴅ = 4fꜰ',limitations:'Momentum flux decreases through wall shear. Constant gas properties and an imposed total friction parameter are assumed.'},
  wall:{chapter:6,title:'Wave Geometry Lab',tag:'BUILD · TURN · INSPECT',description:'Build a piecewise-straight wall from segment angles and lengths, then inspect its compression shocks, expansion fans and local flow states.',inputs:[
  {key:'wallShape',label:'Wall template',value:'Compression ramp',options:['Compression ramp','Expansion corner','Custom wall']},
+ {key:'boundaryMode',label:'Boundary layout',value:'Single wall',options:['Single wall','Channel']},
+ input('channelHeight','Channel inlet height',1,.01,100,.01,'m'),
+ {key:'upperWallSegments',label:'Upper wall segments',type:'wall-segments',value:[{angle:0,length:3}]},
  {key:'wallSide',label:'Gas side',value:'Gas above wall',options:['Gas above wall','Gas below wall']},
  {key:'wallSegments',label:'Wall segments',type:'wall-segments',value:[{angle:12,length:1}]},M('M1',3),T,P,g
  ],model:'Steady 2D piecewise wall · weak attached shocks and centered expansions · horizontal inlet',equation:'δᵢ = θᵢ − θᵢ₋₁ · ν₂ − ν₁ = |δ| for expansion',limitations:'Local surface marching stops at the first sampled wave intersection or encounter with a later wall. Subsequent reflected waves, detached shocks and subsonic continuation are not solved. Lengths are actual segment lengths in metres; angles are signed absolute directions from horizontal. Gas side reverses compression/expansion selection.'},
@@ -99,7 +103,10 @@ export const labs={
  cone:{chapter:10,title:'Taylor–Maccoll cone',tag:'AXISYMMETRIC SIMILARITY',description:'Solve the conical-flow ODE, locate the cone surface and recover the attached weak shock.',inputs:[input('M','Freestream Mach',2,1.2,6,.0001,'M∞'),input('thetaCone','Cone half-angle',10,1,35,.1,'°'),g],model:'Steady, inviscid, axisymmetric sharp cone · zero angle of attack',equation:'dVᵣ/dθ = Vθ   ·   Vθ(θc) = 0',limitations:'Adaptive RK4 step doubling and a bracketed shock-angle search. Strong branches and detached cones are outside this release. Full book-example acceptance is pending.'}
 };
 function experimentInputs(id,x={}){
- if(id==='wall')return labs.wall.inputs.filter(f=>f.key!=='wallShape');
+ if(id==='wall'){
+  const channel=x.wallShape==='Custom wall'&&x.boundaryMode==='Channel';
+  return labs.wall.inputs.filter(f=>f.key!=='wallShape'&&(!['channelHeight','upperWallSegments'].includes(f.key)||channel)&&(f.key!=='wallSide'||!channel)).map(f=>f.key==='wallSegments'?{...f,label:channel?'Lower wall segments':'Wall segments'}:f);
+ }
  if(id==='airfoil')return labs.airfoil.inputs.filter(f=>{
   const flat=x.airfoilShape==='Flat plate',custom=x.airfoilShape==='Custom panels',angles=x.geometryInput==='Angles & lengths';
   if(f.key==='geometryInput')return custom;
@@ -210,9 +217,9 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
 
  }
  else if(id==='wall'){
-  result=solveWaveWall({...x,gamma:g,R});notice=result.reason;
+  result=(x.wallShape==='Custom wall'&&x.boundaryMode==='Channel'?solveWaveChannel:solveWaveWall)({...x,gamma:g,R});notice=result.reason;
   for(const [n,z]of Object.entries(result.regions))rows.push(...[['Mach',z.M,''],['Pressure',z.p/1000,'kPa'],['Temperature',z.T,'K'],['Density',z.rho,'kg/m³'],['Speed',z.u,'m/s'],['Flow angle',p.deg(z.theta),'°'],['Stagnation pressure',z.p0/1000,'kPa'],['Stagnation temperature',z.T0,'K']].map(([label,value,unit])=>({...row(`Region ${n} · ${label}`,value,unit),panel:'wall'})));
-  for(const w of result.waves)if(w.kind==='Oblique shock')shockDetails.push(shockStateSection({kind:'oblique',title:`Wall shock · ${Number(w.id)-1} → ${w.id}`,location:`x = ${w.origin.x.toPrecision(6)} m`,before:w.before,after:w.after,gamma:g,R,extra:[{label:'Shock angle β',value:p.deg(w.beta),unit:'°'},{label:'Flow turn',value:w.turn,unit:'°'}]}));
+  for(const w of result.waves)if(w.kind==='Oblique shock')shockDetails.push(shockStateSection({kind:'oblique',title:`Wall shock · ${w.parentId??Number(w.id)-1} → ${w.id}`,location:`x = ${w.origin.x.toPrecision(6)} m`,before:w.before,after:w.after,gamma:g,R,extra:[{label:'Shock angle β',value:p.deg(w.beta),unit:'°'},{label:'Flow turn',value:w.turn,unit:'°'}]}));
   if(result.limitX!==null)rows.push(row('Local-solution limit',result.limitX,'m'));
   scene={kind:'wall',...result};chart=wallPlots(result)[0].chart;
  }
@@ -257,5 +264,5 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
  if(id==='cone'&&result.status==='ok'){result.relations=conicalRelations(result,x.M,g);result.referenceTable=coneReferenceTable(result.relations);}
  if(result.referenceTable)for(const r of result.referenceTable.rows)r.values.forEach((v,i)=>rows.push({...row(`${result.referenceTable.title} · ${r.label} · ${result.referenceTable.columns[i]}`,v),panel:'reference'}));
 
- return {id,inputs:x,gas:workingGas,model:id==='nozzle'?nozzleInfo(x).model:labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
+ return {id,inputs:x,gas:workingGas,model:id==='nozzle'?nozzleInfo(x).model:id==='wall'&&result.channel?'Steady 2D custom channel · local wall streams · first-interaction limit':labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
 }
