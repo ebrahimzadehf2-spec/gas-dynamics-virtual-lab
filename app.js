@@ -1,4 +1,4 @@
-import {airfoilTables} from './airfoil-tables.js?v=20261108-result-tables';
+import {airfoilTables} from './airfoil-tables.js?v=20261108-pressure-coefficients';
 import {airfoilGeometry,segmentSurface,surfaceSegments,presetSegments} from './airfoil.js?v=20261108-segment-editor';
 import {nearestChartPoint} from './chart-probe.js?v=20261108-chart-tooltip';
 import {probeCone} from './cone-probe.js?v=20261108-cone-hover';
