@@ -1,4 +1,4 @@
-const airfoilPalette=['#839bc9','#77b5cf','#83c6c3','#b2cba3','#ded09a','#dfb08c','#d99393'];
+const airfoilPalette=['#2536c7','#0879f5','#00c8dc','#16bf59','#efe51b','#ff9718','#ee2727'];
 function surfaceColor(t){
  const v=Math.max(0,Math.min(1,t))*(airfoilPalette.length-1),i=Math.min(airfoilPalette.length-2,Math.floor(v)),f=v-i;
  const rgb=c=>c.match(/[a-f0-9]{2}/gi).map(v=>parseInt(v,16)),a=rgb(airfoilPalette[i]),b=rgb(airfoilPalette[i+1]);
@@ -36,9 +36,17 @@ export function airfoilDrawing(s,{txt,line,poly,fmt,incidenceGlyph}){
    inner+='</g>';
   }
  }
- // A joined ribbon on each side avoids gaps or overlapping color at corners.
+ const body=[...s.geometry.upper,...s.geometry.lower.slice().reverse()].map(V);
+ inner+=poly(body,'#edf0f2');
+ const ordinate=(points,x)=>{const i=Math.min(points.length-2,Math.max(0,points.findIndex((p,i)=>i<points.length-1&&x<=points[i+1].x+1e-12)));const a=points[i],b=points[i+1];return a.y+(b.y-a.y)*(x-a.x)/(b.x-a.x);};
+ const stations=[...new Set([...s.geometry.upper,...s.geometry.lower].map(p=>p.x))].sort((a,b)=>a-b);
+ const middle=stations.map(x=>({x,y:(ordinate(s.geometry.upper,x)+ordinate(s.geometry.lower,x))/2}));
+ // Clip each inward ribbon to its own half of the actual body, including sharp tips.
+ inner+='<defs>'+['Upper','Lower'].map(side=>{const surface=side==='Upper'?s.geometry.upper:s.geometry.lower,points=[...surface,...middle.slice().reverse()].map(V);return `<clipPath id="airfoil-ribbon-${side}">${poly(points,'#fff')}</clipPath>`;}).join('')+'</defs>';
+ // Joined inward offsets preserve the exposed exterior corners.
  if(z)for(const side of ['Upper','Lower']){
-  const panels=z.panels.filter(p=>p.side===side),sign=side==='Upper'?1:-1,width=11;
+  const panels=z.panels.filter(p=>p.side===side),sign=side==='Upper'?1:-1,width=-11;
+  inner+=`<g clip-path="url(#airfoil-ribbon-${side})">`;
   const normal=p=>[-Math.sin(p.theta)*sign,-Math.cos(p.theta)*sign];
   const offsets=panels.map(normal),vertices=[V(panels[0].a),...panels.map(p=>V(p.b))];
   const outer=vertices.map((v,i)=>{
@@ -48,9 +56,9 @@ export function airfoilDrawing(s,{txt,line,poly,fmt,incidenceGlyph}){
   panels.forEach((p,i)=>{
    inner+=`<g data-surface-region="${p.id}"><title>${p.id}: Cp = ${fmt(p.Cp,6)}</title>`+poly([vertices[i],vertices[i+1],outer[i+1],outer[i]],color(p.Cp))+'</g>';
   });
+  inner+='</g>';
  }
- const body=[...s.geometry.upper,...s.geometry.lower.slice().reverse()].map(V);
- inner+=poly(body,'#e7ebed','#344652',1.25);
+ inner+=poly(body,'none','#344652',1.25);
  if(z)for(const p of z.panels){
   const sign=p.side==='Upper'?1:-1,nx=-Math.sin(p.theta)*sign,ny=-Math.cos(p.theta)*sign;
   const [ax,ay]=V(p.a),[bx,by]=V(p.b),mx=(ax+bx)/2,my=(ay+by)/2;
@@ -66,5 +74,5 @@ export function airfoilDrawing(s,{txt,line,poly,fmt,incidenceGlyph}){
  inner+=line(108,249,538,249,'#a5b1b7',.8)+line(108,245,108,253,'#a5b1b7',.8)+line(538,245,538,253,'#a5b1b7',.8);
  inner+=txt(108,269,'LE · x/c = 0','#53616b',12)+txt(538,269,'TE · x/c = 1','#53616b',12,'end');
  inner+=line(200,289,222,289,'#000000',1.35)+txt(229,293,'Shock','#53616b',12)+line(317,289,339,289,'#477caa',.95)+txt(346,293,'Expansion fan','#53616b',12);
- return {inner,label:'Supersonic airfoil · analytical surface solution',meta:'Surface ribbons: panel Cp · local wave directions · body-fixed geometry',field:model?{quantity:'cp',options:['cp'],label:'Surface pressure coefficient Cp',min,max,units:'Cp',note:model==='nonlinear'?'Shock–Expansion · uniform Cp on each surface panel':'Linearized · uniform Cp on each surface panel',palette:airfoilPalette}:null};
+ return {inner,label:'Supersonic airfoil · analytical surface solution',meta:'Inward surface ribbons: panel Cp · local wave directions · body-fixed geometry',field:model?{quantity:'cp',options:['cp'],label:'Surface pressure coefficient Cp',min,max,units:'Cp',note:model==='nonlinear'?'Shock–Expansion · uniform Cp on each surface panel':'Linearized · uniform Cp on each surface panel',palette:airfoilPalette}:null};
 }
