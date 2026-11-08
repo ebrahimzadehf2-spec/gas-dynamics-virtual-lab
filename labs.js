@@ -189,7 +189,7 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
    scene={kind:'coneDetached',limits};chart={title:'No attached-flow profile',xlabel:'Polar angle θ (°)',ylabel:'',series:[]};
   }else{
    result={...cone({...x,betaLimit:limits.betaAtLimit}),limits};checks={surfaceTangency:Math.abs(result.eventResidual),coneAngle:Math.abs(result.residual)};
-   rows=[...boundaryRows,row('Conical shock angle β',p.deg(result.beta),'°'),row('Recovered cone angle',result.thetaConeDeg,'°'),row('Surface Mach',result.surface.M),row('Surface pressure',result.surface.p,'p꜀/p∞'),row('Surface temperature',result.surface.T,'T꜀/T∞'),row('Integration steps',result.iterations)];
+   rows=[...boundaryRows,row('Conical shock angle β',p.deg(result.beta),'°'),row('Recovered cone angle',result.thetaConeDeg,'°'),row('Surface Mach',result.surface.M),row('Surface pressure',result.surface.p,'p꜀/p∞'),row('Surface temperature',result.surface.T,'T꜀/T∞')];
    scene={kind:'cone',...result};chart={title:'Angular similarity solution',zeroBaseline:false,xlabel:'Polar angle θ (°)',ylabel:'Mach number',series:[{name:'M(θ)',points:result.history.map(s=>[p.deg(s.theta),s.M]).reverse()}]};
   }
  }
