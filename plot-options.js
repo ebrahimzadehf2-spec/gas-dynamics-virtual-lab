@@ -31,6 +31,7 @@ export function plotOptions(d,time=.001){
   add('wave-speed','Speed ratio',xlabel,'u₂/u₁',samples.map(([t,z])=>[t,z.M2/x.M1*Math.sqrt(z.T)]));
   if(id==='oblique')add('beta','Shock angle',xlabel,'β (°)',samples.map(([t,s])=>[t,deg(s.beta)]));
  }else if(id==='cone'){
+  if(!r.history)return [];
   const samples=r.history.map(s=>[deg(s.theta),s]).reverse();
   const post=r.history[0],postSpeed=Math.hypot(post.vr,post.vt);
   const properties=[['M','Mach number','M',s=>s.M],['p','Static pressure ratio','p/p₂',s=>s.p/post.p],['T','Static temperature ratio','T/T₂',s=>s.T/post.T],['rho','Density ratio','ρ/ρ₂',s=>s.rho/post.rho],['u','Flow speed ratio','u/u₂',s=>Math.hypot(s.vr,s.vt)/postSpeed],['vr','Radial velocity component ratio','Vᵣ/Vᵣ₂',s=>s.vr/post.vr],['vt','Polar velocity component ratio','Vθ/Vθ₂',s=>s.vt/post.vt],['turn','Flow direction','δ (°)',s=>deg(s.theta+Math.atan2(s.vt,s.vr))],['p0','Stagnation-pressure ratio','p₀/p₀₂',s=>s.p*isentropic(s.M,g).p0p/(post.p*isentropic(post.M,g).p0p)],['T0','Stagnation-temperature ratio','T₀/T₀₂',s=>s.T*isentropic(s.M,g).T0T/(post.T*isentropic(post.M,g).T0T)]];

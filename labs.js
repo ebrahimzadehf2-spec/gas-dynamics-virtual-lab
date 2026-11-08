@@ -1,11 +1,12 @@
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261107-matched-sliders';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-detachment';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
 import * as p from './physics.js?v=20261107-isentropic';
-import {cone} from './cone.js?v=20261108-incidence';
+import {cone} from './cone.js?v=20261108-detachment';
+import {coneLimits} from './cone-limits.js?v=20261108-detachment';
 const input=(key,label,value,min,max,step=1,unit='')=>({key,label,value,min,max,step,unit});
 const g=input('gamma','Specific heat ratio',1.4,1.1,1.67,.01,'γ');
 const M=(key='M1',value=2)=>input(key,'Inlet Mach number',value,.1,8,.01,'M');
@@ -180,7 +181,19 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
  }
  else if(id==='linear'){result=p.linearAirfoil(x);notice=result.warning;rows=[row('Lift coefficient',result.CL,'Cᴸ'),row('Wave-drag coefficient',result.CD,'Cᴰ,wave'),row('Upper front Cp',result.CpUF),row('Upper rear Cp',result.CpUR),row('Lower front Cp',result.CpLF),row('Lower rear Cp',result.CpLR)];scene={kind:'linear',...result,...x};chart={title:'Piecewise surface pressure',xlabel:'Chord position x/c',ylabel:'Pressure coefficient Cp',series:[{name:'Upper surface',points:[[0,result.CpUF],[.5,result.CpUF],[.5,result.CpUR],[1,result.CpUR]]},{name:'Lower surface',points:[[0,result.CpLF],[.5,result.CpLF],[.5,result.CpLR],[1,result.CpLR]]}]};}
 
- else if(id==='cone'){result=cone(x);checks={surfaceTangency:Math.abs(result.eventResidual),coneAngle:Math.abs(result.residual)};rows=[row('Conical shock angle β',p.deg(result.beta),'°'),row('Recovered cone angle',result.thetaConeDeg,'°'),row('Surface Mach',result.surface.M),row('Surface pressure',result.surface.p,'p꜀/p∞'),row('Surface temperature',result.surface.T,'T꜀/T∞'),row('Integration steps',result.iterations)];scene={kind:'cone',...result};chart={title:'Angular similarity solution',zeroBaseline:false,xlabel:'Polar angle θ (°)',ylabel:'Mach number',series:[{name:'M(θ)',points:result.history.map(s=>[p.deg(s.theta),s.M]).reverse()}]};}
+ else if(id==='cone'){
+  if(!Number.isFinite(x.alpha??0)||Math.abs(x.alpha??0)>1e-12)throw new p.PhysicsError('unsupported-incidence','Taylor–Maccoll requires zero angle of attack.');
+  const limits=coneLimits(x.M,x.thetaCone,g),boundaryRows=[row('Maximum attached cone half-angle',limits.thetaMaxDeg,'θc,max (°)'),row('Minimum Mach for attached shock',limits.critical.M,'Mcrit')];
+  if(p.rad(x.thetaCone)>limits.thetaMax+2e-8){
+   result={status:'detached',limits};rows=boundaryRows;notice='The cone half-angle exceeds the attached-shock limit at this Mach number. Increase Mach or reduce the cone half-angle. The detached-shock field is not solved.';
+   scene={kind:'coneDetached',limits};chart={title:'No attached-flow profile',xlabel:'Polar angle θ (°)',ylabel:'',series:[]};
+  }else{
+   result={...cone({...x,betaLimit:limits.betaAtLimit}),limits};checks={surfaceTangency:Math.abs(result.eventResidual),coneAngle:Math.abs(result.residual)};
+   rows=[...boundaryRows,row('Conical shock angle β',p.deg(result.beta),'°'),row('Recovered cone angle',result.thetaConeDeg,'°'),row('Surface Mach',result.surface.M),row('Surface pressure',result.surface.p,'p꜀/p∞'),row('Surface temperature',result.surface.T,'T꜀/T∞'),row('Integration steps',result.iterations)];
+   scene={kind:'cone',...result};chart={title:'Angular similarity solution',zeroBaseline:false,xlabel:'Polar angle θ (°)',ylabel:'Mach number',series:[{name:'M(θ)',points:result.history.map(s=>[p.deg(s.theta),s.M]).reverse()}]};
+  }
+ }
+
  else throw new Error('Unknown laboratory.');
  if(id==='rayleigh'||id==='fanno')result.referenceTable=ductReferenceTable(id,result,g);
  if(id==='cone'&&result.status==='ok'){result.relations=conicalRelations(result,x.M,g);result.referenceTable=coneReferenceTable(result.relations);}
