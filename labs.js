@@ -1,4 +1,4 @@
-import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-segment-editor';
+import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
 import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-airfoil';
@@ -88,7 +88,7 @@ export const labs={
  input('thickness','Maximum thickness',.08,0,.2,.001,'t/c'),input('peak','Peak location',.5,.15,.85,.01,'x/c'),input('camber','Peak camber',0,-.08,.08,.001,'y/c'),
  {key:'upperProfile',label:'Upper vertices · x/c,y/c',type:'textarea',value:'0,0; 0.3,0.04; 0.7,0.03; 1,0'},
  {key:'lowerProfile',label:'Lower vertices · x/c,y/c',type:'textarea',value:'0,0; 0.3,-0.04; 0.7,-0.03; 1,0'},T,P,g
- ],model:'Steady 2D sharp airfoil · sequential weak shocks and centered expansions · small-disturbance comparison',equation:'Cp = (p − p∞)/q∞ · φ/(U∞c) = −½ ∫ Cp d(x/c)',limitations:'Surface-panel solution; wave interactions and the trailing-edge wake are not resolved. Shock–expansion requires attached shocks and supersonic surface states. Linearized potential is first order and uses zero perturbation potential at the leading edge.'},
+ ],model:'Steady 2D sharp airfoil · sequential weak shocks and centered expansions · small-disturbance comparison',equation:'Cp = (p − p∞)/q∞ · φ/(U∞c) = −½ ∫ Cp d(x/c)',limitations:'Surface panels and local trailing-edge pressure/direction matching are solved. Upstream wave intersections, subsequent downstream interactions, viscous wake thickness and mixing are not resolved. Shock–expansion requires attached shocks and supersonic surface states. Linearized potential is first order and uses zero perturbation potential at the leading edge.'},
  linear:{chapter:9,title:'Linearized diamond airfoil',tag:'SMALL-DISTURBANCE THEORY',description:'Inspect surface pressure, lift and wave drag for a thin, symmetric double-wedge airfoil.',inputs:[input('M','Freestream Mach',3,1.1,8,.01,'M∞'),input('alpha','Angle of attack',4,-10,10,.1,'°'),input('thickness','Thickness-to-chord ratio',.08,0,.2,.005,'t/c')],model:'Linearized supersonic flow · small slopes and angle of attack',equation:'Cᴸ = 4α/√(M∞² − 1)   ·   Cᴰ = 4[α² + (t/c)²]/√(M∞² − 1)',limitations:'Angles in the equations are radians. This is an approximation, especially near Mach 1. Viscous drag and finite-span effects are absent.'},
  cone:{chapter:10,title:'Taylor–Maccoll cone',tag:'AXISYMMETRIC SIMILARITY',description:'Solve the conical-flow ODE, locate the cone surface and recover the attached weak shock.',inputs:[input('M','Freestream Mach',2,1.2,6,.0001,'M∞'),input('thetaCone','Cone half-angle',10,1,35,.1,'°'),g],model:'Steady, inviscid, axisymmetric sharp cone · zero angle of attack',equation:'dVᵣ/dθ = Vθ   ·   Vθ(θc) = 0',limitations:'Adaptive RK4 step doubling and a bracketed shock-angle search. Strong branches and detached cones are outside this release. Full book-example acceptance is pending.'}
 };
@@ -211,6 +211,15 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
    rows.push(...values.map(([label,value,unit])=>({...row(`${model} · ${panel.id} · ${label}`,value,unit),panel:'airfoil'})));
   }
   if(result.models.includes('linear'))for(const panel of result.linear.potential)rows.push({...row(`Linear potential · ${panel.id} · derivative`,panel.derivative,'dψ/dξ'),panel:'airfoil'},{...row(`Linear potential · ${panel.id} · intercept`,panel.intercept,'ψ'),panel:'airfoil'});
+  if(result.models.includes('nonlinear')&&result.trailingEdge.status==='ok'){
+   const t=result.trailingEdge;
+   rows.push(row('Trailing-edge slip-line angle',t.slipAngle,'°'),row('Trailing-edge common pressure',t.pressure/1000,'kPa'));
+   checks={trailingPressure:t.pressureResidual,trailingDirection:t.directionResidual};
+   for(const w of t.waves){
+    for(const [label,z]of [['before',w.before],['after',w.after]])for(const [key,value,unit]of [['Mach',z.M,''],['Pressure',z.p/1000,'kPa'],['Temperature',z.T,'K'],['Density',z.rho,'kg/m³'],['Speed',z.u,'m/s'],['Flow angle',p.deg(z.theta),'°'],['Stagnation pressure',z.p0/1000,'kPa'],['Stagnation temperature',z.T0,'K']])rows.push({...row(`${w.id} · ${label} · ${key}`,value,unit),panel:'airfoil'});
+    if(w.kind==='Oblique shock')shockDetails.push(shockStateSection({kind:'oblique',title:`${w.id} · ${w.side.toLowerCase()} trailing-edge shock`,location:'x/c = 1 · local two-stream matching',before:w.before,after:w.after,gamma:g,R,extra:[{label:'Turn magnitude',value:Math.abs(w.turn),unit:'°'},{label:'Shock angle β',value:p.deg(w.beta),unit:'°'}]}));
+   }
+  }
   scene={kind:'airfoil',...result};chart=airfoilPlots(result)[0]?.chart??{title:'No accepted surface solution',xlabel:'x/c',ylabel:'Cp',series:[]};
   if(result.models.includes('nonlinear')&&result.nonlinear.status==='ok')for(const w of result.nonlinear.waves.filter(w=>w.kind==='Oblique shock'))shockDetails.push(shockStateSection({kind:'Oblique shock',title:`${w.id} · ${w.side.toLowerCase()} surface shock`,location:`x/c = ${w.origin.x}`,before:w.before,after:w.after,gamma:g,R,extra:[{label:'Turn magnitude',value:Math.abs(w.turn),unit:'°'},{label:'Shock angle β',value:p.deg(w.beta),unit:'°'}]}));
  }
