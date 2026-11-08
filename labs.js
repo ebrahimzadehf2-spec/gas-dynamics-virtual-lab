@@ -1,11 +1,11 @@
-import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261108-book6-interactions';
-import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261108-book6-interactions';
-import {solveWaveChannel} from './wave-channel.js?v=20261108-book6-interactions';
-import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261108-book6-interactions';
+import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261108-book6-interactions-final';
+import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261108-book6-interactions-final';
+import {solveWaveChannel} from './wave-channel.js?v=20261108-book6-interactions-final';
+import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261108-book6-interactions-final';
 import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-book6-interactions';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-book6-interactions-final';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
@@ -227,7 +227,7 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
   for(const [n,z]of Object.entries(result.regions))rows.push(...[['Mach',z.M,''],['Pressure',z.p/1000,'kPa'],['Temperature',z.T,'K'],['Density',z.rho,'kg/m³'],['Speed',z.u,'m/s'],['Flow angle',p.deg(z.theta),'°'],['Stagnation pressure',z.p0/1000,'kPa'],['Stagnation temperature',z.T0,'K']].map(([label,value,unit])=>({...row(`Region ${result.regionLabels?.[n]??n} · ${label}`,value,unit),panel:'wall'})));
   for(const w of result.waves)if(w.kind==='Oblique shock'){
    const title=result.interaction?(result.same?w.title:w.title.replace('2 → 4','2 → 4′').replace('3 → 5','3 → 4')):`Wall shock · ${w.parentId??Number(w.id)-1} → ${w.id}`;
-   const location=result.interaction?'Regular shock interaction · '+(w.title.startsWith('Incident')?'incident wave':'matched outgoing wave'):`x = ${w.origin.x.toPrecision(6)} m`;
+   const location=result.interaction?'Regular shock interaction · '+(/incident/i.test(w.title)?'incident wave':'matched outgoing wave'):`x = ${w.origin.x.toPrecision(6)} m`;
    shockDetails.push(shockStateSection({kind:'oblique',title,location,before:w.before,after:w.after,gamma:g,R,extra:[{label:'Shock angle β',value:p.deg(w.beta),unit:'°'},{label:'Flow turn',value:p.deg(w.after.theta-w.before.theta),unit:'°'}]}));
   }
   if(result.interaction){rows.unshift(row('Signed slip-line angle φ',result.slipAngle,'°'),row('Common downstream pressure',result.regions[4].p/1000,'kPa'));rows.push(row('Interaction x',result.geometry.B[0],'m'),row('Interaction y',result.geometry.B[1],'m'));checks={pressureMatch:Math.abs(result.residual),directionMatch:Math.abs(result.regions[4].theta-result.regions[5].theta)};}

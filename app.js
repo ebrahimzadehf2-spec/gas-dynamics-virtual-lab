@@ -1,19 +1,19 @@
-import {chapter6Example} from './regular-channel.js?v=20261108-book6-interactions';
-import {wallPresets} from './wave-wall.js?v=20261108-book6-interactions';
-import {airfoilTables} from './airfoil-tables.js?v=20261108-book6-interactions';
-import {airfoilGeometry,segmentSurface,surfaceSegments,presetSegments} from './airfoil.js?v=20261108-book6-interactions';
+import {chapter6Example} from './regular-channel.js?v=20261108-book6-interactions-final';
+import {wallPresets} from './wave-wall.js?v=20261108-book6-interactions-final';
+import {airfoilTables} from './airfoil-tables.js?v=20261108-book6-interactions-final';
+import {airfoilGeometry,segmentSurface,surfaceSegments,presetSegments} from './airfoil.js?v=20261108-book6-interactions-final';
 import {nearestChartPoint} from './chart-probe.js?v=20261108-chart-tooltip';
 import {probeCone} from './cone-probe.js?v=20261108-cone-hover';
-import {plotOptions} from './plot-options.js?v=20261108-book6-interactions';
+import {plotOptions} from './plot-options.js?v=20261108-book6-interactions-final';
 import {selectGas,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {pressureSweepPlan,advancePressure} from './sweep.js?v=20261107-shock-states';
-import {labs,chapters,defaults,inputDefinitions,nozzleInfo} from './labs.js?v=20261108-book6-interactions';
-import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261108-book6-interactions';
+import {labs,chapters,defaults,inputDefinitions,nozzleInfo} from './labs.js?v=20261108-book6-interactions-final';
+import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261108-book6-interactions-final';
 const $=id=>document.getElementById(id);let id='rayleigh',inputs={},request=0,current=null,pinned=null,timer,animation=false,frame,lastFrame=0,sceneTime=.001,fieldQuantity='pressure';
 let pendingWaveShape=null,pendingBookCase=null;
 let displayedChart=null,chartChoices=[],plotSelection={};
-const worker=new Worker(new URL('./worker.js?v=20261108-book6-interactions',import.meta.url),{type:'module'});
+const worker=new Worker(new URL('./worker.js?v=20261108-book6-interactions-final',import.meta.url),{type:'module'});
 function renderNav(){ $('chapters').innerHTML=chapters.map(([n,title,,ids])=>`<a href="#${ids[0]}" class="${ids.includes(id)?'active':''}" ${ids.includes(id)?'aria-current="page"':''}><span class="number">${String(n).padStart(2,'0')}</span><span><span class="nav-title">${title}</span></span></a>`).join('');}
 function openLab(){stopSweep();clearTimeout(timer);sweepPositioned=false;sweepFinished=false;let next=location.hash.slice(1)||'rayleigh';if(next==='linear'){location.hash='airfoil';return;}if(!labs[next]){location.hash='rayleigh';return;}id=next;current=null;stopAnimation();inputs=defaults(id);try{let saved=JSON.parse(localStorage.getItem('gdvl-inputs-'+id+(id==='balances'?'-cv2':'')));if(saved&&typeof saved==='object'){for(let k in inputs)if(k in saved)inputs[k]=saved[k];if(id==='airfoil'&&!saved.geometryInput){const old=airfoilGeometry({...inputs,geometryInput:inputs.airfoilShape==='Custom panels'?'Coordinates':'Dimensions'});inputs.upperSegments=surfaceSegments(old.upper);inputs.lowerSegments=surfaceSegments(old.lower);inputs.geometryInput='Angles & lengths';}if(['oblique','expansion'].includes(id)&&saved.cornerColorVersion!==1)inputs.cornerView='Analytical contours';}}catch{}inputs.fluid=gasInfo(inputs).name;if(pendingWaveShape){if(id==='wall'){inputs.wallShape=pendingWaveShape;if(pendingWaveShape!=='Custom wall')inputs.boundaryMode='Single wall';inputs.wallSegments=wallPresets[pendingWaveShape].map(p=>({...p,angle:p.angle*(inputs.wallSide==='Gas below wall'?-1:1)}));}if(id==='collision'){inputs.interactionType=pendingWaveShape;inputs.geometryMode='Custom geometry';}pendingWaveShape=null;}if(pendingBookCase){inputs={...inputs,...chapter6Example(pendingBookCase)};pendingBookCase=null;}if(inputs.channelSolver==='Local shock–expansion')inputs.channelSolver='Automatic shock–expansion';let l=labs[id];$('tag').textContent=l.tag;$('labTitle').textContent=l.title;$('description').textContent=l.description;$('chapterBadge').textContent=`CH. ${String(l.chapter).padStart(2,'0')}`;$('crumb').textContent=`CHAPTER ${String(l.chapter).padStart(2,'0')}`;$('model').textContent=l.model;$('limitations').textContent=l.limitations;let chapter=chapters.find(x=>x[0]===l.chapter);$('labTabs').innerHTML=chapter[3].length<2?'':chapter[3].map(k=>`<button type="button" data-lab="${k}" class="${id===k?'active':''}">${labs[k].title}</button>`).join('');$('labTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>location.hash=b.dataset.lab);renderNav();renderInputs();solve();}
 const waveShapes=['Compression ramp','Expansion corner','Custom wall','Opposing shocks','Same-direction shocks'];
