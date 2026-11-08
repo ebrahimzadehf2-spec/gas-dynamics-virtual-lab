@@ -3,7 +3,6 @@ import {linspace,deg,rad,isentropic,isentropicRelations,state,normalShock,obliqu
 // Each selectable property has its own units and axis. Unavailable states are omitted.
 export function plotOptions(d,time=.001){
  const {id,inputs:x,result:r}=d,g=x.gamma??1.4,R=x.R??287,options=[];
- if(r.status==='geometry-only')return [{key:'geometry',label:'Incidence geometry only',chart:d.chart,note:'Geometric construction only. No nonzero-incidence cone flow properties are calculated.'}];
  const add=(key,label,xlabel,ylabel,points,extra={})=>options.push({key,label,chart:{title:label,xlabel,ylabel,zeroBaseline:false,series:[{name:label,points:points.filter(p=>p.every(Number.isFinite))}],...extra}});
  const family=(prefix,xlabel,samples,properties)=>{for(const [key,label,unit,value] of properties)add(prefix+key,label,xlabel,unit,samples.map(([a,s])=>[a,value(s)]));};
  const original={key:'overview',label:d.chart.title,chart:d.chart};options.push(original);

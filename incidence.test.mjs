@@ -26,13 +26,13 @@ test('Incident shock geometry uses global angles; slip pressure and direction st
  assert.throws(()=>solveInteraction({alpha:12,thetaUpper:10}),/compression shocks/);
 });
 test('Angle-of-attack inputs and drawn inlet vectors are synchronized in chapters 6, 9 and 10',()=>{
- for(const id of ['oblique','expansion','collision','linear','cone']){
+ for(const id of ['oblique','expansion','collision','linear']){
   const x={...defaults(id),alpha:3},d=calculate(id,x),v=sceneSVG(d.scene,x);assert.ok(inputDefinitions(id,x).some(f=>f.key==='alpha'));assert.match(v.svg,/data-incidence="3(?:\.0*)?"/);assert.match(v.svg,/data-flow-angle="3(?:\.0*)?"/);assert.ok(!/NaN|Infinity/.test(v.svg));for(const p of plotOptions(d))assert.ok(!/NaN|Infinity/.test(chartSVG(p.chart).svg));
  }
  const a=calculate('linear',{...defaults('linear'),alpha:3}),b=calculate('linear',{...defaults('linear'),alpha:-3});near(a.result.CL,-b.result.CL);near(a.result.CD,b.result.CD);near(a.result.CpUF,b.result.CpLF);
 });
-test('Nonzero cone incidence has geometry only and cannot reuse axisymmetric states or contours',()=>{
- const x={...defaults('cone'),alpha:5},d=calculate('cone',x),s=sceneSVG(d.scene,x);assert.equal(d.result.status,'geometry-only');assert.equal(d.scene.kind,'coneIncidence');assert.equal(s.field,null);assert.equal(d.result.surface,undefined);assert.equal(d.result.referenceTable,undefined);assert.equal(d.result.relations,undefined);assert.equal(d.shockDetails.length,0);assert.ok(plotOptions(d).every(p=>p.key==='geometry'));assert.throws(()=>cone(x),/zero angle of attack/);
- const zero=calculate('cone',{...x,alpha:0});assert.equal(zero.result.status,'ok');assert.ok(zero.result.surface&&zero.result.referenceTable);assert.ok(sceneSVG(zero.scene,{...x,alpha:0}).field);
- assert.throws(()=>calculate('cone',{...x,thetaCone:NaN}));assert.throws(()=>calculate('cone',{...x,alpha:NaN}));
+test('Cone interface is zero-incidence only and the engine rejects nonzero incidence',()=>{
+ const x=defaults('cone');assert.equal('alpha' in x,false);assert.ok(!inputDefinitions('cone',x).some(f=>f.key==='alpha'));
+ for(const alpha of [-5,5,NaN]){assert.throws(()=>calculate('cone',{...x,alpha}),/zero angle of attack/);assert.throws(()=>cone({...x,alpha}),/zero angle of attack/);}
+ const d=calculate('cone',x);assert.equal(d.result.status,'ok');assert.equal(d.scene.kind,'cone');assert.ok(d.result.surface&&d.result.referenceTable);const scene=sceneSVG(d.scene,x);assert.ok(scene.field);assert.doesNotMatch(scene.svg,/data-incidence=/);
 });
