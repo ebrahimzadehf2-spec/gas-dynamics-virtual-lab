@@ -42,8 +42,8 @@ test('Cone profiles span the integrated surface-to-shock layer and preserve stag
   assert.ok(points.every((p,i)=>!i||p[0]>=points[i-1][0]));assert.equal(o.chart.markers[0].name,'Cone surface');assert.equal(o.chart.markers[1].name,'Shock · downstream');
  }
  const get=k=>options.find(o=>o.key==='cone-'+k).chart.series[0].points;
- assert.ok(Math.abs(get('M')[0][1]-r.surface.M/r.Mpost)<1e-10);assert.ok(Math.abs(get('M').at(-1)[1]-1)<1e-10);
+ assert.ok(Math.abs(get('M')[0][1]-r.surface.M)<1e-10);assert.ok(Math.abs(get('M').at(-1)[1]-r.Mpost)<1e-10);
  for(const [,v] of get('T0'))assert.ok(Math.abs(v-1)<1e-9);
  const recovery=get('p0')[0][1];near(recovery,1);for(const [,v] of get('p0'))assert.ok(Math.abs(v-recovery)<1e-9);
- assert.ok(!options.some(o=>o.key==='cone-a'));for(const key of ['M','p','T','rho','u','vr','vt','p0','T0'])near(get(key).at(-1)[1],1);
+ assert.ok(!options.some(o=>o.key==='cone-a'));for(const key of ['p','T','rho','u','vr','vt','p0','T0'])near(get(key).at(-1)[1],1);
 });
