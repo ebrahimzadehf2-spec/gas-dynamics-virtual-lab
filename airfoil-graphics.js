@@ -58,6 +58,13 @@ export function airfoilDrawing(s,{txt,line,poly,fmt,incidenceGlyph}){
  if(trailing){
   const origin=V({x:1,y:0}),end=ray(origin,trailing.phi,173);
   inner+=`<g data-trailing-interface="${trailing.interfaceKind}">`+line(...origin,...end,'#344652',1,'5 4')+`<circle cx="${origin[0]}" cy="${origin[1]}" r="2.3" fill="#17212b"/>`+'</g>';
+  // The arrow lies on the matched downstream streamline. Its horizontal
+  // reference and angular arc use the same signed phi as both output states.
+  const start=ray(origin,trailing.phi,38),tip=ray(start,trailing.phi,119),dx=Math.cos(trailing.phi),dy=-Math.sin(trailing.phi);
+  const arc=Array.from({length:25},(_,i)=>ray(start,trailing.phi*i/24,37));
+  inner+=`<g data-outlet-flow-angle="${trailing.slipAngle}">`+line(...start,start[0]+119,start[1],'#6c7e88',.85,'4 3')+line(...start,...tip,'#263c4d',1.8);
+  inner+=poly([tip,[tip[0]-7*dx-3*dy,tip[1]-7*dy+3*dx],[tip[0]-7*dx+3*dy,tip[1]-7*dy-3*dx]],'#263c4d');
+  inner+=`<polyline points="${arc.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#263c4d" stroke-width="1.1"/>`+txt(start[0]+46,start[1]+(trailing.phi>=0?16:-9),'φ','#17212b',14,'middle')+'</g>';
   for(const [w,label]of [[trailing.upper,'TE-U+'],[trailing.lower,'TE-L+']]){
    const edge=w.rays.at(-1).angle,angle=(edge+trailing.phi)/2,pos=ray(origin,angle,125);
    inner+=txt(pos[0],pos[1]+4,label,'#253945',12,'middle');
