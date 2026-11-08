@@ -148,8 +148,8 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
   inner+=poly([[35,92],[X(head),92],[X(head),213],[35,213]],shade(inputs.p4*1000));for(let i=0;i<50;i++){let a=head+(tail-head)*i/50,b=head+(tail-head)*(i+1)/50,xi=(a+b)/(2*time),sound=2*s.a4/(inputs.gamma+1)-(inputs.gamma-1)*xi/(inputs.gamma+1),pressure=inputs.p4*1000*(sound/s.a4)**(2*inputs.gamma/(inputs.gamma-1));inner+=poly([[X(a),92],[X(b),92],[X(b),213],[X(a),213]],shade(pressure));}inner+=poly([[X(tail),92],[X(shock),92],[X(shock),213],[X(tail),213]],shade(s.p))+poly([[X(shock),92],[605,92],[605,213],[X(shock),213]],shade(inputs.p1*1000));for(let [x,name,col,dash] of [[head,'head','#7a9a80',''],[tail,'tail','#7a9a80',''],[contact,'contact','#62858e','5 4'],[shock,'shock','#000000','']]){inner+=line(X(x),83,X(x),223,col,1.5,dash)+txt(X(x),name==='contact'?250:69,name,col,9,'middle');}inner+=line(35,92,605,92,'#819783',2)+line(35,213,605,213,'#819783',2)+txt(320,34,`t = ${fmt(time*1000,3)} ms · before wall reflection`,undefined,11,'middle')+txt(320,162,`u₂ = u₃ = ${fmt(s.u)} m/s`,'#ffffff',14,'middle')+txt(35,281,'x = −1 m',undefined,9)+txt(605,281,'x = 1.8 m',undefined,9,'end');label='Analytical similarity field · pressure shading';meta='Expansion fan + uniform regions';}
  else if(s.kind==='linear'){let t=inputs.thickness*440/2,x=90,y=150;inner+=poly([[x,y],[x+220,y-t],[x+440,y],[x+220,y+t]],'#b4c7ad','#66806a',2);for(const [a,b,v] of [[[x,y],[x+220,y-t],s.CpUF],[[x+220,y-t],[x+440,y],s.CpUR],[[x,y],[x+220,y+t],s.CpLF],[[x+220,y+t],[x+440,y],s.CpLR]])inner+=line(...a,...b,shade(v),9);inner+=flow()+txt(320,65,`UPPER  Cₚ,f ${fmt(s.CpUF)}   Cₚ,r ${fmt(s.CpUR)}`,undefined,11,'middle')+txt(320,234,`LOWER  Cₚ,f ${fmt(s.CpLF)}   Cₚ,r ${fmt(s.CpLR)}`,undefined,11,'middle')+txt(320,267,`α = ${inputs.alpha}° · t/c = ${inputs.thickness}`,undefined,10,'middle');label='Piecewise analytical Cp · geometry drawn at zero incidence';meta='Linearized supersonic approximation';}
  else if(s.kind==='collision'){
-  const z=s.geometry,points=z.domain,x0=z.startX,x1=z.endX,y0=Math.min(...points.map(p=>p[1])),y1=Math.max(...points.map(p=>p[1])),scale=Math.min(580/(x1-x0),190/(y1-y0));
-  const ox=320-(x0+x1)*scale/2,oy=153+(y0+y1)*scale/2,V=([x,y])=>[ox+x*scale,oy-y*scale];
+  const z=s.geometry,points=z.domain,x0=z.startX,x1=z.endX,y0=Math.min(...points.map(p=>p[1])),y1=Math.max(...points.map(p=>p[1])),scale=Math.min(500/(x1-x0),190/(y1-y0));
+  const ox=285-(x0+x1)*scale/2,oy=153+(y0+y1)*scale/2,V=([x,y])=>[ox+x*scale,oy-y*scale];
   for(const c of z.fields){const color=shade(f.read(c.state));inner+=poly(c.poly.map(V),color,color,.35);}
   for(const wall of Object.values(z.walls))for(let i=1;i<wall.length;i++)inner+=line(...V(wall[i-1]),...V(wall[i]),'#52616c',3);
   for(const w of z.incident)inner+=line(...V(w.origin),...V(w.end),'#000000',2.2);
@@ -160,13 +160,16 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
    const polygons=z.fields.filter(c=>c.state===state).map(c=>c.poly.map(V));
    const position=regionLabelPosition(polygons);if(!position)continue;
    const [xx,yy]=position.point;
-   if(position.callout){callouts.push({n,point:position.point});continue;}
+   if(position.callout||n==='4'||n==='5'){callouts.push({n,point:position.point});continue;}
    inner+=`<g data-region-label="${n}" data-clearance="${position.clearance}">${txt(xx,yy+6,n,undefined,18,'middle')}</g>`;
   }
   const used=[];
   for(const {n,point:[xx,yy]} of callouts){
-   let lx=Math.max(48,Math.min(592,xx));while(used.some(x=>Math.abs(x-lx)<30))lx=lx>320?lx-32:lx+32;used.push(lx);
-   inner+=line(lx,49,xx,yy,'#455766',1)+`<circle cx="${xx}" cy="${yy}" r="2" fill="#455766"/>`+`<g data-region-callout="${n}">${txt(lx,45,n,undefined,18,'middle')}</g>`;
+   const downstream=n==='4'||n==='5';
+   let lx=downstream?602:Math.max(48,Math.min(530,xx));
+   if(!downstream){while(used.some(x=>Math.abs(x-lx)<30))lx=lx>285?lx-32:lx+32;used.push(lx);}
+   const ly=downstream?(n==='5'?110:200):45;
+   inner+=line(lx-(downstream?12:0),ly+(downstream?-6:4),xx,yy,'#263c4d',1.3)+`<circle cx="${xx}" cy="${yy}" r="2.4" fill="#263c4d"/>`+`<g data-region-callout="${n}" data-target-x="${xx}" data-target-y="${yy}">${txt(lx,ly,n,'#17212b',20,'middle')}</g>`;
   }
   const [bx,by]=V(z.B);inner+=`<circle cx="${bx}" cy="${by}" r="3" fill="#000000"/>`;
   inner+=txt(24,24,s.same?'SAME-DIRECTION INTERACTION':'OPPOSING SHOCK INTERACTION',undefined,14)+txt(616,24,`φ = ${fmt(s.slipAngle,6)}°`,undefined,17,'end');

@@ -18,3 +18,12 @@ test('Both interaction topologies keep every label target inside its own region'
   }
  }
 });
+
+test('Both downstream regions always have distinct visible callouts in opposing custom geometry',async()=>{
+ const {sceneSVG}=await import('./graphics.js');
+ for(const [thetaUpper,thetaLower] of [[12.5,8],[10,20],[20,10],[10,10]]){
+  const x={M1:4,thetaUpper,thetaLower,geometryMode:'Custom geometry',channelHeight:1.5,cornerSpacing:.5,gamma:1.4},r=solveInteraction(x),v=sceneSVG({kind:'collision',...r},x);
+  for(const n of ['4','5'])assert.equal([...v.svg.matchAll(new RegExp(`data-region-callout="${n}"`,'g'))].length,1);
+  assert.match(v.svg,/<text x="602" y="110"[^>]*>5<\/text>/);assert.match(v.svg,/<text x="602" y="200"[^>]*>4<\/text>/);
+ }
+});
