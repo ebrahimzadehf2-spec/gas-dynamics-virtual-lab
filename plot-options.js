@@ -1,6 +1,7 @@
-import {mocProfilePlots} from './channel-moc.js?v=20261108-moc-stage1';
-import {channelPlots} from './wave-channel.js?v=20261108-moc-stage1';
-import {wallPlots} from './wave-wall.js?v=20261108-moc-stage1';
+import {regularChannelPlots} from './regular-channel.js?v=20261108-book6-interactions';
+import {mocProfilePlots} from './channel-moc.js?v=20261108-book6-interactions';
+import {channelPlots} from './wave-channel.js?v=20261108-book6-interactions';
+import {wallPlots} from './wave-wall.js?v=20261108-book6-interactions';
 import {airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
 import {sonicRelations} from './reference-relations.js?v=20261108-reference-relations';
 import {linspace,deg,rad,isentropic,isentropicRelations,state,normalShock,obliqueShock,expansion,rayleighRatios,fannoRatios,linearAirfoil} from './physics.js';
@@ -9,7 +10,7 @@ export function plotOptions(d,time=.001){
  const {id,inputs:x,result:r}=d,g=x.gamma??1.4,R=x.R??287,options=[];
  const add=(key,label,xlabel,ylabel,points,extra={})=>options.push({key,label,chart:{title:label,xlabel,ylabel,zeroBaseline:false,series:[{name:label,points:points.filter(p=>p.every(Number.isFinite))}],...extra}});
  const family=(prefix,xlabel,samples,properties)=>{for(const [key,label,unit,value] of properties)add(prefix+key,label,xlabel,unit,samples.map(([a,s])=>[a,value(s)]));};
- if(id==='wall')return r.moc?mocProfilePlots(r,x.mocStation):r.channel?channelPlots(r):wallPlots(r);
+ if(id==='wall')return r.interaction?regularChannelPlots(r):r.moc?mocProfilePlots(r,x.mocStation):r.channel?channelPlots(r):wallPlots(r);
  if(id==='airfoil')return airfoilPlots(r);
  const original={key:'overview',label:d.chart.title,chart:d.chart};options.push(original);
  if(id==='foundations'){

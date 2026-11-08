@@ -1,5 +1,5 @@
-import {wallDrawing} from './wave-wall-graphics.js?v=20261108-moc-stage1';
-import {airfoilDrawing} from './airfoil-graphics.js?v=20261108-moc-stage1';
+import {wallDrawing} from './wave-wall-graphics.js?v=20261108-book6-interactions';
+import {airfoilDrawing} from './airfoil-graphics.js?v=20261108-book6-interactions';
 import {coneGeometry} from './cone-probe.js?v=20261108-cone-hover';
 import {diagramFontFamily,diagramFontStyle} from './diagram-font.js?v=20261108-scientific-font';
 import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261108-flow-arrows';
@@ -38,7 +38,7 @@ function regionalField(s,inputs,quantity){
  const options=s.kind==='wall'&&s.moc?.rows.length?[...allQuantities,'speed']:s.kind==='linear'?['cp']:full?(['oblique','expansion','collision'].includes(s.kind)?[...allQuantities,'speed']:allQuantities):['pressure'];
  const key=options.includes(quantity)?quantity:options[0],g=inputs.gamma??1.4;
  let values=[],units='',note='Analytical uniform regions';
- const read=z=>key==='mach'?z.M:key==='temperature'?z.T:key==='density'?z.rho:key==='speed'?z.u:z.p;
+ const read=z=>key==='mach'?z.M:key==='temperature'?z.T:key==='density'?z.rho:key==='speed'?z.u:s.kind==='collision'&&s.interaction?z.p/1000:z.p;
  if(['balance','state','normal','duct'].includes(s.kind)){
   const a=s.kind==='balance'?s.a:s.s1,b=s.kind==='balance'?s.b:s.kind==='state'?{M:0,p:a.p0,T:a.T0,rho:a.rho*(a.p0/a.p)*(a.T/a.T0)}:s.s2;
   values=[read(a),...(b?[read(b)]:[])];units=key==='mach'?'M':key==='temperature'?'K':key==='density'?'kg/m³':'Pa';
@@ -50,7 +50,7 @@ function regionalField(s,inputs,quantity){
   const at=m=>{const t=(1+(g-1)*s.M*s.M/2)/(1+(g-1)*m*m/2);return key==='mach'?m:key==='temperature'?t:key==='density'?t**(1/(g-1)):key==='speed'?(m/s.M)*Math.sqrt(t):t**(g/(g-1));};
   values=linspace(s.M,s.M2,45).map(at);units=key==='mach'?'M':key==='temperature'?'T/T₁':key==='density'?'ρ/ρ₁':key==='speed'?'u/u₁':'p/p₁';return {key,options,values,units,note:'Analytical centered expansion',at,read};
  }else if(s.kind==='linear'){values=[s.CpUF,s.CpUR,s.CpLF,s.CpLR];units='Cp';note='Surface pressure only · linearized theory';
- }else if(s.kind==='collision'){values=s.geometry.fields.map(c=>read(c.state));units=key==='mach'?'M':key==='temperature'?'K':key==='density'?'kg/m³':key==='speed'?'m/s':'Pa';note='Analytical states · sampled centered fans · equal geometric scale';
+ }else if(s.kind==='collision'){values=s.geometry.fields.map(c=>read(c.state));units=key==='mach'?'M':key==='temperature'?'K':key==='density'?'kg/m³':key==='speed'?'m/s':s.interaction?'kPa':'Pa';note='Analytical states · sampled centered fans · equal geometric scale';
  }else if(s.kind==='tube'){values=[inputs.p1*1000,inputs.p4*1000,s.p];units='Pa';note='Analytical pressure · before wall reflection';
  }else if(['jet','nozzleJet'].includes(s.kind)){values=[s.inlet.p,s.outlet?.p??s.inlet.p,...(s.samples??[]).map(z=>z.p),...(s.nozzle?.points??[]).map(z=>z.P)];units='Pa';note='Local analytical pressure · unresolved regions hatched';}
  return {key,options,values,units,note,read};
@@ -178,9 +178,9 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
   for(const [n,state] of Object.entries(s.regions)){
    const polygons=z.fields.filter(c=>c.state===state).map(c=>c.poly.map(V));
    const position=regionLabelPosition(polygons);if(!position)continue;
-   const [xx,yy]=position.point;
+   const [xx,yy]=position.point,regionName=s.regionLabels?.[n]??n;
    if(position.callout||n==='4'||n==='5'){callouts.push({n,point:position.point});continue;}
-   inner+=`<g data-region-label="${n}" data-clearance="${position.clearance}">${txt(xx,yy+6,n,undefined,18,'middle')}</g>`;
+   inner+=`<g data-region-label="${n}" data-clearance="${position.clearance}">${txt(xx,yy+6,regionName,undefined,18,'middle')}</g>`;
   }
   const used=[];
   for(const {n,point:[xx,yy]} of callouts){
@@ -188,11 +188,11 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
    let lx=downstream?602:Math.max(48,Math.min(530,xx));
    if(!downstream){while(used.some(x=>Math.abs(x-lx)<30))lx=lx>285?lx-32:lx+32;used.push(lx);}
    const ly=downstream?(n==='5'?110:200):45;
-   inner+=line(lx-(downstream?12:0),ly+(downstream?-6:4),xx,yy,'#263c4d',1.3)+`<circle cx="${xx}" cy="${yy}" r="2.4" fill="#263c4d"/>`+`<g data-region-callout="${n}" data-target-x="${xx}" data-target-y="${yy}">${txt(lx,ly,n,'#17212b',20,'middle')}</g>`;
+   inner+=line(lx-(downstream?12:0),ly+(downstream?-6:4),xx,yy,'#263c4d',1.3)+`<circle cx="${xx}" cy="${yy}" r="2.4" fill="#263c4d"/>`+`<g data-region-callout="${n}" data-target-x="${xx}" data-target-y="${yy}">${txt(lx,ly,s.regionLabels?.[n]??n,'#17212b',20,'middle')}</g>`;
   }
   const [gx,gy]=V([z.startX+.04*z.H,z.H*.6]);inner+=directedArrow(gx,gy,55,0,'#263c4d');
-  const [bx,by]=V(z.B);inner+=`<circle cx="${bx}" cy="${by}" r="3" fill="#000000"/>`;
-  inner+=txt(24,24,s.same?'SAME-DIRECTION INTERACTION':'OPPOSING SHOCK INTERACTION',undefined,14)+txt(616,24,`φ = ${fmt(s.slipAngle,6)}°`,undefined,17,'end');
+  const [bx,by]=V(z.B);if(s.interaction){inner+=incidenceGlyph(s.delta,520,156,62,'#263c4d').replaceAll('α =','φ =');}inner+=`<circle cx="${bx}" cy="${by}" r="3" fill="#000000"/>`;
+  inner+=txt(24,24,s.bookCase?`EXAMPLE ${s.bookCase}`:s.same?'SAME-DIRECTION INTERACTION':'OPPOSING SHOCK INTERACTION',undefined,14)+(s.interaction?'':txt(616,24,`φ = ${fmt(s.slipAngle,6)}°`,undefined,17,'end'));
   inner+=txt(24,273,`B: x = ${fmt(z.B[0],5)}, y = ${fmt(z.B[1],5)} ${s.geometryMode==='Custom geometry'?'m':'(normalized)'}`,undefined,14)+txt(616,273,s.a.kind,undefined,14,'end');
   label='Analytical wave interaction · signed slip angle · equal geometric scale';meta='Dashed: slip line · solid black: shocks · view ends before wall reflections';
  }
