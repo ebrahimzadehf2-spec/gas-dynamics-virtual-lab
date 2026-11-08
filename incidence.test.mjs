@@ -7,13 +7,12 @@ import {cone} from './cone.js';
 import {sceneSVG,chartSVG} from './graphics.js';
 import {plotOptions} from './plot-options.js';
 const near=(a,b,t=1e-9)=>assert.ok(Math.abs(a-b)<t,`${a} != ${b}`);
-test('Chapter 6 lower-face turns include signed incidence and preserve the fixed body wall angle',()=>{
- for(const alpha of [-5,0,5]){
-  const x={...defaults('oblique'),alpha},d=calculate('oblique',x),ref=obliqueShock(x.M1,rad(x.theta-alpha),x.gamma,x.branch);near(d.result.M2,ref.M2);near(d.result.p,ref.p);near(d.scene.bodyAngle,rad(x.theta));near(d.scene.alpha,rad(alpha));near(d.scene.alpha+d.scene.theta,d.scene.bodyAngle);
-  const y={...defaults('expansion'),alpha},e=calculate('expansion',y),ex=expansion(y.M1,rad(y.theta+alpha),y.gamma);near(e.result.M2,ex.M2);near(e.result.p,ex.p);near(e.scene.alpha-e.scene.theta,e.scene.bodyAngle);
+test('Chapter 6 fixes inlet flow horizontally and ignores legacy incidence values',()=>{
+ for(const id of ['oblique','expansion','collision']){
+  const base=defaults(id);assert.equal('alpha' in base,false);assert.ok(!inputDefinitions(id,base).some(f=>f.key==='alpha'));
+  const reference=calculate(id,base);
+  for(const alpha of [-5,5,NaN]){const d=calculate(id,{...base,alpha});assert.deepEqual(d.result,reference.result);const v=sceneSVG(d.scene,d.inputs);assert.doesNotMatch(v.svg,/data-incidence=|α =/);assert.ok(!/NaN|Infinity/.test(v.svg));}
  }
- assert.throws(()=>calculate('oblique',{...defaults('oblique'),theta:2,alpha:5}),/expansion/);
- assert.throws(()=>calculate('expansion',{...defaults('expansion'),theta:2,alpha:-5}),/compresses/);
 });
 test('Incident shock geometry uses global angles; slip pressure and direction still match',()=>{
  for(const interactionType of ['Opposing shocks','Same-direction shocks'])for(const alpha of [-3,3]){
@@ -25,8 +24,8 @@ test('Incident shock geometry uses global angles; slip pressure and direction st
  const positive=solveInteraction({alpha:3,thetaUpper:10,thetaLower:10}),negative=solveInteraction({alpha:-3,thetaUpper:10,thetaLower:10});near(positive.delta,-negative.delta);
  assert.throws(()=>solveInteraction({alpha:12,thetaUpper:10}),/compression shocks/);
 });
-test('Angle-of-attack inputs and drawn inlet vectors are synchronized in chapters 6, 9 and 10',()=>{
- for(const id of ['oblique','expansion','collision','linear']){
+test('Chapter 9 angle-of-attack input and drawn inlet vector remain synchronized',()=>{
+ for(const id of ['linear']){
   const x={...defaults(id),alpha:3},d=calculate(id,x),v=sceneSVG(d.scene,x);assert.ok(inputDefinitions(id,x).some(f=>f.key==='alpha'));assert.match(v.svg,/data-incidence="3(?:\.0*)?"/);assert.match(v.svg,['oblique','expansion'].includes(id)?/data-flow-angle="0"/:/data-flow-angle="3(?:\.0*)?"/);assert.ok(!/NaN|Infinity/.test(v.svg));for(const p of plotOptions(d))assert.ok(!/NaN|Infinity/.test(chartSVG(p.chart).svg));
  }
  const a=calculate('linear',{...defaults('linear'),alpha:3}),b=calculate('linear',{...defaults('linear'),alpha:-3});near(a.result.CL,-b.result.CL);near(a.result.CD,b.result.CD);near(a.result.CpUF,b.result.CpLF);

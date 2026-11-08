@@ -5,7 +5,7 @@ import {sceneSVG} from './graphics.js';
 test('Textbook corner drawings have one horizontal approach wall and one ramp without a vertical face',()=>{
  for(const id of ['oblique','expansion'])for(const alpha of [-5,0,5]){
   const x={...defaults(id),alpha,cornerView:'Textbook schematic'},d=calculate(id,x),v=sceneSVG(d.scene,x);assert.equal(x.cornerView,'Textbook schematic');assert.equal(v.field,null);assert.ok(inputDefinitions(id,x).some(f=>f.key==='cornerView'));
-  const wall=v.svg.match(/data-corner-wall="true" points="([^"]+)"/)[1].split(' ').map(s=>s.split(',').map(Number));assert.equal(wall.length,3);assert.equal(wall[0][1],wall[1][1]);assert.ok(wall[2][0]>wall[1][0]);assert.ok(id==='oblique'?wall[2][1]<wall[1][1]:wall[2][1]>wall[1][1]);assert.match(v.svg,/data-streamline=/);assert.match(v.svg,/clip-path="url\(#cornerGas\)"/);assert.ok(!/NaN|Infinity/.test(v.svg));
+  const wall=v.svg.match(/data-corner-wall="true" points="([^"]+)"/)[1].split(' ').map(s=>s.split(',').map(Number));assert.equal(wall.length,3);assert.equal(wall[0][1],wall[1][1]);assert.ok(wall[2][0]>wall[1][0]);assert.ok(id==='oblique'?wall[2][1]<wall[1][1]:wall[2][1]>wall[1][1]);assert.match(v.svg,/data-streamline=/);assert.match(v.svg,/data-stream-arrow="true"/);assert.match(v.svg,/clip-path="url\(#cornerGas\)"/);assert.ok(!/NaN|Infinity/.test(v.svg));
  }
 });
 test('Analytical contours remain available and do not change scientific wave results',()=>{

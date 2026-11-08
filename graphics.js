@@ -1,4 +1,4 @@
-import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261108-soft-contours';
+import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261108-flow-arrows';
 import {regionLabelPosition} from './region-labels.js?v=20261108-interior-labels';
 import {readableSceneLabels} from './scene-labels.js?v=20261108-readable-labels';
 import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261107-shock-states';
@@ -183,7 +183,7 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
    const ly=downstream?(n==='5'?110:200):45;
    inner+=line(lx-(downstream?12:0),ly+(downstream?-6:4),xx,yy,'#263c4d',1.3)+`<circle cx="${xx}" cy="${yy}" r="2.4" fill="#263c4d"/>`+`<g data-region-callout="${n}" data-target-x="${xx}" data-target-y="${yy}">${txt(lx,ly,n,'#17212b',20,'middle')}</g>`;
   }
-  const [gx,gy]=V([z.startX+.04*z.H,z.H*.6]);inner+=incidenceGlyph(s.alpha??0,gx,gy,55,'#ffffff');
+  const [gx,gy]=V([z.startX+.04*z.H,z.H*.6]);inner+=directedArrow(gx,gy,55,0,'#263c4d');
   const [bx,by]=V(z.B);inner+=`<circle cx="${bx}" cy="${by}" r="3" fill="#000000"/>`;
   inner+=txt(24,24,s.same?'SAME-DIRECTION INTERACTION':'OPPOSING SHOCK INTERACTION',undefined,14)+txt(616,24,`φ = ${fmt(s.slipAngle,6)}°`,undefined,17,'end');
   inner+=txt(24,273,`B: x = ${fmt(z.B[0],5)}, y = ${fmt(z.B[1],5)} ${s.geometryMode==='Custom geometry'?'m':'(normalized)'}`,undefined,14)+txt(616,273,s.a.kind,undefined,14,'end');
