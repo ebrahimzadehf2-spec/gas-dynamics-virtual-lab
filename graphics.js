@@ -1,4 +1,4 @@
-import {cornerDrawing} from './corner-graphics.js?v=20261108-simple-corners';
+import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261108-soft-contours';
 import {regionLabelPosition} from './region-labels.js?v=20261108-interior-labels';
 import {readableSceneLabels} from './scene-labels.js?v=20261108-readable-labels';
 import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261107-shock-states';
@@ -25,34 +25,34 @@ const fieldColor=t=>contourColor(t);
 const contourColor=t=>{let v=clamp(t)*(ramp.length-1),i=Math.min(ramp.length-2,Math.floor(v)),f=v-i,a=ramp[i].match(/[\da-f]{2}/gi).map(x=>parseInt(x,16)),b=ramp[i+1].match(/[\da-f]{2}/gi).map(x=>parseInt(x,16));return '#'+a.map((x,j)=>Math.round(x+(b[j]-x)*f).toString(16).padStart(2,'0')).join('');};
 const fieldValues=(s,kind,key)=>{
  if(kind==='nozzle')return s.points.map(z=>key==='mach'?z.M:key==='temperature'?z.T/s.T0:key==='density'?z.rho/(s.p0/(s.R*s.T0)):z.p);
- return s.history.map(z=>key==='mach'?z.M:key==='temperature'?z.T:key==='density'?z.rho:z.p);
+ return s.history.map(z=>key==='mach'?z.M:key==='temperature'?z.T:key==='density'?z.rho:key==='speed'?z.u:z.p);
 };
 const quantityLabel=(key,kind)=>({pressure:kind==='nozzle'?'Static pressure p/p₀':'Static pressure p/p∞',mach:'Mach number M',temperature:kind==='nozzle'?'Temperature T/T₀':'Temperature T/T∞',density:kind==='nozzle'?'Density ρ/ρ₀':'Density ρ/ρ∞'}[key]??'Static pressure');
 const allQuantities=['pressure','mach','temperature','density'];
 function regionalField(s,inputs,quantity){
  const full=['balance','state','normal','duct','oblique','expansion','nozzle','cone','collision'].includes(s.kind);
- const options=s.kind==='linear'?['cp']:full?allQuantities:['pressure'];
+ const options=s.kind==='linear'?['cp']:full?(['oblique','expansion','collision'].includes(s.kind)?[...allQuantities,'speed']:allQuantities):['pressure'];
  const key=options.includes(quantity)?quantity:options[0],g=inputs.gamma??1.4;
  let values=[],units='',note='Analytical uniform regions';
- const read=z=>key==='mach'?z.M:key==='temperature'?z.T:key==='density'?z.rho:z.p;
+ const read=z=>key==='mach'?z.M:key==='temperature'?z.T:key==='density'?z.rho:key==='speed'?z.u:z.p;
  if(['balance','state','normal','duct'].includes(s.kind)){
   const a=s.kind==='balance'?s.a:s.s1,b=s.kind==='balance'?s.b:s.kind==='state'?{M:0,p:a.p0,T:a.T0,rho:a.rho*(a.p0/a.p)*(a.T/a.T0)}:s.s2;
   values=[read(a),...(b?[read(b)]:[])];units=key==='mach'?'M':key==='temperature'?'K':key==='density'?'kg/m³':'Pa';
   if(s.kind==='balance')note='Endpoint states only · interior schematic';
   if(s.kind==='duct')note='Inlet / outlet states only · interior distribution not resolved';
  }else if(s.kind==='oblique'){
-  values=key==='mach'?[s.M,s.M2]:[1,key==='temperature'?s.T:key==='density'?s.rho:s.p];units=key==='mach'?'M':key==='temperature'?'T/T₁':key==='density'?'ρ/ρ₁':'p/p₁';
+  values=key==='mach'?[s.M,s.M2]:key==='speed'?[1,(s.M2/s.M)*Math.sqrt(s.T)]:[1,key==='temperature'?s.T:key==='density'?s.rho:s.p];units=key==='mach'?'M':key==='temperature'?'T/T₁':key==='density'?'ρ/ρ₁':key==='speed'?'u/u₁':'p/p₁';
  }else if(s.kind==='expansion'){
-  const at=m=>{const t=(1+(g-1)*s.M*s.M/2)/(1+(g-1)*m*m/2);return key==='mach'?m:key==='temperature'?t:key==='density'?t**(1/(g-1)):t**(g/(g-1));};
-  values=linspace(s.M,s.M2,45).map(at);units=key==='mach'?'M':key==='temperature'?'T/T₁':key==='density'?'ρ/ρ₁':'p/p₁';return {key,options,values,units,note:'Analytical centered expansion',at,read};
+  const at=m=>{const t=(1+(g-1)*s.M*s.M/2)/(1+(g-1)*m*m/2);return key==='mach'?m:key==='temperature'?t:key==='density'?t**(1/(g-1)):key==='speed'?(m/s.M)*Math.sqrt(t):t**(g/(g-1));};
+  values=linspace(s.M,s.M2,45).map(at);units=key==='mach'?'M':key==='temperature'?'T/T₁':key==='density'?'ρ/ρ₁':key==='speed'?'u/u₁':'p/p₁';return {key,options,values,units,note:'Analytical centered expansion',at,read};
  }else if(s.kind==='linear'){values=[s.CpUF,s.CpUR,s.CpLF,s.CpLR];units='Cp';note='Surface pressure only · linearized theory';
- }else if(s.kind==='collision'){values=s.geometry.fields.map(c=>read(c.state));units=key==='mach'?'M':key==='temperature'?'K':key==='density'?'kg/m³':'Pa';note='Analytical states · sampled centered fans · equal geometric scale';
+ }else if(s.kind==='collision'){values=s.geometry.fields.map(c=>read(c.state));units=key==='mach'?'M':key==='temperature'?'K':key==='density'?'kg/m³':key==='speed'?'m/s':'Pa';note='Analytical states · sampled centered fans · equal geometric scale';
  }else if(s.kind==='tube'){values=[inputs.p1*1000,inputs.p4*1000,s.p];units='Pa';note='Analytical pressure · before wall reflection';
  }else if(['jet','nozzleJet'].includes(s.kind)){values=[s.inlet.p,s.outlet?.p??s.inlet.p,...(s.samples??[]).map(z=>z.p),...(s.nozzle?.points??[]).map(z=>z.P)];units='Pa';note='Local analytical pressure · unresolved regions hatched';}
  return {key,options,values,units,note,read};
 }
 export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',label='Schematic geometry · analytical states',meta='Ideal gas · no CFD',field=null;
- const f=regionalField(s,inputs,quantity);quantity=f.key;const vals=f.values.filter(Number.isFinite),lo=Math.min(...vals),hi=Math.max(...vals),shade=v=>contourColor(hi-lo<1e-14?.5:(v-lo)/(hi-lo));if(vals.length)field={quantity,options:f.options,label:quantity==='cp'?'Surface pressure coefficient':quantity,units:f.units,min:lo,max:hi,note:f.note};
+ const f=regionalField(s,inputs,quantity);quantity=f.key;const vals=f.values.filter(Number.isFinite),lo=Math.min(...vals),hi=Math.max(...vals),shade=v=>(['oblique','expansion','collision'].includes(s.kind)?cornerContourColor:contourColor)(hi-lo<1e-14?.5:(v-lo)/(hi-lo));if(vals.length)field={quantity,options:f.options,label:quantity==='cp'?'Surface pressure coefficient':quantity,units:f.units,min:lo,max:hi,note:f.note};
  const W=640,H=300;let flow=(angle=0)=>{let r='';for(let y of [85,125,165,205])r+=directedArrow(27,y,56,angle,'#ffffff');return r;};
  if(s.kind==='balance'){
   const H=55,ratio=Math.sqrt(s.A2/s.A1),h1=H/Math.max(1,ratio),h2=h1*ratio;
@@ -73,7 +73,7 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
  else if(s.kind==='duct'){inner+=poly([[40,85],[600,85],[600,215],[40,215]],'#e5efe2');if(s.s2){inner+=poly([[40,86],[320,86],[320,214],[40,214]],shade(f.values[0]))+poly([[320,86],[600,86],[600,214],[320,214]],shade(f.values[1]));inner+=txt(68,130,'INLET',undefined,9)+txt(68,158,`M₁ = ${fmt(s.s1.M)}`,undefined,19)+txt(398,130,'OUTLET',undefined,9)+txt(398,158,`M₂ = ${fmt(s.s2.M)}`,undefined,19);for(let x=90;x<590;x+=80)inner+=arrow(x,187,35)+dot(x+10,187,x);if(s.process==='rayleigh'){for(let x=220;x<420;x+=42)inner+=line(x,44,x,77,'#cb9b60',1.4)+(inputs.q>=0?poly([[x,79],[x-3,73],[x+3,73]],'#cb9b60'):poly([[x,42],[x-3,48],[x+3,48]],'#cb9b60'));inner+=txt(320,33,`${inputs.q>=0?'HEATING':'COOLING'}  q = ${fmt(inputs.q)} kJ/kg`,'#a77944',10,'middle');}else inner+=txt(320,50,`WALL FRICTION · fᴅL/D = ${fmt(inputs.lambda)}`,'#8a7862',10,'middle');label='Illustration of endpoint states · shading is schematic';}else inner+=txt(320,152,'NO STEADY OUTLET FOR THIS INLET','#a3784c',14,'middle');inner+=line(40,85,600,85,'#819a85',3)+line(40,215,600,215,'#819a85',3);}
  else if(s.kind==='oblique'||s.kind==='expansion'){
   const view=cornerDrawing(s,{...inputs,_cornerQuantity:quantity,_cornerUp:f.values[0],_cornerDown:f.values.at(-1)},{txt,line,poly,shade,fmt});inner+=view.inner;label=view.label;meta=view.meta;
-  if(inputs.cornerView!=='Analytical contours')field=null;
+  if(inputs.cornerView==='Textbook schematic')field=null;
  }
  else if(s.kind==='nozzle'){
   const a=s.points,scale=104/Math.max(...a.map(z=>z.h)),top=a.map(z=>[35+570*z.x,150-scale*z.h]),bottom=a.map(z=>[35+570*z.x,150+scale*z.h]);
@@ -191,7 +191,7 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
  }
 
  inner=readableSceneLabels(inner);
- if(field){field.options??=f.options;field.note??='Range scaled to this solution';}
+ if(field){if(['oblique','expansion','collision'].includes(s.kind))field.palette=cornerPalette;field.options??=f.options;field.note??='Range scaled to this solution';}
  return {label,meta,field,svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}"><title>${esc(label)}</title><defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#e4ece1" stroke-width=".5"/></pattern></defs><rect width="640" height="300" fill="#f8fbf6"/><rect width="640" height="300" fill="url(#grid)"/>${inner}</svg>`};
 }
 export function chartSVG(c){const W=640,H=266,L=60,R=23,T=15,B=49;let all=c.series.flatMap(s=>s.points).filter(s=>s.every(Number.isFinite));if(!all.length)return{svg:'',legend:''};let xmin=Math.min(...all.map(p=>p[0])),xmax=Math.max(...all.map(p=>p[0])),ymin=c.zeroBaseline===false?Math.min(...all.map(p=>p[1])):Math.min(0,...all.map(p=>p[1])),ymax=Math.max(...all.map(p=>p[1]));if(xmax===xmin)xmax=xmin+1;if(ymax===ymin)ymax=ymin+1;let pad=(ymax-ymin)*.08;ymax+=pad;if(ymin<0||c.zeroBaseline===false)ymin-=pad*.3;const X=x=>L+(x-xmin)/(xmax-xmin)*(W-L-R),Y=y=>H-B-(y-ymin)/(ymax-ymin)*(H-B-T);let inner='';for(let i=0;i<=4;i++){let y=ymin+(ymax-ymin)*i/4;inner+=line(L,Y(y),W-R,Y(y),'#e8eee5')+txt(L-10,Y(y)+3,fmt(y,3),'#4b5563',9,'end');}for(let i=0;i<=5;i++){let x=xmin+(xmax-xmin)*i/5;inner+=txt(X(x),H-B+18,fmt(x,3),'#4b5563',9,'middle');}inner+=line(L,T,L,H-B,'#c8d4c5')+line(L,H-B,W-R,H-B,'#c8d4c5');c.series.forEach((s,i)=>{if(c.scatter){for(const [x,y] of s.points.filter(p=>p.every(Number.isFinite)))inner+=`<circle cx="${X(x)}" cy="${Y(y)}" r="4" fill="${colors[i%colors.length]}"/>`;return;}inner+=`<polyline points="${s.points.filter(p=>p.every(Number.isFinite)).map(([x,y])=>[X(x),Y(y)].join(',')).join(' ')}" fill="none" stroke="${colors[i%colors.length]}" stroke-width="2.2" stroke-linejoin="round"/>`;});for(let [i,m]of(c.markers??[]).entries())inner+=`<circle cx="${X(m.x)}" cy="${Y(m.y)}" r="4.5" fill="${i?'#fff':'#167c70'}" stroke="${i?'#dc9b52':'#167c70'}" stroke-width="2"/>`+txt(X(m.x)+7,Y(m.y)-9,m.name,i?'#ae7b3d':'#397661',9);inner+=txt((L+W-R)/2,H-9,c.xlabel,'#4b5563',10,'middle')+`<text transform="translate(14 ${(T+H-B)/2}) rotate(-90)" fill="#4b5563" font-size="12" font-family="Segoe UI,Arial,sans-serif" text-anchor="middle">${esc(c.ylabel)}</text>`;

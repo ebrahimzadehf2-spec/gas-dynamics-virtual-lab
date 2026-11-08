@@ -28,6 +28,7 @@ export function plotOptions(d,time=.001){
   if(id==='oblique'){xlabel='Flow turn θ (°)';samples=linspace(0,deg(r.thetaMax)*(1-1e-8),121).map(t=>[t,obliqueShock(x.M1,rad(t),g,x.branch)]);}
   else{xlabel='Flow turn θ (°)';samples=linspace(0,Math.max(r.effectiveTurn??x.theta,.001),121).map(t=>[t,expansion(x.M1,rad(t),g)]);}
   family('wave-',xlabel,samples,[['M','Downstream Mach','M₂',s=>s.M2],['p','Pressure ratio','p₂/p₁',s=>s.p],['T','Temperature ratio','T₂/T₁',s=>s.T],['rho','Density ratio','ρ₂/ρ₁',s=>s.rho],['p0','Stagnation-pressure recovery','p₀₂/p₀₁',s=>s.p0]]);
+  add('wave-speed','Speed ratio',xlabel,'u₂/u₁',samples.map(([t,z])=>[t,z.M2/x.M1*Math.sqrt(z.T)]));
   if(id==='oblique')add('beta','Shock angle',xlabel,'β (°)',samples.map(([t,s])=>[t,deg(s.beta)]));
  }else if(id==='cone'){
   family('cone-','Polar angle θ (°)',r.history.map(s=>[deg(s.theta),s]).reverse(),[['M','Mach number','M',s=>s.M],['p','Pressure ratio','p/p∞',s=>s.p],['T','Temperature ratio','T/T∞',s=>s.T],['rho','Density ratio','ρ/ρ∞',s=>s.rho],['vr','Radial velocity component','Vᵣ/Vmax',s=>s.vr],['vt','Polar velocity component','Vθ/Vmax',s=>s.vt],['turn','Flow direction','δ (°)',s=>deg(s.theta+Math.atan2(s.vt,s.vr))]]);

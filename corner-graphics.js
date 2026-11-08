@@ -1,8 +1,10 @@
 import {linspace,prandtlMeyer,deg} from './physics.js';
+export const cornerPalette=['#8ea6dc','#80b7dd','#85cdd6','#a2cfad','#e0d89b','#e3b68f','#dc9999'];
+export function cornerContourColor(t){const v=Math.max(0,Math.min(1,t))*(cornerPalette.length-1),i=Math.min(cornerPalette.length-2,Math.floor(v)),f=v-i;const a=cornerPalette[i].match(/[a-f0-9]{2}/gi).map(v=>parseInt(v,16)),b=cornerPalette[i+1].match(/[a-f0-9]{2}/gi).map(v=>parseInt(v,16));return '#'+a.map((v,k)=>Math.round(v+(b[k]-v)*f).toString(16).padStart(2,'0')).join('');}
 // A flow-aligned local corner: horizontal approach wall, one ramp, no vertical face.
 export function cornerDrawing(s,inputs,{txt,line,poly,shade,fmt}){
  const shock=s.kind==='oblique',alpha=s.alpha??0,turn=s.theta,angle=shock?turn:-turn;
- const colored=inputs.cornerView==='Analytical contours',g=inputs.gamma??1.4;
+ const colored=inputs.cornerView!=='Textbook schematic',g=inputs.gamma??1.4;
  const x=245,y=shock?242:154,L=Math.min(365,(shock?140:105)/Math.max(1e-12,Math.abs(Math.tan(angle)))),right=x+L;
  const wallY=y-L*Math.tan(angle),domain=[[20,52],[right,52],[right,wallY],[x,y],[20,y]];
  const end=a=>{const dx=Math.cos(a),dy=-Math.sin(a),times=[];if(dx>1e-12)times.push((right-x)/dx);if(dy< -1e-12)times.push((52-y)/dy);if(dy>1e-12)times.push((292-y)/dy);const t=Math.min(...times.filter(t=>t>=0));return [x+t*dx,y+t*dy];};
@@ -11,7 +13,7 @@ export function cornerDrawing(s,inputs,{txt,line,poly,shade,fmt}){
  let inner=`<defs><clipPath id="cornerGas"><polygon points="${domain.map(p=>p.join(',')).join(' ')}"/></clipPath></defs>`;
  inner+=`<g clip-path="url(#cornerGas)" data-corner-fluid="true">`;
  if(colored)inner+=poly(domain,shade(inputs._cornerUp));
- const streamlineColor=colored?'#e8fff4':'#376f5a';
+ const streamlineColor='#376451';
  let waveMarkup='';
  if(shock){
   const e=end(s.beta),m=Math.tan(s.beta);
@@ -25,7 +27,7 @@ export function cornerDrawing(s,inputs,{txt,line,poly,shade,fmt}){
  }else{
   const samples=linspace(s.M,s.M2,49).map(M=>{const omega=prandtlMeyer(M,g)-s.nu1;return {M,omega,phi:Math.asin(1/M)-omega};});
   let previous=null;
-  if(colored){for(const z of samples){const e=end(z.phi);if(previous){const tr=(1+(g-1)*s.M*s.M/2)/(1+(g-1)*z.M*z.M/2),value=inputs._cornerQuantity==='mach'?z.M:inputs._cornerQuantity==='temperature'?tr:inputs._cornerQuantity==='density'?tr**(1/(g-1)):tr**(g/(g-1));inner+=poly([[x,y],previous,e],shade(value));}previous=e;}const tail=end(samples.at(-1).phi);inner+=poly([[x,y],tail,[right,tail[1]],[right,wallY]],shade(inputs._cornerQuantity==='mach'?s.M2:inputs._cornerQuantity==='temperature'?s.T:inputs._cornerQuantity==='density'?s.rho:s.p));}
+  if(colored){for(const z of samples){const e=end(z.phi);if(previous){const tr=(1+(g-1)*s.M*s.M/2)/(1+(g-1)*z.M*z.M/2),value=inputs._cornerQuantity==='mach'?z.M:inputs._cornerQuantity==='temperature'?tr:inputs._cornerQuantity==='density'?tr**(1/(g-1)):inputs._cornerQuantity==='speed'?(z.M/s.M)*Math.sqrt(tr):tr**(g/(g-1));inner+=poly([[x,y],previous,e],shade(value));}previous=e;}const tail=end(samples.at(-1).phi);inner+=poly([[x,y],tail,[right,tail[1]],[right,wallY]],shade(inputs._cornerQuantity==='mach'?s.M2:inputs._cornerQuantity==='temperature'?s.T:inputs._cornerQuantity==='density'?s.rho:inputs._cornerQuantity==='speed'?(s.M2/s.M)*Math.sqrt(s.T):s.p));}
   for(const h of [22,45,68,91,114]){
    const radius=h/Math.sin(samples[0].phi),points=[[20,y-h]];
    for(const z of samples){const ratio=((1+(g-1)*z.M*z.M/2)/(1+(g-1)*s.M*s.M/2))**((g+1)/(2*(g-1))),r=radius*ratio;points.push([x+r*Math.cos(z.phi),y-r*Math.sin(z.phi)]);}
