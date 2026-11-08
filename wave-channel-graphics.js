@@ -1,6 +1,8 @@
+import {mocDrawing} from './channel-moc-graphics.js?v=20261108-moc-stage1';
 import {channelOrdinate} from './wave-channel.js';
 import {cornerContourColor,cornerPalette} from './corner-graphics.js';
-export function channelDrawing(s,{txt,line,poly,fmt}){
+export function channelDrawing(s,{txt,line,poly,fmt,quantity,showCharacteristics}){
+ if(s.moc?.rows.length)return mocDrawing(s,{txt,line,poly,fmt,quantity,showCharacteristics});
  const g=s.geometry,L=g.end,start=-.18*L,heights=[0,L,...g.lower.points.map(p=>p.x),...g.upper.points.map(p=>p.x)].filter(x=>x<=L+1e-10).flatMap(x=>[channelOrdinate(g.lower,x),channelOrdinate(g.upper,x)]),lo=Math.min(...heights),hi=Math.max(...heights),scale=Math.min(560/(L-start),160/Math.max(hi-lo,.12*L));
  const X=x=>320+(x-(L+start)/2)*scale,Y=y=>145+((lo+hi)/2-y)*scale,V=p=>[X(p.x),Y(p.y)];
  const vals=Object.values(s.regions).map(z=>z.p/1000),min=Math.min(...vals),max=Math.max(...vals),color=p=>cornerContourColor(max-min<1e-10?.5:(p/1000-min)/(max-min));
@@ -27,5 +29,5 @@ export function channelDrawing(s,{txt,line,poly,fmt}){
  if(s.limitX!==null){const xx=X(s.limitX);inner+=`<rect x="${xx}" y="43" width="${Math.max(0,X(L)-xx)}" height="203" fill="#ffffff" opacity=".7"/>`+line(xx,43,xx,246,'#8e6d42',1,'4 4');}
  inner+='</g>';
  inner+=txt(24,270,s.limitX!==null?`Local solution ends at x = ${fmt(s.limitX,5)} m`:`Shared channel length = ${fmt(L,5)} m`,'#53616b',13)+txt(616,292,'L: lower wall · U: upper wall','#53616b',12,'end');
- return {inner,label:'Custom channel · two independent piecewise walls',meta:'Local wall states · pressure-colored boundaries · unresolved reflections omitted',field:{quantity:'pressure',options:['pressure'],min,max,units:'kPa',label:'Surface pressure',note:'Local lower- and upper-wall states',palette:cornerPalette}};
+ return {inner,label:'Custom channel · two independent piecewise walls',meta:'Local wall states · pressure-colored boundaries · unresolved reflections omitted',field:s.moc?null:{quantity:'pressure',options:['pressure'],min,max,units:'kPa',label:'Surface pressure',note:'Local lower- and upper-wall states',palette:cornerPalette}};
 }

@@ -1,9 +1,10 @@
-import {solveWaveChannel} from './wave-channel.js?v=20261108-custom-channel';
-import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261108-custom-channel';
+import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261108-moc-stage1';
+import {solveWaveChannel} from './wave-channel.js?v=20261108-moc-stage1';
+import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261108-moc-stage1';
 import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-custom-channel';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261108-moc-stage1';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
@@ -60,6 +61,10 @@ export const labs={
  wall:{chapter:6,title:'Wave Geometry Lab',tag:'BUILD · TURN · INSPECT',description:'Build a piecewise-straight wall from segment angles and lengths, then inspect its compression shocks, expansion fans and local flow states.',inputs:[
  {key:'wallShape',label:'Wall template',value:'Compression ramp',options:['Compression ramp','Expansion corner','Custom wall']},
  {key:'boundaryMode',label:'Boundary layout',value:'Single wall',options:['Single wall','Channel']},
+ {key:'channelSolver',label:'Channel solution',value:'Local shock–expansion',options:['Local shock–expansion','Method of characteristics']},
+ input('mocResolution','Characteristic resolution',81,31,201,10,'points'),
+ input('mocStation','Profile station x/L',1,0,1,.01,''),
+ {key:'mocLines',label:'Characteristic lines',value:'Shown',options:['Shown','Hidden']},
  input('channelHeight','Channel inlet height',1,.01,100,.01,'m'),
  {key:'upperWallSegments',label:'Upper wall segments',type:'wall-segments',value:[{angle:0,length:3}]},
  {key:'wallSide',label:'Gas side',value:'Gas above wall',options:['Gas above wall','Gas below wall']},
@@ -104,8 +109,8 @@ export const labs={
 };
 function experimentInputs(id,x={}){
  if(id==='wall'){
-  const channel=x.wallShape==='Custom wall'&&x.boundaryMode==='Channel';
-  return labs.wall.inputs.filter(f=>f.key!=='wallShape'&&(!['channelHeight','upperWallSegments'].includes(f.key)||channel)&&(f.key!=='wallSide'||!channel)).map(f=>f.key==='wallSegments'?{...f,label:channel?'Lower wall segments':'Wall segments'}:f);
+  const channel=x.wallShape==='Custom wall'&&x.boundaryMode==='Channel',moc=channel&&x.channelSolver==='Method of characteristics';
+  return labs.wall.inputs.filter(f=>f.key!=='wallShape'&&(!['channelHeight','upperWallSegments','channelSolver'].includes(f.key)||channel)&&(!['mocResolution','mocStation','mocLines'].includes(f.key)||moc)&&(f.key!=='wallSide'||!channel)).map(f=>f.key==='wallSegments'?{...f,label:channel?'Lower wall segments':'Wall segments'}:f);
  }
  if(id==='airfoil')return labs.airfoil.inputs.filter(f=>{
   const flat=x.airfoilShape==='Flat plate',custom=x.airfoilShape==='Custom panels',angles=x.geometryInput==='Angles & lengths';
@@ -217,11 +222,12 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
 
  }
  else if(id==='wall'){
-  result=(x.wallShape==='Custom wall'&&x.boundaryMode==='Channel'?solveWaveChannel:solveWaveWall)({...x,gamma:g,R});notice=result.reason;
+  result=(x.wallShape==='Custom wall'&&x.boundaryMode==='Channel'?(x.channelSolver==='Method of characteristics'?solveChannelMOC:solveWaveChannel):solveWaveWall)({...x,gamma:g,R});notice=result.reason;
   for(const [n,z]of Object.entries(result.regions))rows.push(...[['Mach',z.M,''],['Pressure',z.p/1000,'kPa'],['Temperature',z.T,'K'],['Density',z.rho,'kg/m³'],['Speed',z.u,'m/s'],['Flow angle',p.deg(z.theta),'°'],['Stagnation pressure',z.p0/1000,'kPa'],['Stagnation temperature',z.T0,'K']].map(([label,value,unit])=>({...row(`Region ${n} · ${label}`,value,unit),panel:'wall'})));
   for(const w of result.waves)if(w.kind==='Oblique shock')shockDetails.push(shockStateSection({kind:'oblique',title:`Wall shock · ${w.parentId??Number(w.id)-1} → ${w.id}`,location:`x = ${w.origin.x.toPrecision(6)} m`,before:w.before,after:w.after,gamma:g,R,extra:[{label:'Shock angle β',value:p.deg(w.beta),unit:'°'},{label:'Flow turn',value:w.turn,unit:'°'}]}));
   if(result.limitX!==null)rows.push(row('Local-solution limit',result.limitX,'m'));
-  scene={kind:'wall',...result};chart=wallPlots(result)[0].chart;
+  if(result.moc?.massResidual!==undefined)rows.push(row('Mass-flow residual',result.moc.massResidual*100,'%'));
+  scene={kind:'wall',...result};chart=(result.moc?mocProfilePlots(result,x.mocStation):wallPlots(result))[0]?.chart??{title:'No accepted characteristic field',xlabel:'Height y (m)',ylabel:'M',series:[]};
  }
  else if(id==='airfoil'){
   result=solveAirfoil({...x,gamma:g,R});notice=result.warning;rows=[];
@@ -264,5 +270,5 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
  if(id==='cone'&&result.status==='ok'){result.relations=conicalRelations(result,x.M,g);result.referenceTable=coneReferenceTable(result.relations);}
  if(result.referenceTable)for(const r of result.referenceTable.rows)r.values.forEach((v,i)=>rows.push({...row(`${result.referenceTable.title} · ${r.label} · ${result.referenceTable.columns[i]}`,v),panel:'reference'}));
 
- return {id,inputs:x,gas:workingGas,model:id==='nozzle'?nozzleInfo(x).model:id==='wall'&&result.channel?'Steady 2D custom channel · local wall streams · first-interaction limit':labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
+ return {id,inputs:x,gas:workingGas,model:id==='nozzle'?nozzleInfo(x).model:id==='wall'&&result.moc?'Numerical isentropic 2D method of characteristics · shock-free expanding channels':id==='wall'&&result.channel?'Steady 2D custom channel · local wall streams · first-interaction limit':labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
 }
