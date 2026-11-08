@@ -31,7 +31,16 @@ export function plotOptions(d,time=.001){
   add('wave-speed','Speed ratio',xlabel,'u₂/u₁',samples.map(([t,z])=>[t,z.M2/x.M1*Math.sqrt(z.T)]));
   if(id==='oblique')add('beta','Shock angle',xlabel,'β (°)',samples.map(([t,s])=>[t,deg(s.beta)]));
  }else if(id==='cone'){
-  family('cone-','Polar angle θ (°)',r.history.map(s=>[deg(s.theta),s]).reverse(),[['M','Mach number','M',s=>s.M],['p','Pressure ratio','p/p∞',s=>s.p],['T','Temperature ratio','T/T∞',s=>s.T],['rho','Density ratio','ρ/ρ∞',s=>s.rho],['vr','Radial velocity component','Vᵣ/Vmax',s=>s.vr],['vt','Polar velocity component','Vθ/Vmax',s=>s.vt],['turn','Flow direction','δ (°)',s=>deg(s.theta+Math.atan2(s.vt,s.vr))]]);
+  const samples=r.history.map(s=>[deg(s.theta),s]).reverse();
+  const velocity=s=>Math.hypot(s.vr,s.vt)/Math.sqrt(x.M*x.M/(x.M*x.M+2/(g-1)));
+  const properties=[['M','Mach number','M',s=>s.M],['p','Static pressure ratio','p/p∞',s=>s.p],['T','Static temperature ratio','T/T∞',s=>s.T],['rho','Density ratio','ρ/ρ∞',s=>s.rho],['u','Flow speed ratio','u/u∞',velocity],['a','Speed of sound ratio','a/a∞',s=>Math.sqrt(s.T)],['vr','Radial velocity component','Vᵣ/Vmax',s=>s.vr],['vt','Polar velocity component','Vθ/Vmax',s=>s.vt],['turn','Flow direction','δ (°)',s=>deg(s.theta+Math.atan2(s.vt,s.vr))],['p0','Stagnation-pressure ratio','p₀/p₀∞',s=>s.p*isentropic(s.M,g).p0p/isentropic(x.M,g).p0p],['T0','Stagnation-temperature ratio','T₀/T₀∞',s=>s.T*isentropic(s.M,g).T0T/isentropic(x.M,g).T0T]];
+  // Plot the integrated field from the cone surface to the downstream side of the shock.
+  options.shift();
+  for(const [key,label,unit,value] of properties){
+   const points=samples.map(([theta,z])=>[theta,value(z)]);
+   add('cone-'+key,label+' · cone to shock','Polar angle θ (°)',unit,points,{markers:[{name:'Cone surface',x:points[0][0],y:points[0][1]},{name:'Shock · downstream',x:points.at(-1)[0],y:points.at(-1)[1],anchor:'end'}]});
+   options.at(-1).note='Cone surface → downstream side of shock';
+  }
  }else if(id==='nozzle'){
   if(r.external){const j=r.external,exp=j.status==='expansion',samples=exp?j.samples.map(z=>[deg(z.theta),z]):j.outlet?[[0,j.inlet],[.5,j.inlet],[.5,j.outlet],[1,j.outlet]]:[[0,j.inlet],[1,j.inlet]];
    family('external-',exp?'Flow turn θ (°)':'Across local wave · schematic coordinate',samples,[['M','External Mach','M',s=>s.M],['p','External pressure','p (kPa)',s=>s.p/1000],['T','External temperature','T (K)',s=>s.T],['rho','External density','ρ (kg/m³)',s=>s.rho],['u','External speed','u (m/s)',s=>s.u],['p0','External stagnation pressure','p₀ (kPa)',s=>s.p0/1000],['T0','External stagnation temperature','T₀ (K)',s=>s.T0]]);

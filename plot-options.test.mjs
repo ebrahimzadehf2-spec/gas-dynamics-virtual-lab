@@ -32,3 +32,18 @@ test('Result panels are placed in the output column and plot controls remain in 
  for(const id of ['isentropicPanel','balancePanel','shockResults','results'])assert.ok(column.includes(`id="${id}"`),id);
  assert.ok(!column.includes('id="chart"'));assert.ok(html.includes('id="plotQuantity"'));
 });
+
+test('Cone profiles span the integrated surface-to-shock layer and preserve stagnation properties',()=>{
+ const x={...defaults('cone'),M:2,thetaCone:9},d=calculate('cone',x),options=plotOptions(d),r=d.result;
+ assert.equal(options[0].key,'cone-M');
+ for(const key of ['M','p','T','rho','u','a','vr','vt','turn','p0','T0']){
+  const o=options.find(z=>z.key==='cone-'+key);assert.ok(o,key);const points=o.chart.series[0].points;
+  assert.ok(Math.abs(points[0][0]-x.thetaCone)<1e-6);assert.ok(Math.abs(points.at(-1)[0]-r.beta*180/Math.PI)<1e-10);
+  assert.ok(points.every((p,i)=>!i||p[0]>=points[i-1][0]));assert.equal(o.chart.markers[0].name,'Cone surface');assert.equal(o.chart.markers[1].name,'Shock · downstream');
+ }
+ const get=k=>options.find(o=>o.key==='cone-'+k).chart.series[0].points;
+ assert.ok(Math.abs(get('M')[0][1]-r.surface.M)<1e-10);assert.ok(Math.abs(get('M').at(-1)[1]-r.Mpost)<1e-10);
+ for(const [,v] of get('T0'))assert.ok(Math.abs(v-1)<1e-9);
+ const recovery=get('p0')[0][1];assert.ok(recovery>0&&recovery<1);for(const [,v] of get('p0'))assert.ok(Math.abs(v-recovery)<1e-9);
+ const last=r.history[0];assert.ok(Math.abs(get('u').at(-1)[1]-last.M/x.M*Math.sqrt(last.T))<1e-9);
+});
