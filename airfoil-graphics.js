@@ -16,7 +16,7 @@ export function airfoilDrawing(s,{txt,line,poly,fmt,incidenceGlyph}){
  const ray=(origin,angle,r)=>[origin[0]+r*Math.cos(angle),origin[1]-r*Math.sin(angle)];
  let inner='<rect width="640" height="300" fill="#fcfdfc"/>';
  inner+='<defs><clipPath id="airfoil-wave-window"><rect x="20" y="46" width="600" height="188"/></clipPath></defs>';
- inner+=txt(24,29,'SUPERSONIC AIRFOIL','#53616b',13)+txt(616,29,trailing?`φ = ${fmt(trailing.slipAngle,5)}°`:`${s.geometry.panels.length} surface regions`,'#263c4d',14,'end');
+ inner+=txt(24,29,'SUPERSONIC AIRFOIL','#53616b',13)+txt(616,29,`${s.geometry.panels.length} surface regions`,'#263c4d',14,'end');
  inner+='<g clip-path="url(#airfoil-wave-window)" stroke-linecap="round" stroke-linejoin="round">';
  // Finite rays deliberately stop locally: downstream wave interactions are not solved.
  if(available)for(const w of [...s.nonlinear.waves,...(trailing?.waves??[])]){
@@ -64,9 +64,9 @@ export function airfoilDrawing(s,{txt,line,poly,fmt,incidenceGlyph}){
   const arc=Array.from({length:25},(_,i)=>ray(start,trailing.phi*i/24,37));
   inner+=`<g data-outlet-flow-angle="${trailing.slipAngle}">`+line(...start,start[0]+119,start[1],'#6c7e88',.85,'4 3')+line(...start,...tip,'#263c4d',1.8);
   inner+=poly([tip,[tip[0]-7*dx-3*dy,tip[1]-7*dy+3*dx],[tip[0]-7*dx+3*dy,tip[1]-7*dy-3*dx]],'#263c4d');
-  inner+=`<polyline points="${arc.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#263c4d" stroke-width="1.1"/>`+txt(start[0]+46,start[1]+(trailing.phi>=0?16:-9),'φ','#17212b',14,'middle')+'</g>';
+  inner+=`<polyline points="${arc.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#263c4d" stroke-width="1.1"/>`+txt(start[0]+46,start[1]+(trailing.phi>=0?16:-12),`φ = ${fmt(trailing.slipAngle,5)}°`,'#17212b',14,'middle')+'</g>';
   for(const [w,label]of [[trailing.upper,'TE-U+'],[trailing.lower,'TE-L+']]){
-   const edge=w.rays.at(-1).angle,angle=(edge+trailing.phi)/2,pos=ray(origin,angle,125);
+   const edge=w.rays.at(-1).angle,angle=(edge+trailing.phi)/2,pos=ray(origin,angle,152);
    inner+=txt(pos[0],pos[1]+4,label,'#253945',12,'middle');
   }
  }
