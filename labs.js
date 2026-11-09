@@ -1,14 +1,14 @@
-import {channelSolverName,solveShockExpansionChannel} from './channel-solver.js?v=20261109-unified-channel';
-import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-unified-channel';
-import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-unified-channel';
-import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-unified-channel';
-import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-unified-channel';
-import {solveWaveChannel} from './wave-channel.js?v=20261109-unified-channel';
-import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261109-unified-channel';
+import {channelSolverName,solveShockExpansionChannel} from './channel-solver.js?v=20261109-boundary-layout';
+import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-boundary-layout';
+import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-boundary-layout';
+import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-boundary-layout';
+import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-boundary-layout';
+import {solveWaveChannel} from './wave-channel.js?v=20261109-boundary-layout';
+import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261109-boundary-layout';
 import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-unified-channel';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-boundary-layout';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
@@ -117,7 +117,7 @@ export const labs={
 function experimentInputs(id,x={}){
  if(id==='wall'){
   const channel=x.wallShape==='Custom wall'&&x.boundaryMode==='Channel',moc=channel&&x.channelSolver==='Method of characteristics',tracking=channel&&channelSolverName(x.channelSolver)==='Shock–Expansion';
-  return labs.wall.inputs.filter(f=>f.key!=='wallShape'&&(!['channelHeight','upperWallSegments','channelSolver'].includes(f.key)||channel)&&(!['trackingStep','trackingStation','trackingRefine'].includes(f.key)||tracking)&&(!['mocResolution','mocStation','mocLines'].includes(f.key)||moc)&&(f.key!=='wallSide'||!channel)).map(f=>f.key==='wallSegments'?{...f,label:channel?'Lower wall segments':'Wall segments'}:f);
+  return labs.wall.inputs.filter(f=>f.key!=='wallShape'&&(f.key!=='boundaryMode'||x.wallShape==='Custom wall')&&(!['channelHeight','upperWallSegments','channelSolver'].includes(f.key)||channel)&&(!['trackingStep','trackingStation','trackingRefine'].includes(f.key)||tracking)&&(!['mocResolution','mocStation','mocLines'].includes(f.key)||moc)&&(f.key!=='wallSide'||!channel)).map(f=>f.key==='wallSegments'?{...f,label:channel?'Lower wall segments':'Wall segments'}:f);
  }
  if(id==='airfoil')return labs.airfoil.inputs.filter(f=>{
   const flat=x.airfoilShape==='Flat plate',custom=x.airfoilShape==='Custom panels',angles=x.geometryInput==='Angles & lengths';
