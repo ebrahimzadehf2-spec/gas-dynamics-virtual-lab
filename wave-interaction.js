@@ -51,7 +51,8 @@ export function interactionGeometry(r,x){
  const lowerSegments=r.same?[[incomingSlope,0], [Math.tan(t1),0],[Math.tan(t1+t2),C[1]-Math.tan(t1+t2)*d]]:[[incomingSlope,0],[Math.tan(t1),0]];
  const upperSegments=r.same?[[incomingSlope,H]]:[[incomingSlope,H-incomingSlope*d],[-Math.tan(t2),H+Math.tan(t2)*d]];
  const bottom=z=>Math.max(...lowerSegments.map(([m,c])=>m*z+c)),top=z=>Math.min(...upperSegments.map(([m,c])=>m*z+c));
- requireValue(finite(...B)&&B[0]>Math.max(0,d)+1e-9&&B[1]>bottom(B[0])+1e-9&&B[1]<top(B[0])-1e-9,'The incident waves do not meet inside this geometry before a wall encounter. Change the height, corner spacing or turns.','geometry-limit');
+ requireValue(finite(...B)&&B[0]>Math.max(0,d)+1e-9,'The incident shocks do not meet downstream of both corners. This calculator requires a direct two-shock interaction. Use Wave Geometry Lab → Custom wall → Channel → Shock–Expansion to construct the channel and follow its actual event sequence.','geometry-limit');
+ requireValue(B[1]>bottom(B[0])+1e-9&&B[1]<top(B[0])-1e-9,'An incident shock reaches a wall before the two incident shocks can meet inside the channel. This calculator assumes a direct two-shock interaction and does not solve the earlier wall reflection. Use Wave Geometry Lab → Custom wall → Channel → Shock–Expansion to follow that event sequence.','geometry-limit');
  const hits=[];
  for(const w of [r.a,r.b])for(const ray of w.rays){const m=Math.tan(ray.angle);requireValue(Math.cos(ray.angle)>0,'An outgoing wave is not downstream-directed in this regular model.','unsupported-pattern');for(const [mw,c] of [...lowerSegments,...upperSegments]){const xx=(c-B[1]+m*B[0])/(m-mw);if(xx>B[0]+1e-8)hits.push(xx);}}
  const ms=Math.tan(r.delta);for(const [mw,c] of [...lowerSegments,...upperSegments]){const xx=(c-B[1]+ms*B[0])/(ms-mw);if(xx>B[0]+1e-8)hits.push(xx);}

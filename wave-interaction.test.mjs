@@ -36,15 +36,15 @@ test('Custom geometry intersects actual incident rays; uniform scaling leaves al
  }
 });
 test('Incompatible corner geometry and unsupported shock patterns fail explicitly',()=>{
- assert.throws(()=>solveInteraction({interactionType:'Same-direction shocks',geometryMode:'Custom geometry',cornerSpacing:1,channelHeight:.2}),/inside this geometry/);
+ assert.throws(()=>solveInteraction({interactionType:'Same-direction shocks',geometryMode:'Custom geometry',cornerSpacing:1,channelHeight:.2}),/wall before the two incident shocks/);
  assert.throws(()=>solveInteraction({interactionType:'Same-direction shocks',geometryMode:'Custom geometry',cornerSpacing:0,channelHeight:2}),/positive separation/);
  assert.throws(()=>solveInteraction({M1:1.2,thetaUpper:20,thetaLower:20}),/Attached-shock limit/);
  assert.throws(()=>solveInteraction({thetaUpper:NaN}),/corner turns/);
 });
-test('Both UI geometry modes expose correct inputs and produce finite contours and complete shock reports',()=>{
+test('Unified UI geometry always exposes dimensions and produces finite contours and shock reports',()=>{
  for(const interactionType of ['Opposing shocks','Same-direction shocks'])for(const geometryMode of ['Educational','Custom geometry']){
   const x={...defaults('collision'),interactionType,geometryMode},d=calculate('collision',x);
-  assert.equal(inputDefinitions('collision',x).some(f=>f.key==='channelHeight'),geometryMode==='Custom geometry');
+  assert.ok(inputDefinitions('collision',x).some(f=>f.key==='channelHeight'));assert.ok(!inputDefinitions('collision',x).some(f=>f.key==='geometryMode'));assert.equal(d.result.geometryMode,'Custom geometry');assert.ok(d.rows.find(r=>r.label==='Interaction location x').unit==='m');
   assert.equal(d.shockDetails.length,interactionType==='Opposing shocks'?4:3);
   for(const q of ['pressure','mach','temperature','density']){
    const v=sceneSVG(d.scene,x,.001,q);assert.ok(Number.isFinite(v.field.min)&&Number.isFinite(v.field.max));assert.ok(!/NaN|Infinity/.test(v.svg));
