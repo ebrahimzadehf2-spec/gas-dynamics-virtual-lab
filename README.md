@@ -74,3 +74,5 @@ Chapter navigation omits chapter-number prefixes. Wave Geometry Lab is the singl
 All six Chapter 6 example shortcuts are grouped in one Examples card at the bottom of the right-hand results column, after shock reports, shown only when Geometry is Custom wall. Loading a channel example selects Channel and its appropriate solver automatically, including when starting from a single custom wall.
 
 Compression ramp, Expansion corner and Custom wall share a Geometry & solution panel above the workspace; gas and inlet conditions remain on the left. Case-specific geometry and display options occupy the top panel. Custom-wall editors and solver settings are collapsible. Profile station x/L appears beside the property plot for both channel solvers. Solver and station controls include short English descriptions. Examples remain at the bottom of the right results column.
+
+Wave Interaction uses the same top Geometry & solution panel: mode, both corner turns, channel height and axial separation are above the diagram. Only gas and inlet conditions remain in the left input column. Both opposing and same-direction modes retain the same calculations.
