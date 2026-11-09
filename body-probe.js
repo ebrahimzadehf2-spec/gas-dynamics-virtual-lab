@@ -1,5 +1,5 @@
 import {probeCone} from './cone-probe.js';
-import {wedgeGeometry} from './wedge-graphics.js';
+import {wedgeGeometry} from './wedge-graphics.js?v=20261109-wedge-contour';
 import {expansion,deg} from './physics.js';
 export function probeWedge(w,x,y){
  const g=wedgeGeometry(w),dx=x-g.x;if(dx<=1e-8||dx>g.length)return null;const a=Math.atan2(g.y-y,dx);if(Math.abs(a)<w.theta-1e-10)return null;

@@ -1,4 +1,4 @@
-import {wedgeDrawing} from './wedge-graphics.js';
+import {wedgeDrawing} from './wedge-graphics.js?v=20261109-wedge-contour';
 import {trackingDrawing} from './wave-tracker-graphics.js?v=20261109-wedge-cone';
 import {wallDrawing} from './wave-wall-graphics.js?v=20261109-wedge-cone';
 import {airfoilDrawing} from './airfoil-graphics.js?v=20261109-wedge-cone';

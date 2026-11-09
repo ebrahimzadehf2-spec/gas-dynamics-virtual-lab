@@ -1,4 +1,4 @@
-import {probeBody} from './body-probe.js';
+import {probeBody} from './body-probe.js?v=20261109-wedge-contour';
 import {comparisonHTML} from './channel-comparison.js';
 import {fittedInspectionHTML,fittedPointHTML,selectedFittedPoint,fittedExportRows} from './channel-moc-shocks-tables.js';
 import {probeFittedMOC} from './channel-moc-shocks-graphics.js';
@@ -17,7 +17,7 @@ import {selectGas,gasInfo} from './gas-properties.js?v=20261109-wedge-cone';
 import {controlVolumePreset} from './control-volume.js?v=20261109-wedge-cone';
 import {pressureSweepPlan,advancePressure} from './sweep.js?v=20261109-wedge-cone';
 import {labs,chapters,defaults,inputDefinitions,nozzleInfo,trackingShockDetails} from './labs.js?v=20261109-wedge-cone';
-import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261109-wedge-cone';
+import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261109-wedge-contour';
 const $=id=>document.getElementById(id);let id='rayleigh',inputs={},request=0,current=null,pinned=null,timer,animation=false,frame,lastFrame=0,sceneTime=.001,fieldQuantity='pressure';
 let pendingWaveShape=null,pendingBookCase=null,pendingCustomChannel=false,pendingLegacyCorner=null;
 let displayedChart=null,chartChoices=[],plotSelection={};

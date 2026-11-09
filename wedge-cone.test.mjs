@@ -23,3 +23,9 @@ test('Default cone retains original reference plots and hides wedge incidence',(
 test('Wedge contour probe respects each face and expansion fan and excludes solid',()=>{
  for(const alpha of [0,12,-12]){const w=solveWedge({M:3,thetaCone:10,wedgeAlpha:alpha}),dx=80;assert.equal(probeWedge(w,165+dx,150),null);for(const f of w.faces){const angle=f.wall+f.sign*.01,z=probeWedge(w,165+dx,150-dx*Math.tan(angle));assert.ok(z);near(z.M,f.surface.M);if(f.kind==='Expansion fan'){const head=w.alpha+f.sign*Math.asin(1/w.M),tail=f.wall+f.sign*Math.asin(1/f.surface.M),a=(head+tail)/2,p=probeWedge(w,165+dx,150-dx*Math.tan(a));assert.ok(p.M>w.M&&p.M<f.surface.M);}}}
 });
+
+test('Wedge body and accepted gas layers reach the view edge without a false freestream strip',()=>{
+ const w=solveWedge({M:2.6443,thetaCone:10.1,wedgeAlpha:-20});
+ for(const f of w.faces){const angle=f.wall+f.sign*.02;for(const dx of [380,460]){const z=probeWedge(w,165+dx,150-dx*Math.tan(angle));assert.ok(z);near(z.M,f.surface.M);near(z.p,f.surface.p);}}
+ const x={...defaults('cone'),bodyGeometry:'Wedge',M:2.6443,thetaCone:10.1,wedgeAlpha:-20},d=calculate('cone',x),v=sceneSVG(d.scene,x);assert.ok(v.svg.includes('640,'));assert.doesNotMatch(v.svg,/NaN|Infinity/);
+});
