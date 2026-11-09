@@ -8,7 +8,7 @@ GitHub Pages serves the repository root. Use the website link in repository Sett
 
 ## Scientific scope
 
-Calorically perfect ideal gas; analytical relations, bracketed scalar roots and Taylor–Maccoll ODE integration. No CFD, SU2, mesh generation or 2D Euler solver. Scene labels distinguish analytical regions, quasi-1D fields, similarity fields and illustrative geometry.
+Calorically perfect ideal gas; analytical relations, bracketed scalar roots and Taylor–Maccoll ODE integration. No external CFD package, SU2, finite-volume mesh or remote solver is required. The optional wave-front tracker approximates interacting inviscid supersonic fields using local shock/expansion Riemann relations; it is not a general grid-based Euler solver. Scene labels distinguish analytical regions, quasi-1D fields, similarity fields and illustrative geometry.
 
 ## Source layout
 
@@ -41,7 +41,7 @@ The Chapter 9 experiment is available at `#airfoil`; the earlier `#linear` inter
 
 `#wall` opens the Wave Geometry Lab. A Geometry selector in the input column offers compression, expansion, editable multi-corner walls and the existing opposing/same-direction interaction calculators. Single walls accept up to eight absolute angles and true segment lengths; gas can lie above or below. The local solution stops at the first sampled wave crossing or later-wall encounter. It reports uniform surface states and one-sided shock values without inventing subsequent interactions. Chapter 6 no longer lists the Chapter 9 airfoil tool.
 
-Custom wall also provides Boundary layout = Channel: independent upper/lower angle-length editors, inlet gap, crossing validation, separate wall-stream properties and charts, and clipping at the first wave interaction or opposite-wall encounter. The shared displayed domain ends at the shorter axial wall extent. Subsequent reflection trains are not solved.
+Custom wall also provides Boundary layout = Channel: independent upper/lower angle-length editors, inlet gap, crossing validation, separate wall-stream properties and charts, and clipping at the first wave interaction or opposite-wall encounter. The shared displayed domain ends at the shorter axial wall extent. The original automatic/local mode stops there; the separate Attached-wave tracking option continues regular reflections and interactions within its stated limits.
 
 ## Isentropic characteristic field (stage 1)
 
@@ -50,3 +50,11 @@ Custom channels can select `Method of characteristics`. `channel-moc.js` transpo
 ## Chapter 6 worked shock interactions
 
 The Geometry input includes Example 6–4 and Example 6–5 loaders. `regular-channel.js` detects their opposing/same-direction topologies directly from editable wall angles and lengths. Automatic shock–expansion solves the regular interaction, pressure-matched slip direction and all five canonical states. The field is partitioned into analytical uniform regions and sampled expansion fans; it stops before the next wall encounter. Example 6–4 uses displayed labels 4′ (lower) and 4 (upper), with canonical indices retained separately. `book6-interaction-reference.py/.json` provide an independent SciPy pressure-root check. This completes those worked examples without claiming a general rotational MOC/shock-fitting solver.
+
+## Attached-wave tracking
+
+`wave-tracker.js` provides event-driven downstream front tracking on editable two-wall channels: weak attached shocks, discretized PM fans, wall turns/reflections, regular wave interactions and pressure/direction-matched slip lines. Each stream retains its own stagnation pressure after shocks. Fan propagation/interactions are approximate, with explicit angular width and optional half-width outlet-profile comparison. The method does not solve a finite-volume Euler mesh or require a remote service. Computational and physical limits stop the solution rather than filling an unsupported downstream field.
+
+Three presets exercise repeated shock reflections, shock–expansion interaction, and two expansion fans. `wave-tracker-graphics.js` draws the solved cells and terminated wave paths, with selectable contours and pointer inspection. `wave-tracker-tables.js` synchronizes event selection, local states, slip directions and complete CSV exports; one-sided finite-shock tables follow the selected event. All accepted events/states are in JSON.
+
+`wave-tracker-reference.py/.json` independently check a shock and three wall reflections using SciPy, plus characteristic-invariant symmetric-fan states. Nine focused tests cover these references, the original Chapter 6 matches, shock conservation, mass and front refinement, mirror symmetry, physical/budget stops and UI/export integration. The full suite has 153 passing tests at this update. Small mass discrepancy does not establish total accuracy, and arbitrary-geometry convergence is not claimed. See the guide for the finite-front approximation and limits.
