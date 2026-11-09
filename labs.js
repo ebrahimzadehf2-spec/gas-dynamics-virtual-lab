@@ -1,13 +1,14 @@
-import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-wave-tracking';
-import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-wave-tracking';
-import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-wave-tracking';
-import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-wave-tracking';
-import {solveWaveChannel} from './wave-channel.js?v=20261109-wave-tracking';
-import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261109-wave-tracking';
+import {channelSolverName,solveShockExpansionChannel} from './channel-solver.js?v=20261109-unified-channel';
+import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-unified-channel';
+import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-unified-channel';
+import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-unified-channel';
+import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-unified-channel';
+import {solveWaveChannel} from './wave-channel.js?v=20261109-unified-channel';
+import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261109-unified-channel';
 import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-wave-tracking';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-unified-channel';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
@@ -64,7 +65,7 @@ export const labs={
  wall:{chapter:6,title:'Wave Geometry Lab',tag:'BUILD · TURN · INSPECT',description:'Build a piecewise-straight wall from segment angles and lengths, then inspect its compression shocks, expansion fans and local flow states.',inputs:[
  {key:'wallShape',label:'Wall template',value:'Compression ramp',options:['Compression ramp','Expansion corner','Custom wall']},
  {key:'boundaryMode',label:'Boundary layout',value:'Single wall',options:['Single wall','Channel']},
- {key:'channelSolver',label:'Channel solution',value:'Automatic shock–expansion',options:['Automatic shock–expansion','Attached-wave tracking','Method of characteristics']},
+ {key:'channelSolver',label:'Channel solution',value:'Shock–Expansion',options:['Shock–Expansion','Method of characteristics']},
  input('trackingStep','Expansion-front width',.5,.25,2,.25,'°'),
  input('trackingStation','Profile station x/L',1,0,1,.01,''),
  {key:'trackingRefine',label:'Check front refinement',value:'Off',options:['Off','On']},
@@ -115,7 +116,7 @@ export const labs={
 };
 function experimentInputs(id,x={}){
  if(id==='wall'){
-  const channel=x.wallShape==='Custom wall'&&x.boundaryMode==='Channel',moc=channel&&x.channelSolver==='Method of characteristics',tracking=channel&&x.channelSolver==='Attached-wave tracking';
+  const channel=x.wallShape==='Custom wall'&&x.boundaryMode==='Channel',moc=channel&&x.channelSolver==='Method of characteristics',tracking=channel&&channelSolverName(x.channelSolver)==='Shock–Expansion';
   return labs.wall.inputs.filter(f=>f.key!=='wallShape'&&(!['channelHeight','upperWallSegments','channelSolver'].includes(f.key)||channel)&&(!['trackingStep','trackingStation','trackingRefine'].includes(f.key)||tracking)&&(!['mocResolution','mocStation','mocLines'].includes(f.key)||moc)&&(f.key!=='wallSide'||!channel)).map(f=>f.key==='wallSegments'?{...f,label:channel?'Lower wall segments':'Wall segments'}:f);
  }
  if(id==='airfoil')return labs.airfoil.inputs.filter(f=>{
@@ -228,9 +229,9 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
 
  }
  else if(id==='wall'){
-  result=(x.wallShape==='Custom wall'&&x.boundaryMode==='Channel'?(x.channelSolver==='Attached-wave tracking'?solveWaveTracker:x.channelSolver==='Method of characteristics'?solveChannelMOC:solveRegularChannel):solveWaveWall)({...x,gamma:g,R});notice=result.reason;
+  result=(x.wallShape==='Custom wall'&&x.boundaryMode==='Channel'?(channelSolverName(x.channelSolver)==='Method of characteristics'?solveChannelMOC:solveShockExpansionChannel):solveWaveWall)({...x,gamma:g,R});notice=result.reason;
   if(result.tracking)selectTrackingEvent(result,defaultTrackingEvent(result));
-  for(const [n,z]of Object.entries(result.regions))rows.push(...[['Mach',z.M,''],['Pressure',z.p/1000,'kPa'],['Temperature',z.T,'K'],['Density',z.rho,'kg/m³'],['Speed',z.u,'m/s'],['Flow angle',p.deg(z.theta),'°'],['Stagnation pressure',z.p0/1000,'kPa'],['Stagnation temperature',z.T0,'K']].map(([label,value,unit])=>({...row(`Region ${result.regionLabels?.[n]??n} · ${label}`,value,unit),panel:'wall'})));
+  for(const [n,z]of Object.entries(result.regions))rows.push(...[['Mach',z.M,''],['Pressure',z.p/1000,'kPa'],['Temperature',z.T,'K'],['Density',z.rho,'kg/m³'],['Speed',z.u,'m/s'],['Flow angle',p.deg(z.theta),'°'],['Stagnation pressure',z.p0/1000,'kPa'],['Stagnation temperature',z.T0,'K']].map(([label,value,unit])=>({...row(`${result.tracking?n:'Region '+(result.regionLabels?.[n]??n)} · ${label}`,value,unit),panel:'wall'})));
   for(const w of result.waves)if(w.kind==='Oblique shock'){
    const title=result.interaction?(result.same?w.title:w.title.replace('2 → 4','2 → 4′').replace('3 → 5','3 → 4')):`Wall shock · ${w.parentId??Number(w.id)-1} → ${w.id}`;
    const location=result.interaction?'Regular shock interaction · '+(/incident/i.test(w.title)?'incident wave':'matched outgoing wave'):`x = ${w.origin.x.toPrecision(6)} m`;
@@ -283,7 +284,7 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
  if(id==='cone'&&result.status==='ok'){result.relations=conicalRelations(result,x.M,g);result.referenceTable=coneReferenceTable(result.relations);}
  if(result.referenceTable)for(const r of result.referenceTable.rows)r.values.forEach((v,i)=>rows.push({...row(`${result.referenceTable.title} · ${r.label} · ${result.referenceTable.columns[i]}`,v),panel:'reference'}));
 
- return {id,inputs:x,gas:workingGas,model:id==='nozzle'?nozzleInfo(x).model:id==='wall'&&result.tracking?'Attached-wave tracking · weak shocks and discrete isentropic expansion fronts · local pressure/direction matching':id==='wall'&&result.interaction?'Regular shock interaction · exact shock/expansion relations · matched pressure and slip direction':id==='wall'&&result.moc?'Numerical isentropic 2D method of characteristics · shock-free expanding channels':id==='wall'&&result.channel?'Steady 2D custom channel · local wall streams · first-interaction limit':labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
+ return {id,inputs:x,gas:workingGas,model:id==='nozzle'?nozzleInfo(x).model:id==='wall'&&result.tracking?'Shock–Expansion · direct jump/polar relations · downstream propagation with finite expansion fronts':id==='wall'&&result.interaction?'Regular shock interaction · exact shock/expansion relations · matched pressure and slip direction':id==='wall'&&result.moc?'Numerical isentropic 2D method of characteristics · shock-free expanding channels':id==='wall'&&result.channel?'Steady 2D custom channel · local wall streams · first-interaction limit':labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
 }
 
 export function trackingShockDetails(r){const e=r.tracking?.events.find(e=>e.index===r.selectedTrackingEvent);return (e?.waves??[]).filter(w=>w.kind==='Oblique shock').map((w,i)=>shockStateSection({kind:'oblique',title:`E${e.index} · ${e.type} · shock ${i+1}`,location:`x = ${Number(e.x.toPrecision(6))} m · y = ${Number(e.y.toPrecision(6))} m`,before:w.before,after:w.after,gamma:r.gamma,R:r.R,extra:[{label:'Shock angle β',value:p.deg(w.beta),unit:'°'},{label:'Flow turn',value:p.deg(w.after.theta-w.before.theta),unit:'°'}]}));}

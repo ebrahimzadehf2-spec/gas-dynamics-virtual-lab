@@ -23,7 +23,7 @@ test('Crossing boundaries are rejected and unequal wall lengths use the shared d
 });
 test('Custom channel fields, exports, region names, plots and drawing stay consistent',()=>{
  const x={...base(),wallSegments:[{angle:8,length:3}]},d=calculate('wall',x),fields=inputDefinitions('wall',x).map(f=>f.key);
- assert.ok(fields.includes('upperWallSegments')&&fields.includes('channelHeight')&&!fields.includes('wallSide'));assert.ok(d.result.regions.L2&&d.result.regions.U2);assert.ok(d.rows.some(r=>r.label==='Region U2 · Mach'));assert.ok(d.shockDetails.some(r=>r.title.includes('1 → L2')));
- assert.ok(!/NaN|undefined/.test(sceneSVG(d.scene,x).svg));assert.ok(channelPlots(d.result).every(p=>p.chart.series.length===2));
+ assert.ok(fields.includes('upperWallSegments')&&fields.includes('channelHeight')&&!fields.includes('wallSide'));assert.ok(d.result.tracking);assert.ok(d.result.regions.Before&&d.result.regions.After);assert.ok(d.rows.some(r=>r.label==='Selected wave event'));assert.ok(d.shockDetails.some(r=>r.title.includes('Wall reflection')));
+ assert.ok(!/NaN|undefined/.test(sceneSVG(d.scene,x).svg));assert.ok(d.result.tracking.events.some(e=>e.type==='Wall reflection'));
  const single=inputDefinitions('wall',{...x,boundaryMode:'Single wall'}).map(f=>f.key);assert.ok(!single.includes('upperWallSegments')&&single.includes('wallSide'));
 });

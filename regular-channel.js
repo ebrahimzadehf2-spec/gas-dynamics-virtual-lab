@@ -3,7 +3,7 @@ import {solveInteraction,interactionPair,clipPolygon} from './wave-interaction.j
 import {deg,rad} from './physics.js';
 import {requireValue,PhysicsError} from './numerics.js';
 export function chapter6Example(number){
- const common={wallShape:'Custom wall',boundaryMode:'Channel',channelSolver:'Automatic shock–expansion',fluid:'Air',gamma:1.4,R:287,T1:300};
+ const common={wallShape:'Custom wall',boundaryMode:'Channel',channelSolver:'Shock–Expansion',fluid:'Air',gamma:1.4,R:287,T1:300};
  if(String(number)==='4')return {...common,M1:4,p1:10,channelHeight:1,wallSegments:[{angle:20,length:1.8}],upperWallSegments:[{angle:-10,length:2}]};
  requireValue(String(number)==='5','Choose example 6–4 or 6–5.');
  return {...common,M1:3,p1:100,channelHeight:3,wallSegments:[{angle:10,length:1/Math.cos(rad(10))},{angle:20,length:2}],upperWallSegments:[{angle:0,length:4}]};

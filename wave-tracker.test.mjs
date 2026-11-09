@@ -44,5 +44,5 @@ test('Profile, all contour quantities, selected-event tables, shock inspection a
  for(const quantity of ['pressure','mach','temperature','density','speed']){const view=sceneSVG({...r,kind:'wall'},x,0,quantity);assert.equal(view.field.quantity,quantity);assert.ok(!/NaN|undefined/.test(view.svg));}
  const c=trackingCoordinates(r),v=probeTracking(r,c.X(.5),c.Y(.5)),p=trackingProfile(r,.5);assert.ok(v&&v.M>1&&p);assert.equal(probeTracking(r,c.X(-1),c.Y(.5)),null);
  const rows=trackingExportRows(r);assert.ok(rows.some(z=>z.label.includes('E4')&&z.label.includes('Mach')));assert.ok(rows.every(z=>Number.isFinite(z.value)));
- assert.ok(inputDefinitions('wall',x).some(z=>z.key==='trackingStep'));assert.ok(!inputDefinitions('wall',{...x,channelSolver:'Automatic shock–expansion'}).some(z=>z.key==='trackingStep'));
+ assert.ok(inputDefinitions('wall',x).some(z=>z.key==='trackingStep'));assert.ok(inputDefinitions('wall',{...x,channelSolver:'Automatic shock–expansion'}).some(z=>z.key==='trackingStep'));
 });

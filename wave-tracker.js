@@ -9,7 +9,7 @@ import {requireValue,finite,bisect,PhysicsError} from './numerics.js';
 // finite-volume grid. Rarefaction fronts have a finite angular width: this is
 // an approximation, not an exact characteristic field or a general CFD code.
 const small=1e-9;
-const apply=(s,w,theta,g,R)=>({...state(w.M2,s.T*w.T,s.p*w.p,g,R),theta});
+const apply=(s,w,theta,g,R)=>({...state(w.M2,s.T*w.T,s.p*w.p,g,R),theta,approximate:!!s.approximate});
 const rel=(a,b)=>Math.abs(a-b)/Math.max(1,Math.abs(a),Math.abs(b));
 function accepted(s){
  requireValue(finite(s.M,s.T,s.p,s.theta)&&s.M>1.000001&&s.M<=50,'A sonic/subsonic state or Mach-50 expansion limit was reached. The accepted upstream field is retained.','tracking-limit');
@@ -55,7 +55,7 @@ function bundle(w,origin,step,g,R,allocate){
  return fronts.sort((a,b)=>a.m-b.m);
 }
 export function trackingPreset(name){
- const common={wallShape:'Custom wall',boundaryMode:'Channel',channelSolver:'Attached-wave tracking',fluid:'Air',gamma:1.4,R:287,T1:300,p1:100,M1:3,channelHeight:1,trackingStep:.5,trackingStation:1,trackingRefine:'Off'};
+ const common={wallShape:'Custom wall',boundaryMode:'Channel',channelSolver:'Shock–Expansion',fluid:'Air',gamma:1.4,R:287,T1:300,p1:100,M1:3,channelHeight:1,trackingStep:.5,trackingStation:1,trackingRefine:'Off'};
  if(name==='reflection')return {...common,wallSegments:[{angle:5,length:6}],upperWallSegments:[{angle:0,length:6}]};
  if(name==='shock-fan')return {...common,wallSegments:[{angle:2,length:4}],upperWallSegments:[{angle:2,length:4}]};
  if(name==='fans')return {...common,wallSegments:[{angle:-3,length:4}],upperWallSegments:[{angle:3,length:4}]};
@@ -95,11 +95,13 @@ function trackCore(x){
    // valid incoming solution available right up to this station.
   }
   const theta=wallTheta(side,xx),w=turn(before,theta,lower?1:-1,gamma,R);allocate(w.after);
+  const approximate=!!before.approximate||(reflection&&(lower?active.slice(0,remove):active.slice(-remove)).some(f=>f.kind==='Expansion front'));
+  if(approximate){w.after={...w.after,stateId:undefined,approximate:true};allocate(w.after);}
   const fronts=bundle(w,point,step,gamma,R,allocate);
   const consumed=reflection?(lower?active.splice(0,remove):active.splice(active.length-remove,remove)):[];
   consumed.forEach(f=>endFront(f,point));install(fronts);
   if(lower){active.unshift(...fronts);lowState=w.after;}else{active.push(...fronts);highState=w.after;}
-  const e={index:events.length+1,type:reflection?'Wall reflection':'Wall corner',side,x:xx,y:point.y,before,after:w.after,waves:[w],incoming:consumed.map(f=>f.kind),theta,pressure:w.after.p};events.push(e);
+  const e={index:events.length+1,type:reflection?'Wall reflection':'Wall corner',side,x:xx,y:point.y,before,after:w.after,waves:[w],incoming:consumed.map(f=>f.kind),theta,pressure:w.after.p,approximate};events.push(e);
   surfaces[side].push({x:xx,state:w.after});
  };
  const recordSlab=right=>{
@@ -138,6 +140,8 @@ function trackCore(x){
     else if(Math.abs(yy-wallY('upper',xNow))<yEps*5){commitWall('upper',xNow,true);}
     else{
      const lower=active[i].lower,upper=active[j].upper,match=matchTrackingStreams(lower,upper,gamma,R),point={x:xNow,y:yy};
+     const approximate=!!lower.approximate||!!upper.approximate||active.slice(i,j+1).some(f=>f.kind==='Expansion front');
+     if(approximate){match.a.after={...match.a.after,stateId:undefined,approximate:true};match.b.after={...match.b.after,stateId:undefined,approximate:true};}
      allocate(match.a.after);allocate(match.b.after);
      const a=bundle(match.a,point,step,gamma,R,allocate),b=bundle(match.b,point,step,gamma,R,allocate),contact=[];
      if(rel(match.a.after.M,match.b.after.M)>1e-8||rel(match.a.after.T,match.b.after.T)>1e-8){contact.push({origin:{...point},m:Math.tan(match.theta),angle:match.theta,kind:'Slip line',side:0,lower:match.a.after,upper:match.b.after});}
@@ -146,7 +150,7 @@ function trackCore(x){
      const consumed=active.splice(i,j-i+1,...install(outgoing));consumed.forEach(f=>endFront(f,point));
      if(!active.length){lowState=match.a.after;highState=match.b.after;}
      else{lowState=active[0].lower;highState=active.at(-1).upper;}
-     const e={index:events.length+1,type:'Wave interaction',x:xNow,y:yy,lower,upper,match,waves:[match.a,match.b],incoming:consumed.map(f=>f.kind),theta:match.theta,pressure:match.pressure,hasSlip:!!contact.length};events.push(e);lastMatch=e;
+     const e={index:events.length+1,type:'Wave interaction',x:xNow,y:yy,lower,upper,match,waves:[match.a,match.b],incoming:consumed.map(f=>f.kind),theta:match.theta,pressure:match.pressure,hasSlip:!!contact.length,approximate};events.push(e);lastMatch=e;
     }
    }else if(next.type==='wall')commitWall(next.side,xNow,true);
    // A corner and a reflection can occupy the same station; the wall solver
@@ -159,7 +163,7 @@ function trackCore(x){
  const inletFlux=s1.rho*s1.u*g.height,massResidual=final?Math.abs(fluxAt(final,true)-inletFlux)/inletFlux:0,maxMassResidual=slabs.reduce((max,z)=>Math.max(max,Math.abs(fluxAt(z,true)-inletFlux)/inletFlux),0),maxPressureResidual=events.reduce((v,e)=>Math.max(v,e.match?.residual??0),0);
  const usedStates=new Set([s1,...slabs.flatMap(s=>s.states),...events.flatMap(e=>e.waves.flatMap(w=>[w.before,w.after]))]);
  const acceptedStates=Object.fromEntries([...usedStates].map(z=>[z.stateId,z]));
- const tracking={step:deg(step),events,traces:traces.filter(f=>f.end&&f.end.x-f.origin.x>eps*.01),slabs,allStates:acceptedStates,surfaces,endX:xNow,cellCount,massResidual,maxMassResidual,maxPressureResidual,lastMatchIndex:lastMatch?.index??null};
+ const tracking={step:deg(step),hasFanApproximation:traces.some(f=>f.kind==='Expansion front'),events,traces:traces.filter(f=>f.end&&f.end.x-f.origin.x>eps*.01),slabs,allStates:acceptedStates,surfaces,endX:xNow,cellCount,massResidual,maxMassResidual,maxPressureResidual,lastMatchIndex:lastMatch?.index??null};
  return {channel:true,tracking,status:reason?'partial':'ok',reason,limitX:reason?xNow:null,geometry:g,s1,gamma,R,regions:{Inlet:s1},panels:[],waves:[]};
 }
 export function trackingProfile(r,fraction=1){

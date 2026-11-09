@@ -5,7 +5,7 @@ export function defaultTrackingEvent(r){
 export function selectTrackingEvent(r,index){
  const e=r.tracking.events.find(e=>e.index===Number(index))??r.tracking.events[0];
  r.selectedTrackingEvent=e?.index??null;
- r.regions=e?.match?{'Lower before':e.lower,'Upper before':e.upper,'Lower after':e.match.a.after,'Upper after':e.match.b.after}:e?{'Before':e.before,'After':e.after}:{'Inlet':r.s1};
+ r.regions=e?.bookRegions??(e?.match?{'Lower before':e.lower,'Upper before':e.upper,'Lower after':e.match.a.after,'Upper after':e.match.b.after}:e?{'Before':e.before,'After':e.after}:{'Inlet':r.s1});
  return e;
 }
 function incomingText(e){
@@ -18,6 +18,7 @@ export function trackingInspectionHTML(r,fmt){
  if(!e)return html+'<p>No accepted wave event. Change the wall angles or inlet Mach number.</p>';
  html+=`<label for="trackingEventSelect">Inspect event</label><select id="trackingEventSelect" aria-label="Inspect wave event">${t.events.map(z=>`<option value="${z.index}" ${z.index===e.index?'selected':''}>E${z.index} · ${z.type}${z.side?' · '+z.side+' wall':''} · x = ${fmt(z.x,5)} m</option>`).join('')}</select>`;
  html+=`<p><strong>E${e.index} · ${incomingText(e)}</strong><br>x = ${fmt(e.x,6)} m · y = ${fmt(e.y,6)} m</p>`;
+ html+=`<p class="tracking-caption"><strong>${e.bookCase?'Example '+e.bookCase+' · ':''}${e.approximate?'Approximate fan-front interaction or dependent state':'Direct shock–expansion relations'}</strong></p>`;
  html+=`<div class="tracking-event-summary"><span>${e.hasSlip?'Slip-line angle φ':e.match?'Common flow direction θ':'Wall flow direction θ'}<strong>${fmt(degrees(e.theta),6)}°</strong></span><span>${e.match?'Common downstream pressure':'Downstream pressure'}<strong>${fmt(e.pressure/1000,6)} kPa</strong></span></div>`;
  if(e.match)html+=`<p class="tracking-caption">${e.waves.map((w,i)=>(i?'Upper':'Lower')+' outgoing: '+w.kind).join(' · ')}${e.hasSlip?' · Slip line':' · No entropy/velocity contact'}</p>`;
  html+='<p class="tracking-caption">The table below and shock reports correspond to the selected event. All accepted events and states are included in JSON and CSV exports.</p>';
