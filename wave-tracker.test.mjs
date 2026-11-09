@@ -35,6 +35,8 @@ test('Straight channels generate no waves; physical and computation limits retai
  const detached=solveWaveTracker({...trackingPreset('reflection'),M1:1.2,wallSegments:[{angle:20,length:1}],upperWallSegments:[{angle:0,length:1}]});assert.equal(detached.status,'partial');assert.equal(detached.tracking.endX,0);assert.equal(detached.tracking.slabs.length,0);assert.match(detached.reason,/Attached-shock/);
  const capped=solveWaveTracker({...trackingPreset('shock-fan'),wallSegments:[{angle:5,length:6}],upperWallSegments:[{angle:5,length:6}]});assert.equal(capped.status,'partial');assert.match(capped.reason,/budget/);assert.ok(capped.tracking.endX<capped.geometry.end);assert.ok(capped.tracking.slabs.every(s=>s.right<=capped.tracking.endX+1e-8));
  assert.throws(()=>solveWaveTracker({...trackingPreset('reflection'),channelHeight:.1}),/close|cross/);
+ assert.throws(()=>solveWaveTracker({...trackingPreset('fans'),trackingStation:NaN}),/Profile station/);
+ assert.throws(()=>solveWaveTracker({...trackingPreset('fans'),trackingStation:1.1}),/Profile station/);
 });
 test('Profile, all contour quantities, selected-event tables, shock inspection and exports stay synchronized',()=>{
  const x={...defaults('wall'),...trackingPreset('reflection')},d=calculate('wall',x),r=d.result;

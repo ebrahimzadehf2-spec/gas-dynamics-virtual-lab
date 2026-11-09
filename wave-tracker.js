@@ -168,6 +168,7 @@ export function trackingProfile(r,fraction=1){
  return {x:Math.max(slab.left,Math.min(slab.right,target)),states:slab.states,ys:slab.bottoms.map((a,i)=>a+(slab.tops[i]-a)*t)};
 }
 export function solveWaveTracker(x){
+ requireValue(finite(x.trackingStation??1)&&(x.trackingStation??1)>=0&&(x.trackingStation??1)<=1,'Profile station x/L must be between 0 and 1.');
  const r=trackCore(x),profile=trackingProfile(r,x.trackingStation??1);
  if(profile){const locate=y=>profile.states[Math.max(0,profile.ys.findIndex((v,i)=>i>0&&y<=v)-1)]??profile.states.at(-1);r.regions={Inlet:r.s1,'Lower sample':profile.states[0],'Centre sample':locate((profile.ys[0]+profile.ys.at(-1))/2),'Upper sample':profile.states.at(-1)};}
  if(x.trackingRefine==='On'&&r.tracking.slabs.length){
