@@ -1,6 +1,6 @@
 import {expansion,rad,deg} from './physics.js';
 export const wedgeGeometry=w=>({x:165,y:150,length:640-165});
-export function wedgeDrawing(s,{txt,line,poly,fmt,quantity='pressure',color,range,arrow,incidence}){
+export function wedgeDrawing(s,{txt,line,poly,fmt,quantity='pressure',inputs={},color,range,arrow,incidence}){
  const w=s.wedge,options=['mach','pressure','temperature','density'],key=options.includes(quantity)?quantity:'pressure',value=z=>key==='mach'?z.M:key==='temperature'?z.T:key==='density'?z.rho:z.p,inlet={M:w.M,p:1,T:1,rho:1},values=[value(inlet),...w.faces.filter(f=>f.surface).map(f=>value(f.surface))],min=range?.min??Math.min(...values),max=range?.max??Math.max(...values),fill=z=>color((value(z)-min)/(max-min||1)),x=165,y=150,L=wedgeGeometry(w).length,at=a=>[x+L,y-L*Math.tan(a)];
  let inner='<defs><clipPath id="wedge-field"><rect x="0" y="32" width="640" height="234"/></clipPath></defs><g clip-path="url(#wedge-field)">'+poly([[0,32],[640,32],[640,266],[0,266]],fill(inlet));
  for(const f of w.faces){
@@ -15,6 +15,6 @@ export function wedgeDrawing(s,{txt,line,poly,fmt,quantity='pressure',color,rang
   inner+=txt(300,f.sign>0?52:251,`${f.side}: ${f.kind} · M = ${fmt(f.surface.M,4)}`,undefined,13);
  }
  inner+=poly([[x,y],at(w.theta),at(-w.theta)],'#d7d9d5','#283943',1.7)+txt(340,147,`θ = ${fmt(deg(w.theta))}°`,undefined,14)+incidence(32,153,rad(deg(w.alpha)),76);
- inner+='</g>';inner+=txt(18,22,'WEDGE · 2D',undefined,14);
+ inner+='</g>';inner+=txt(18,22,'WEDGE · 2D',undefined,14)+txt(164,22,`M∞ = ${fmt(w.M,5)} · p∞ = ${fmt(inputs.p1??101,5)} kPa · T∞ = ${fmt(inputs.T1??300,5)} K`,undefined,12);
  return {inner,label:'Wedge · upper and lower surface states',meta:'α is signed inlet-flow direction relative to the horizontal body axis · black: shocks',field:{quantity:key,options,min,max,label:{mach:'Mach number M',pressure:'Static pressure',temperature:'Static temperature',density:'Density'}[key],units:{mach:'M',pressure:'p/p∞',temperature:'T/T∞',density:'ρ/ρ∞'}[key],note:'Ratios reference the common freestream'}};
 }

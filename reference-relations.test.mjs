@@ -21,5 +21,5 @@ test('Inlet and outlet use their own local Mach and retain only inlet for reject
 });
 test('M5, 20-degree cone agrees with independent DOP853 reference and preserves post-shock isentropy',()=>{
  const x={...defaults('cone'),M:5,thetaCone:20},d=calculate('cone',x),r=d.result.relations;
- near(r.waveAngle,24.942724376,2e-6);near(r.surfaceMach,3.37519771,2e-7);near(r.pcp1,5.55824565,2e-7);near(r.p02p01,r.p0cp01,1e-10);near(r.rho2rho1*r.T2T1,r.p2p1);near(r.rhocRho1*r.TcT1,r.pcp1);assert.ok(r.shockTurn<r.coneAngle&&r.coneAngle<r.waveAngle);assert.ok(r.pcp1>r.p2p1);assert.equal(d.result.referenceTable.rows.length,13);
+ near(r.waveAngle,24.942724376,2e-6);near(r.surfaceMach,3.37519771,2e-7);near(r.pcp1,5.55824565,2e-7);near(r.p02p01,r.p0cp01,1e-10);near(r.rho2rho1*r.T2T1,r.p2p1);near(r.rhocRho1*r.TcT1,r.pcp1);assert.ok(r.shockTurn<r.coneAngle&&r.coneAngle<r.waveAngle);assert.ok(r.pcp1>r.p2p1);assert.equal(d.result.referenceTable.rows.length,15);
 });

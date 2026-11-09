@@ -1,4 +1,4 @@
-import {probeCone} from './cone-probe.js';
+import {probeCone} from './cone-probe.js?v=20261110-cone-conditions';
 import {wedgeGeometry} from './wedge-graphics.js?v=20261109-wedge-contour';
 import {expansion,deg} from './physics.js';
 export function probeWedge(w,x,y){

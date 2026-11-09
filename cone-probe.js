@@ -1,5 +1,5 @@
 // Shared SVG geometry and interpolation of the Taylor–Maccoll solution.
-export const coneGeometry=s=>({x:120,y:150,length:Math.min(440,125/Math.tan(s.beta))});
+export const coneGeometry=s=>({x:150,y:150,length:Math.min(230,110/Math.tan(s.beta))});
 export function probeCone(s,inputs,x,y){
  const z=coneGeometry(s),dx=x-z.x;if(!Number.isFinite(x+y)||dx<=1e-8||dx>z.length)return null;
  const theta=Math.atan2(Math.abs(y-z.y),dx),lo=s.thetaCone,hi=s.beta;
