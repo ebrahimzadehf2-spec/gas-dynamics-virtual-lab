@@ -1,0 +1,16 @@
+{
+  "description": "Uniform limiting states after complete incident fan/shock interaction, before wall reflection. Direct pressure/direction matching, independently computed with SciPy.",
+  "upstream": {
+    "M": 3.1058039947744063,
+    "p": 85394.44205974301,
+    "T": 286.7673568214957,
+    "theta": 0.03490658503988659
+  },
+  "downstream": {
+    "M": 2.999740174444714,
+    "p": 99998.84322393949,
+    "T": 300.0334084161876,
+    "theta": 0.06981476877977365
+  },
+  "beta": 0.3519943890814288
+}

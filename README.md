@@ -43,9 +43,9 @@ The Chapter 9 experiment is available at `#airfoil`; the earlier `#linear` inter
 
 Custom wall also provides Boundary layout = Channel: independent upper/lower angle-length editors, inlet gap, crossing validation, separate wall-stream properties and charts, and clipping at the first wave interaction or opposite-wall encounter. The shared displayed domain ends at the shorter axial wall extent. The original automatic/local mode stops there; the unified Shock–Expansion option continues regular reflections and interactions within its stated limits.
 
-## Isentropic characteristic field (stage 1)
+## Characteristic fields and fitted shocks
 
-Custom channels can select `Method of characteristics`. `channel-moc.js` transports the planar θ±ν invariants on successive x stations using predictor/corrector characteristic feet and linear interpolation, with wall tangency and fixed stagnation state. Only straight/outward-turning boundaries are accepted; shocks, compression corners and shock-produced entropy/vorticity need the later shock-fitting stage. The expanding-channel example exercises fan interaction and reflection. Contours and cross-channel profiles are computed from the numerical field. Resolution refinement, mass-flux closure and independent centered-fan references are checked; this is not advertised as an exact analytical contour.
+Custom channels retain `Shock–Expansion` and `Method of characteristics`. Smooth expanding channels use the original isentropic MOC. Compression cases use `channel-moc-shocks.js`: rotational pressure/direction compatibility, streamline p0 transport, separate smooth meshes at each fitted shock, weak-shock jump/compatibility fitting and regular wall-reflection events. One active fitted shock and smooth shock–fan interaction are supported. Shock/shock/contact topology, detached/Mach reflection, subsonic continuation and automatic insertion of a coalesced interior shock are explicitly outside this stage. This is independent of front tracking. Preset buttons retain the chosen method. Fitted-point inspection, every one-sided CSV/JSON shock station, local-p0 contours and cross-channel profiles are included. See [MOC_SHOCK_VALIDATION.md](MOC_SHOCK_VALIDATION.md).
 
 ## Chapter 6 worked shock interactions
 

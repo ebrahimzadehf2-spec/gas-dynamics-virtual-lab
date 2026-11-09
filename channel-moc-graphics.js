@@ -1,7 +1,9 @@
+import {fittedMocDrawing} from './channel-moc-shocks-graphics.js';
 import {channelOrdinate} from './wave-channel.js';
 const palette=['#2536c7','#0879f5','#00c8dc','#16bf59','#efe51b','#ff9718','#ee2727'];
 const shade=t=>{const v=Math.max(0,Math.min(1,t))*6,i=Math.min(5,Math.floor(v)),f=v-i,rgb=c=>c.match(/[a-f0-9]{2}/gi).map(v=>parseInt(v,16)),a=rgb(palette[i]),b=rgb(palette[i+1]);return '#'+a.map((v,k)=>Math.round(v+(b[k]-v)*f).toString(16).padStart(2,'0')).join('');};
 export function mocDrawing(s,{txt,line,poly,fmt,quantity='mach',showCharacteristics=true}){
+ if(s.moc.fitted)return fittedMocDrawing(s,{txt,line,poly,fmt,quantity,showCharacteristics});
  const rows=s.moc.rows,g=s.geometry,last=rows.at(-1),end=g.end,start=-.15*end;
  const samples=[0,end,...g.lower.points.map(p=>p.x),...g.upper.points.map(p=>p.x)].filter(x=>x<=end+1e-9),ys=samples.flatMap(x=>[channelOrdinate(g.lower,x),channelOrdinate(g.upper,x)]),lo=Math.min(...ys),hi=Math.max(...ys),scale=Math.min(560/(end-start),164/Math.max(hi-lo,.1*end)),X=x=>320+(x-(start+end)/2)*scale,Y=y=>145+((lo+hi)/2-y)*scale;
  const options=['mach','pressure','temperature','density','speed'],key=options.includes(quantity)?quantity:'mach',label={mach:'Mach number',pressure:'Static pressure',temperature:'Static temperature',density:'Density',speed:'Flow speed'}[key],unit={mach:'M',pressure:'kPa',temperature:'K',density:'kg/m³',speed:'m/s'}[key];

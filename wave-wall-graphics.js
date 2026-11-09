@@ -1,4 +1,4 @@
-import {channelDrawing} from './wave-channel-graphics.js?v=20261108-moc-stage1';
+import {channelDrawing} from './wave-channel-graphics.js?v=20261109-fitted-moc';
 import {cornerContourColor,cornerPalette} from './corner-graphics.js';
 export function wallDrawing(s,{txt,line,poly,fmt,quantity,showCharacteristics}){
  if(s.channel)return channelDrawing(s,{txt,line,poly,fmt,quantity,showCharacteristics});

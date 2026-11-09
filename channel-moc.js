@@ -1,3 +1,4 @@
+import {needsShockFitting,solveFittedChannelMOC,fittedProfilePlots} from './channel-moc-shocks.js';
 import {solveWaveChannel,channelOrdinate} from './wave-channel.js';
 import {prandtlMeyer,state} from './physics.js';
 import {requireValue,PhysicsError} from './numerics.js';
@@ -22,6 +23,7 @@ export function mocState(r,row,index){
  return {...state(M,T,p,r.gamma,r.R),theta:row.theta[index]};
 }
 export function solveChannelMOC(x){
+ if(needsShockFitting(x))return solveFittedChannelMOC(x);
  const base=solveWaveChannel(x),g=base.gamma,geometry=base.geometry,N=Math.round(x.mocResolution??81);
  requireValue(Number.isFinite(N)&&N>=31&&N<=201,'MOC resolution must be 31–201 points across the channel.');
  const result={...base,waves:[],panels:[],regions:{Inlet:base.s1},moc:{status:'unsupported',rows:[],resolution:N},status:'unsupported',limitX:0};
@@ -72,6 +74,7 @@ export function solveChannelMOC(x){
  }catch(e){if(!(e instanceof PhysicsError))throw e;result.reason=e.message;result.moc.reason=e.message;return result;}
 }
 export function mocProfilePlots(r,fraction=1){
+ if(r.moc?.fitted)return fittedProfilePlots(r,fraction);
  if(!r.moc?.rows.length)return [];
  requireValue(Number.isFinite(fraction)&&fraction>=0&&fraction<=1,'Profile station x/L must be between 0 and 1.');
  const rows=r.moc.rows,target=Math.min(rows.at(-1).x,r.geometry.end*Math.max(0,Math.min(1,fraction))),row=rows.reduce((a,b)=>Math.abs(a.x-target)<Math.abs(b.x-target)?a:b);

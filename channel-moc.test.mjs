@@ -18,8 +18,8 @@ test('Opposing expansion fans continue beyond their first interaction and preser
 test('An expansion reflected from the opposite flat wall reaches the analytical wall state',()=>{
  const r=solveChannelMOC({...base(),wallSegments:[{angle:-8,length:8}],upperWallSegments:[{angle:0,length:8}],mocResolution:151});assert.equal(r.status,'ok');assert.ok(Math.abs(r.regions['Upper outlet'].M-expansion(3,rad(16)).M2)<.001);near(r.regions['Upper outlet'].theta,0);
 });
-test('Compression corners are explicitly rejected rather than plotted as isentropic MOC',()=>{
- const x={...base(),wallSegments:[{angle:8,length:3}],upperWallSegments:[{angle:-8,length:3}]},r=solveChannelMOC(x);assert.equal(r.status,'unsupported');assert.equal(r.moc.rows.length,0);assert.match(r.reason,/shock fitting/);const svg=sceneSVG({kind:'wall',...r},x);assert.equal(svg.field,null);assert.ok(!svg.svg.includes('data-characteristic'));
+test('Unsupported two-incident-shock topology is rejected rather than plotted as isentropic MOC',()=>{
+ const x={...base(),wallSegments:[{angle:8,length:3}],upperWallSegments:[{angle:-8,length:3}]},r=solveChannelMOC(x);assert.equal(r.status,'unsupported');assert.equal(r.moc.rows.length,0);assert.match(r.reason,/shock\/shock\/contact/);const svg=sceneSVG({kind:'wall',...r},x);assert.equal(svg.field,null);assert.ok(!svg.svg.includes('data-characteristic'));
 });
 test('MOC UI, sample table, numerical plots and all contour properties use the computed field',()=>{
  const x={...base(),wallSegments:[{angle:-8,length:3}],upperWallSegments:[{angle:8,length:3}],mocResolution:61},d=calculate('wall',x);assert.ok(inputDefinitions('wall',x).some(f=>f.key==='mocResolution'));assert.ok(d.result.regions['Centre outlet']);assert.equal(d.shockDetails.length,0);assert.ok(d.rows.some(r=>r.label==='Mass-flow residual'));assert.ok(mocProfilePlots(d.result).length===6);
@@ -27,5 +27,5 @@ test('MOC UI, sample table, numerical plots and all contour properties use the c
 });
 test('Outward multi-corner walls land on corner stations and retain the correct wall tangency',()=>{
  const x={...base(),wallSegments:[{angle:-5,length:2},{angle:-10,length:2}],upperWallSegments:[{angle:0,length:4}],mocResolution:81},r=solveChannelMOC(x);assert.equal(r.status,'ok');assert.ok(r.moc.rows.some(row=>Math.abs(row.x-2*Math.cos(rad(5)))<1e-9));near(r.regions['Lower outlet'].theta,rad(-10));near(r.regions['Upper outlet'].theta,0);assert.ok(r.moc.massResidual<.02);
- const bad=solveChannelMOC({...x,wallSegments:[{angle:-5,length:2},{angle:-2,length:2}]});assert.equal(bad.status,'unsupported');assert.match(bad.reason,/shock fitting/);
+ const bad=solveChannelMOC({...x,wallSegments:[{angle:-5,length:2},{angle:-2,length:2}]});assert.equal(bad.status,'ok');assert.ok(bad.moc.fitted);assert.ok(bad.moc.traces.length>0);
 });

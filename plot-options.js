@@ -1,10 +1,10 @@
-import {trackingPlots} from './wave-tracker.js?v=20261109-corner-merge';
-import {regularChannelPlots} from './regular-channel.js?v=20261109-corner-merge';
-import {mocProfilePlots} from './channel-moc.js?v=20261109-corner-merge';
-import {channelPlots} from './wave-channel.js?v=20261109-corner-merge';
-import {wallPlots} from './wave-wall.js?v=20261109-corner-merge';
-import {airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
-import {sonicRelations} from './reference-relations.js?v=20261108-reference-relations';
+import {trackingPlots} from './wave-tracker.js?v=20261109-fitted-moc';
+import {regularChannelPlots} from './regular-channel.js?v=20261109-fitted-moc';
+import {mocProfilePlots} from './channel-moc.js?v=20261109-fitted-moc';
+import {channelPlots} from './wave-channel.js?v=20261109-fitted-moc';
+import {wallPlots} from './wave-wall.js?v=20261109-fitted-moc';
+import {airfoilPlots} from './airfoil.js?v=20261109-fitted-moc';
+import {sonicRelations} from './reference-relations.js?v=20261109-fitted-moc';
 import {linspace,deg,rad,isentropic,isentropicRelations,state,normalShock,obliqueShock,expansion,rayleighRatios,fannoRatios,linearAirfoil} from './physics.js';
 // Each selectable property has its own units and axis. Unavailable states are omitted.
 export function plotOptions(d,time=.001){

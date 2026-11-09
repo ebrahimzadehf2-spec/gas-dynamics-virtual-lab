@@ -1,20 +1,20 @@
-import {channelSolverName,solveShockExpansionChannel} from './channel-solver.js?v=20261109-geometry-navigation';
-import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-geometry-navigation';
-import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-geometry-navigation';
-import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-geometry-navigation';
-import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-geometry-navigation';
-import {solveWaveChannel} from './wave-channel.js?v=20261109-geometry-navigation';
-import {solveWaveWall,wallPlots,wallGeometry} from './wave-wall.js?v=20261109-geometry-navigation';
-import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
-import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
-import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-geometry-navigation';
-import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
-import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
-import {externalJet} from './jet.js?v=20261107-shock-states';
-import * as p from './physics.js?v=20261107-isentropic';
-import {cone} from './cone.js?v=20261108-detachment';
-import {coneLimits} from './cone-limits.js?v=20261108-detachment';
+import {channelSolverName,solveShockExpansionChannel} from './channel-solver.js?v=20261109-fitted-moc';
+import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-fitted-moc';
+import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-fitted-moc';
+import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-fitted-moc';
+import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-fitted-moc';
+import {solveWaveChannel} from './wave-channel.js?v=20261109-fitted-moc';
+import {solveWaveWall,wallPlots,wallGeometry} from './wave-wall.js?v=20261109-fitted-moc';
+import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261109-fitted-moc';
+import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261109-fitted-moc';
+import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261109-fitted-moc';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-fitted-moc';
+import {gasInputFields,gasInfo} from './gas-properties.js?v=20261109-fitted-moc';
+import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261109-fitted-moc';
+import {externalJet} from './jet.js?v=20261109-fitted-moc';
+import * as p from './physics.js?v=20261109-fitted-moc';
+import {cone} from './cone.js?v=20261109-fitted-moc';
+import {coneLimits} from './cone-limits.js?v=20261109-fitted-moc';
 const input=(key,label,value,min,max,step=1,unit='')=>({key,label,value,min,max,step,unit});
 const g=input('gamma','Specific heat ratio',1.4,1.1,1.67,.01,'γ');
 const M=(key='M1',value=2)=>input(key,'Inlet Mach number',value,.1,8,.01,'M');
@@ -243,7 +243,7 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
   if(result.tracking)selectTrackingEvent(result,defaultTrackingEvent(result));
   for(const [n,z]of Object.entries(result.regions))rows.push(...[['Mach',z.M,''],['Pressure',z.p/1000,'kPa'],['Temperature',z.T,'K'],['Density',z.rho,'kg/m³'],['Speed',z.u,'m/s'],['Flow angle',p.deg(z.theta),'°'],['Stagnation pressure',z.p0/1000,'kPa'],['Stagnation temperature',z.T0,'K']].map(([label,value,unit])=>({...row(`${result.tracking?n:'Region '+(result.regionLabels?.[n]??n)} · ${label}`,value,unit),panel:'wall'})));
   for(const w of result.waves)if(w.kind==='Oblique shock'){
-   const title=result.interaction?(result.same?w.title:w.title.replace('2 → 4','2 → 4′').replace('3 → 5','3 → 4')):`Wall shock · ${w.parentId??Number(w.id)-1} → ${w.id}`;
+   const title=result.moc?.fitted?w.title:result.interaction?(result.same?w.title:w.title.replace('2 → 4','2 → 4′').replace('3 → 5','3 → 4')):`Wall shock · ${w.parentId??Number(w.id)-1} → ${w.id}`;
    const location=result.interaction?'Regular shock interaction · '+(/incident/i.test(w.title)?'incident wave':'matched outgoing wave'):`x = ${w.origin.x.toPrecision(6)} m`;
    shockDetails.push(shockStateSection({kind:'oblique',title,location,before:w.before,after:w.after,gamma:g,R,extra:[{label:'Shock angle β',value:p.deg(w.beta),unit:'°'},{label:'Flow turn',value:p.deg(w.after.theta-w.before.theta),unit:'°'}]}));
   }
@@ -251,6 +251,7 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
   if(result.limitX!==null)rows.push(row(result.interaction?'View limit before next reflection':'Local-solution limit',result.limitX,'m'));
   if(result.tracking){rows.push(...trackingSummaryRows(result));shockDetails=trackingShockDetails(result);checks={trackingPressure:result.tracking.maxPressureResidual,trackingMass:result.tracking.maxMassResidual};}
   if(result.moc?.massResidual!==undefined)rows.push(row('Mass-flow residual',result.moc.massResidual*100,'%'));
+  if(result.moc?.fitted){rows.push(row('Maximum cross-section mass residual',result.moc.maxMassResidual*100,'%'),row('Fitted shocks',result.moc.traces.length,''),row('Maximum shock-jump residual',result.moc.maxJumpResidual,''));checks={mocMass:result.moc.maxMassResidual,shockJump:result.moc.maxJumpResidual};}
   scene={kind:result.interaction?'collision':'wall',...result};chart=(result.tracking?trackingPlots(result,x.trackingStation):result.interaction?regularChannelPlots(result):result.moc?mocProfilePlots(result,x.mocStation):wallPlots(result))[0]?.chart??{title:'No accepted characteristic field',xlabel:'Height y (m)',ylabel:'M',series:[]};
  }
  else if(id==='airfoil'){
@@ -294,7 +295,7 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
  if(id==='cone'&&result.status==='ok'){result.relations=conicalRelations(result,x.M,g);result.referenceTable=coneReferenceTable(result.relations);}
  if(result.referenceTable)for(const r of result.referenceTable.rows)r.values.forEach((v,i)=>rows.push({...row(`${result.referenceTable.title} · ${r.label} · ${result.referenceTable.columns[i]}`,v),panel:'reference'}));
 
- return {id,inputs:x,gas:workingGas,model:id==='nozzle'?nozzleInfo(x).model:id==='wall'&&result.tracking?'Shock–Expansion · direct jump/polar relations · downstream propagation with finite expansion fronts':id==='wall'&&result.interaction?'Regular shock interaction · exact shock/expansion relations · matched pressure and slip direction':id==='wall'&&result.moc?'Numerical isentropic 2D method of characteristics · shock-free expanding channels':id==='wall'&&result.channel?'Steady 2D custom channel · local wall streams · first-interaction limit':labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
+ return {id,inputs:x,gas:workingGas,model:id==='nozzle'?nozzleInfo(x).model:id==='wall'&&result.tracking?'Shock–Expansion · direct jump/polar relations · downstream propagation with finite expansion fronts':id==='wall'&&result.interaction?'Regular shock interaction · exact shock/expansion relations · matched pressure and slip direction':id==='wall'&&result.moc?.fitted?'Rotational numerical MOC · fitted regular shocks · streamline stagnation-pressure transport':id==='wall'&&result.moc?'Numerical isentropic 2D method of characteristics · shock-free expanding channels':id==='wall'&&result.channel?'Steady 2D custom channel · local wall streams · first-interaction limit':labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
 }
 
 export function trackingShockDetails(r){const e=r.tracking?.events.find(e=>e.index===r.selectedTrackingEvent);return (e?.waves??[]).filter(w=>w.kind==='Oblique shock').map((w,i)=>shockStateSection({kind:'oblique',title:`E${e.index} · ${e.type} · shock ${i+1}`,location:`x = ${Number(e.x.toPrecision(6))} m · y = ${Number(e.y.toPrecision(6))} m`,before:w.before,after:w.after,gamma:r.gamma,R:r.R,extra:[{label:'Shock angle β',value:p.deg(w.beta),unit:'°'},{label:'Flow turn',value:p.deg(w.after.theta-w.before.theta),unit:'°'}]}));}
