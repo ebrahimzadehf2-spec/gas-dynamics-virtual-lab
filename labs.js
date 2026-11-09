@@ -1,14 +1,14 @@
-import {channelSolverName,solveShockExpansionChannel} from './channel-solver.js?v=20261109-corner-merge';
-import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-corner-merge';
-import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-corner-merge';
-import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-corner-merge';
-import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-corner-merge';
-import {solveWaveChannel} from './wave-channel.js?v=20261109-corner-merge';
-import {solveWaveWall,wallPlots,wallGeometry} from './wave-wall.js?v=20261109-corner-merge';
+import {channelSolverName,solveShockExpansionChannel} from './channel-solver.js?v=20261109-geometry-navigation';
+import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-geometry-navigation';
+import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-geometry-navigation';
+import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-geometry-navigation';
+import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-geometry-navigation';
+import {solveWaveChannel} from './wave-channel.js?v=20261109-geometry-navigation';
+import {solveWaveWall,wallPlots,wallGeometry} from './wave-wall.js?v=20261109-geometry-navigation';
 import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-corner-merge';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-geometry-navigation';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
@@ -45,7 +45,7 @@ export const chapters=[
  [3,'Normal shocks','Sound, compression & entropy',['normal']],
  [4,'Rayleigh flow','Heat transfer & thermal choking',['rayleigh']],
  [5,'Fanno flow','Friction & sonic length',['fanno']],
- [6,'Waves & turning','Oblique shocks, expansion & interaction',['wall','collision']],
+ [6,'Wave Geometry Lab','Oblique shocks, expansion & interaction',['wall','collision']],
  [7,'Unsteady waves','Shock-tube wave system',['tube']],
  [8,'Nozzle flow','Quasi-1D regimes & shock position',['nozzle']],
  [9,'Supersonic airfoils','Linearized and shock–expansion methods',['airfoil']],
@@ -80,7 +80,7 @@ export const labs={
  ],model:'Steady 2D piecewise wall · weak attached shocks and centered expansions · horizontal inlet',equation:'δᵢ = θᵢ − θᵢ₋₁ · ν₂ − ν₁ = |δ| for expansion',limitations:'Local surface marching stops at the first sampled wave intersection or encounter with a later wall. Subsequent reflected waves, detached shocks and subsonic continuation are not solved. Lengths are actual segment lengths in metres; angles are signed absolute directions from horizontal. Gas side reverses compression/expansion selection.'},
  oblique:{chapter:6,title:'Oblique shock wave',tag:'COMPRESSION CORNER',description:'Change the wedge angle and watch the shock geometry and post-shock state respond.',inputs:[M('M1',3),input('theta','Ramp turn angle θ',15,0,40,.1,'°'),g,{key:'branch',label:'Shock branch',value:'weak',options:['weak','strong']}],model:'Attached, two-dimensional oblique shock · uniform downstream region',equation:'tan θ = 2 cot β (M₁² sin²β − 1) / [M₁²(γ + cos 2β) + 2]',limitations:'The attached-shock limit is checked. Detached-shock geometry is not approximated by a normal line.'},
  expansion:{chapter:6,title:'Prandtl–Meyer expansion',tag:'CENTERED EXPANSION FAN',description:'Turn a supersonic flow away from a wall through an isentropic expansion fan.',inputs:[M('M1',2),input('theta','Expansion turn angle θ',15,0,60,.1,'°'),g],model:'Steady, isentropic, centered expansion · calorically perfect gas',equation:'ν(M₂) = ν(M₁) + |θ|   ·   p₀₂ = p₀₁',limitations:'The infinite-Mach expansion limit is enforced. Displayed rays sample the continuous analytical fan.'},
- collision:{chapter:6,title:'Wave Interaction Calculator',tag:'PRESSURE · DIRECTION · SLIP LINE',description:'Solve opposing or same-direction shock interactions, including reflected expansion fans. Set the corner geometry and inspect the direct two-shock interaction.',inputs:[
+ collision:{chapter:6,title:'Wave Interaction',tag:'PRESSURE · DIRECTION · SLIP LINE',description:'Solve opposing or same-direction shock interactions, including reflected expansion fans. Set the corner geometry and inspect the direct two-shock interaction.',inputs:[
  {key:'interactionType',label:'Interaction type',value:'Opposing shocks',options:['Opposing shocks','Same-direction shocks']},
  {key:'geometryMode',label:'Geometry mode',value:'Custom geometry',options:['Custom geometry']},
  M('M1',3),T,{...P,value:100},input('thetaUpper','First corner turn',10,.1,30,.1,'°'),input('thetaLower','Second corner turn',10,.1,30,.1,'°'),
