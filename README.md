@@ -78,3 +78,5 @@ Compression ramp, Expansion corner and Custom wall share a Geometry & solution p
 Wave Interaction uses the same top Geometry & solution panel: mode, both corner turns, channel height and axial separation are above the diagram. Only gas and inlet conditions remain in the left input column. Both opposing and same-direction modes retain the same calculations.
 
 The Wave Interaction selector is shown only from Custom wall and while an interaction is active. Compression ramp and Expansion corner omit it.
+
+All laboratories use one compact header: title, model badge and assumptions link share a row, followed by the short description. Redundant chapter breadcrumbs, number badges and taglines are removed from the workspace header.
