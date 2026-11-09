@@ -1,12 +1,13 @@
-import {trackingDrawing} from './wave-tracker-graphics.js?v=20261109-compare-channel';
-import {wallDrawing} from './wave-wall-graphics.js?v=20261109-compare-channel';
-import {airfoilDrawing} from './airfoil-graphics.js?v=20261109-compare-channel';
-import {coneGeometry} from './cone-probe.js?v=20261109-compare-channel';
-import {diagramFontFamily,diagramFontStyle} from './diagram-font.js?v=20261109-compare-channel';
-import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261109-compare-channel';
-import {regionLabelPosition,calloutSlot} from './region-labels.js?v=20261109-compare-channel';
-import {readableSceneLabels} from './scene-labels.js?v=20261109-compare-channel';
-import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261109-compare-channel';
+import {wedgeDrawing} from './wedge-graphics.js';
+import {trackingDrawing} from './wave-tracker-graphics.js?v=20261109-wedge-cone';
+import {wallDrawing} from './wave-wall-graphics.js?v=20261109-wedge-cone';
+import {airfoilDrawing} from './airfoil-graphics.js?v=20261109-wedge-cone';
+import {coneGeometry} from './cone-probe.js?v=20261109-wedge-cone';
+import {diagramFontFamily,diagramFontStyle} from './diagram-font.js?v=20261109-wedge-cone';
+import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261109-wedge-cone';
+import {regionLabelPosition,calloutSlot} from './region-labels.js?v=20261109-wedge-cone';
+import {readableSceneLabels} from './scene-labels.js?v=20261109-wedge-cone';
+import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261109-wedge-cone';
 export const colors=['#167c70','#dc9b52','#779bb7','#9c84b4'];
 export const fmt=(x,d=5)=>x===null||x===undefined?'—':!Number.isFinite(x)?'—':Math.abs(x)>1e5||Math.abs(x)>0&&Math.abs(x)<1e-4?x.toExponential(3):Number(x.toPrecision(d)).toString();
 const esc=s=>String(s).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('"','&quot;');
@@ -56,7 +57,16 @@ function regionalField(s,inputs,quantity){
  }else if(['jet','nozzleJet'].includes(s.kind)){values=[s.inlet.p,s.outlet?.p??s.inlet.p,...(s.samples??[]).map(z=>z.p),...(s.nozzle?.points??[]).map(z=>z.P)];units='Pa';note='Local analytical pressure · unresolved regions hatched';}
  return {key,options,values,units,note,read};
 }
-export function sceneSVG(s,inputs,time=.001,quantity='pressure'){if(s.comparison){
+export function sceneSVG(s,inputs,time=.001,quantity='pressure'){if(s.kind==='bodyCompare'){
+ const states=[{kind:'wedge',wedge:s.wedge},s.cone?.status==='ok'?{kind:'cone',...s.cone}:null],views=states.map(z=>z?sceneSVG(z,inputs,time,quantity):null),fields=views.map(v=>v?.field).filter(Boolean),range={min:Math.min(...fields.map(f=>f.min)),max:Math.max(...fields.map(f=>f.max))};
+ const cards=states.map((z,i)=>{const view=z?sceneSVG(z,{...inputs,bodyRange:range},time,quantity):null;let svg=view?.svg??`<svg viewBox="0 0 640 300">${txt(28,145,'Cone: no accepted attached field')}</svg>`;svg=svg.replace('<svg ','<svg width="640" height="300" ').replaceAll(/id="([^"]+)"/g,(_,id)=>`id="body${i}-${id}"`).replaceAll(/url\(#([^)]*)\)/g,(_,id)=>`url(#body${i}-${id})`);return `<g transform="translate(${i*640},30)">${txt(320,-9,i?'Cone · α = 0°':`Wedge · α = ${fmt(deg(s.wedge.alpha))}°`,undefined,16,'middle')}${svg}</g>`;}).join('');
+ return {label:'Wedge and cone · matched Mach, gas and half-angle',meta:'Shared freestream ratios and color range · cone incidence is always zero',field:{...fields[0],...range,note:'Common range · each ratio references the same freestream'},svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 330" role="img" aria-label="Wedge and cone comparison">${diagramFontStyle}${cards}</svg>`};
+ }
+ if(s.kind==='wedge'){
+ const view=wedgeDrawing(s,{txt,line,poly,fmt,quantity,color:cornerContourColor,range:inputs.bodyRange,arrow:directedArrow,incidence:(x,y,a,l)=>incidenceGlyph(a,x,y,l)});
+ return {...view,field:{...view.field,palette:cornerPalette},svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 300" role="img" aria-label="Wedge at selected incidence">${diagramFontStyle}${readableSceneLabels(view.inner)}</svg>`};
+ }
+if(s.comparison){
  const c=s.comparison,valid=z=>z?.tracking?.slabs?.length||z?.moc?.rows?.length;
  let views=[c.se,c.moc].map(z=>valid(z)?sceneSVG({kind:'wall',...z},inputs,time,quantity):null);
  const fields=views.map(v=>v?.field).filter(Boolean),range=fields.length?{min:Math.min(...fields.map(f=>f.min)),max:Math.max(...fields.map(f=>f.max))}:null;
@@ -89,7 +99,7 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){if(s.comparison
  }
  else if(s.kind==='nozzle'){
   const a=s.points,scale=104/Math.max(...a.map(z=>z.h)),top=a.map(z=>[35+570*z.x,150-scale*z.h]),bottom=a.map(z=>[35+570*z.x,150+scale*z.h]);
-  const vals=fieldValues(s,'nozzle',quantity),lo=Math.min(...vals),hi=Math.max(...vals),norm=v=>hi-lo<1e-14?.5:(v-lo)/(hi-lo);
+  const vals=fieldValues(s,'nozzle',quantity),lo=inputs.bodyRange?.min??Math.min(...vals),hi=inputs.bodyRange?.max??Math.max(...vals),norm=v=>hi-lo<1e-14?.5:(v-lo)/(hi-lo);
   field={quantity,label:quantityLabel(quantity,'nozzle'),min:lo,max:hi,units:quantity==='mach'?'M':quantity==='pressure'?'p/p₀':quantity==='temperature'?'T/T₀':'ρ/ρ₀'};
   for(let i=0;i<a.length-1;i++){let z=a[i],q=a[i+1],v=vals[i];inner+=poly([[35+570*z.x,150-scale*z.h],[35+570*q.x,150-scale*q.h],[35+570*q.x,150+scale*q.h],[35+570*z.x,150+scale*z.h]],contourColor(norm(v)),contourColor(norm(v)),.6);}
   inner+=`<polyline points="${top.map(z=>z.join(',')).join(' ')}" fill="none" stroke="#657d68" stroke-width="3"/><polyline points="${bottom.map(z=>z.join(',')).join(' ')}" fill="none" stroke="#657d68" stroke-width="3"/>`;
@@ -168,7 +178,7 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){if(s.comparison
   meta='Angles to scale · local construction · reflections and mixing absent';
  }
  else if(s.kind==='coneDetached'){inner+=txt(320,135,'Detached shock · no attached solution','#17212b',18,'middle')+txt(320,175,`Maximum cone half-angle: ${fmt(s.limits.thetaMaxDeg,6)}°`,'#17212b',16,'middle');label='Attached-shock limit exceeded';meta='Detached flow field is not computed';}
- else if(s.kind==='cone'){let {x,y,length:L}=coneGeometry(s),b=s.beta,c=s.thetaCone;let h=s.history,vals=fieldValues(s,'cone',quantity),lo=Math.min(...vals),hi=Math.max(...vals),norm=v=>hi-lo<1e-14?.5:(v-lo)/(hi-lo);field={quantity,label:quantityLabel(quantity,'cone'),min:lo,max:hi,units:quantity==='mach'?'M':quantity==='pressure'?'p/p∞':quantity==='temperature'?'T/T∞':'ρ/ρ∞'};for(let i=0;i<h.length-1;i++){let a=h[i],d=h[i+1],v=vals[i];for(let sign of [-1,1])inner+=poly([[x,y],[x+L,y+sign*L*Math.tan(a.theta)],[x+L,y+sign*L*Math.tan(d.theta)]],contourColor(norm(v)));}inner+=poly([[x,y],[x+L,y-L*Math.tan(c)],[x+L,y+L*Math.tan(c)]],'#d7d9d5','#56636b',1.5);for(let sign of [-1,1])inner+=line(x,y,x+L,y+sign*L*Math.tan(b),'#000000',2);inner+=directedArrow(20,126,65,0)+directedArrow(20,175,65,0);inner+=txt(385,54,`β = ${fmt(deg(b),5)}°`,'#ab7e38',12)+txt(385,90,`θc = ${fmt(deg(c),5)}°`,undefined,12)+txt(385,215,`M꜀ = ${fmt(s.surface.M)}`,undefined,15)+txt(385,242,`p꜀/p∞ = ${fmt(s.surface.p)}`);label=`Taylor–Maccoll analytical field · ${field.label}`;meta='Conical similarity · meridional plane · no CFD';}
+ else if(s.kind==='cone'){let {x,y,length:L}=coneGeometry(s),b=s.beta,c=s.thetaCone;let h=s.history,vals=fieldValues(s,'cone',quantity),lo=inputs.bodyRange?.min??Math.min(...vals),hi=inputs.bodyRange?.max??Math.max(...vals),norm=v=>hi-lo<1e-14?.5:(v-lo)/(hi-lo);field={quantity,label:quantityLabel(quantity,'cone'),min:lo,max:hi,units:quantity==='mach'?'M':quantity==='pressure'?'p/p∞':quantity==='temperature'?'T/T∞':'ρ/ρ∞'};for(let i=0;i<h.length-1;i++){let a=h[i],d=h[i+1],v=vals[i];for(let sign of [-1,1])inner+=poly([[x,y],[x+L,y+sign*L*Math.tan(a.theta)],[x+L,y+sign*L*Math.tan(d.theta)]],(inputs.bodyRange?cornerContourColor:contourColor)(norm(v)));}inner+=poly([[x,y],[x+L,y-L*Math.tan(c)],[x+L,y+L*Math.tan(c)]],'#d7d9d5','#56636b',1.5);for(let sign of [-1,1])inner+=line(x,y,x+L,y+sign*L*Math.tan(b),'#000000',2);inner+=directedArrow(20,126,65,0)+directedArrow(20,175,65,0);inner+=txt(385,54,`β = ${fmt(deg(b),5)}°`,'#ab7e38',12)+txt(385,90,`θc = ${fmt(deg(c),5)}°`,undefined,12)+txt(385,215,`M꜀ = ${fmt(s.surface.M)}`,undefined,15)+txt(385,242,`p꜀/p∞ = ${fmt(s.surface.p)}`);label=`Taylor–Maccoll analytical field · ${field.label}`;meta='Conical similarity · meridional plane · no CFD';}
  else if(s.kind==='tube'){const xmin=-1,xmax=1.8,X=x=>35+(x-xmin)/(xmax-xmin)*570;let head=s.head*time,tail=s.tail*time,contact=s.contact*time,shock=s.shockSpeed*time;
   inner+=poly([[35,92],[X(head),92],[X(head),213],[35,213]],shade(inputs.p4*1000));for(let i=0;i<50;i++){let a=head+(tail-head)*i/50,b=head+(tail-head)*(i+1)/50,xi=(a+b)/(2*time),sound=2*s.a4/(inputs.gamma+1)-(inputs.gamma-1)*xi/(inputs.gamma+1),pressure=inputs.p4*1000*(sound/s.a4)**(2*inputs.gamma/(inputs.gamma-1));inner+=poly([[X(a),92],[X(b),92],[X(b),213],[X(a),213]],shade(pressure));}inner+=poly([[X(tail),92],[X(shock),92],[X(shock),213],[X(tail),213]],shade(s.p))+poly([[X(shock),92],[605,92],[605,213],[X(shock),213]],shade(inputs.p1*1000));for(let [x,name,col,dash] of [[head,'head','#7a9a80',''],[tail,'tail','#7a9a80',''],[contact,'contact','#62858e','5 4'],[shock,'shock','#000000','']]){inner+=line(X(x),83,X(x),223,col,1.5,dash)+txt(X(x),name==='contact'?250:69,name,col,9,'middle');}inner+=line(35,92,605,92,'#819783',2)+line(35,213,605,213,'#819783',2)+txt(320,34,`t = ${fmt(time*1000,3)} ms · before wall reflection`,undefined,11,'middle')+txt(320,162,`u₂ = u₃ = ${fmt(s.u)} m/s`,'#ffffff',14,'middle')+txt(35,281,'x = −1 m',undefined,9)+txt(605,281,'x = 1.8 m',undefined,9,'end');label='Analytical similarity field · pressure shading';meta='Expansion fan + uniform regions';}
  else if(s.kind==='wall'){const view=(s.tracking?trackingDrawing:wallDrawing)(s,{txt,line,poly,fmt,quantity,range:inputs.comparisonRange,showCharacteristics:inputs.mocLines!=='Hidden'});inner+=view.inner;label=view.label;meta=view.meta;field=view.field;}

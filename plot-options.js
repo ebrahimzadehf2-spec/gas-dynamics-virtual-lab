@@ -1,11 +1,12 @@
+import {bodyPlots} from './wedge-cone.js';
 import {comparisonPlots} from './channel-comparison.js';
-import {trackingPlots} from './wave-tracker.js?v=20261109-compare-channel';
-import {regularChannelPlots} from './regular-channel.js?v=20261109-compare-channel';
-import {mocProfilePlots} from './channel-moc.js?v=20261109-compare-channel';
-import {channelPlots} from './wave-channel.js?v=20261109-compare-channel';
-import {wallPlots} from './wave-wall.js?v=20261109-compare-channel';
-import {airfoilPlots} from './airfoil.js?v=20261109-compare-channel';
-import {sonicRelations} from './reference-relations.js?v=20261109-compare-channel';
+import {trackingPlots} from './wave-tracker.js?v=20261109-wedge-cone';
+import {regularChannelPlots} from './regular-channel.js?v=20261109-wedge-cone';
+import {mocProfilePlots} from './channel-moc.js?v=20261109-wedge-cone';
+import {channelPlots} from './wave-channel.js?v=20261109-wedge-cone';
+import {wallPlots} from './wave-wall.js?v=20261109-wedge-cone';
+import {airfoilPlots} from './airfoil.js?v=20261109-wedge-cone';
+import {sonicRelations} from './reference-relations.js?v=20261109-wedge-cone';
 import {linspace,deg,rad,isentropic,isentropicRelations,state,normalShock,obliqueShock,expansion,rayleighRatios,fannoRatios,linearAirfoil} from './physics.js';
 // Each selectable property has its own units and axis. Unavailable states are omitted.
 export function plotOptions(d,time=.001){
@@ -42,6 +43,7 @@ export function plotOptions(d,time=.001){
   if(r.simpleCorner)family('wave-dimensional-',xlabel,samples.map(([angle,w])=>[angle,state(w.M2,x.T1*w.T,x.p1*1000*w.p,g,R)]),[['p','Downstream pressure','p (kPa)',z=>z.p/1000],['T','Downstream temperature','T (K)',z=>z.T],['rho','Downstream density','ρ (kg/m³)',z=>z.rho],['u','Downstream speed','u (m/s)',z=>z.u],['p0','Downstream stagnation pressure','p₀ (kPa)',z=>z.p0/1000],['T0','Downstream stagnation temperature','T₀ (K)',z=>z.T0]]);
   if(id==='oblique')add('beta','Shock angle',xlabel,'β (°)',samples.map(([t,s])=>[t,deg(s.beta)]));
  }else if(id==='cone'){
+  if(r.bodyLab)return bodyPlots(r);
   if(!r.history)return [];
   const samples=r.history.map(s=>[deg(s.theta),s]).reverse();
   const post=r.history[0],postSpeed=Math.hypot(post.vr,post.vt);

@@ -1,21 +1,22 @@
+import {solveBodyLab,bodyPlots} from './wedge-cone.js';
 import {solveChannelComparison,comparisonPlots,comparisonExportRows} from './channel-comparison.js';
-import {channelSolverName,solveShockExpansionChannel} from './channel-solver.js?v=20261109-compare-channel';
-import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-compare-channel';
-import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-compare-channel';
-import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-compare-channel';
-import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-compare-channel';
-import {solveWaveChannel} from './wave-channel.js?v=20261109-compare-channel';
-import {solveWaveWall,wallPlots,wallGeometry} from './wave-wall.js?v=20261109-compare-channel';
-import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261109-compare-channel';
-import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261109-compare-channel';
-import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261109-compare-channel';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-compare-channel';
-import {gasInputFields,gasInfo} from './gas-properties.js?v=20261109-compare-channel';
-import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261109-compare-channel';
-import {externalJet} from './jet.js?v=20261109-compare-channel';
-import * as p from './physics.js?v=20261109-compare-channel';
-import {cone} from './cone.js?v=20261109-compare-channel';
-import {coneLimits} from './cone-limits.js?v=20261109-compare-channel';
+import {channelSolverName,solveShockExpansionChannel} from './channel-solver.js?v=20261109-wedge-cone';
+import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-wedge-cone';
+import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-wedge-cone';
+import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-wedge-cone';
+import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-wedge-cone';
+import {solveWaveChannel} from './wave-channel.js?v=20261109-wedge-cone';
+import {solveWaveWall,wallPlots,wallGeometry} from './wave-wall.js?v=20261109-wedge-cone';
+import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261109-wedge-cone';
+import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261109-wedge-cone';
+import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261109-wedge-cone';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-wedge-cone';
+import {gasInputFields,gasInfo} from './gas-properties.js?v=20261109-wedge-cone';
+import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261109-wedge-cone';
+import {externalJet} from './jet.js?v=20261109-wedge-cone';
+import * as p from './physics.js?v=20261109-wedge-cone';
+import {cone} from './cone.js?v=20261109-wedge-cone';
+import {coneLimits} from './cone-limits.js?v=20261109-wedge-cone';
 const input=(key,label,value,min,max,step=1,unit='')=>({key,label,value,min,max,step,unit});
 const g=input('gamma','Specific heat ratio',1.4,1.1,1.67,.01,'γ');
 const M=(key='M1',value=2)=>input(key,'Inlet Mach number',value,.1,8,.01,'M');
@@ -50,7 +51,7 @@ export const chapters=[
  [7,'Unsteady waves','Shock-tube wave system',['tube']],
  [8,'Nozzle flow','Quasi-1D regimes & shock position',['nozzle']],
  [9,'Supersonic airfoils','Linearized and shock–expansion methods',['airfoil']],
- [10,'Conical flow','Taylor–Maccoll similarity solution',['cone']]
+ [10,'Wedge & Cone Lab','Taylor–Maccoll similarity solution',['cone']]
 ];
 export const labs={
  foundations:{chapter:1,title:'Isentropic Flow Calculator',tag:'ISENTROPIC RELATIONS',description:'Inspect static, stagnation and sonic-reference ratios, area ratio, Mach angle and Prandtl–Meyer angle for a calorically perfect gas.',inputs:[M('M',2),T,P,g],model:'Calorically perfect ideal gas · local isentropic deceleration to rest',equation:'T₀/T = 1 + (γ − 1)M²/2',limitations:'This relation defines stagnation properties. It does not assert that an entire flow field is isentropic.'},
@@ -115,7 +116,7 @@ export const labs={
  {key:'lowerProfile',label:'Lower vertices · x/c,y/c',type:'textarea',value:'0,0; 0.3,-0.04; 0.7,-0.03; 1,0'},T,P,g
  ],model:'Steady 2D sharp airfoil · sequential weak shocks and centered expansions · small-disturbance comparison',equation:'Cp = (p − p∞)/q∞ · φ/(U∞c) = −½ ∫ Cp d(x/c)',limitations:'Surface panels and local trailing-edge pressure/direction matching are solved. Upstream wave intersections, subsequent downstream interactions, viscous wake thickness and mixing are not resolved. Shock–expansion requires attached shocks and supersonic surface states. Linearized potential is first order and uses zero perturbation potential at the leading edge.'},
  linear:{chapter:9,title:'Linearized diamond airfoil',tag:'SMALL-DISTURBANCE THEORY',description:'Inspect surface pressure, lift and wave drag for a thin, symmetric double-wedge airfoil.',inputs:[input('M','Freestream Mach',3,1.1,8,.01,'M∞'),input('alpha','Angle of attack',4,-10,10,.1,'°'),input('thickness','Thickness-to-chord ratio',.08,0,.2,.005,'t/c')],model:'Linearized supersonic flow · small slopes and angle of attack',equation:'Cᴸ = 4α/√(M∞² − 1)   ·   Cᴰ = 4[α² + (t/c)²]/√(M∞² − 1)',limitations:'Angles in the equations are radians. This is an approximation, especially near Mach 1. Viscous drag and finite-span effects are absent.'},
- cone:{chapter:10,title:'Taylor–Maccoll cone',tag:'AXISYMMETRIC SIMILARITY',description:'Solve the conical-flow ODE, locate the cone surface and recover the attached weak shock.',inputs:[input('M','Freestream Mach',2,1.2,6,.0001,'M∞'),input('thetaCone','Cone half-angle',10,1,35,.1,'°'),g],model:'Steady, inviscid, axisymmetric sharp cone · zero angle of attack',equation:'dVᵣ/dθ = Vθ   ·   Vθ(θc) = 0',limitations:'Adaptive RK4 step doubling and a bracketed shock-angle search. Strong branches and detached cones are outside this release. Full book-example acceptance is pending.'}
+ cone:{chapter:10,title:'Wedge & Cone Lab',tag:'AXISYMMETRIC SIMILARITY',description:'Compare two-dimensional wedge flow with axisymmetric cone flow; inspect shock angles and surface properties.',inputs:[{key:'bodyGeometry',label:'Geometry',value:'Cone',options:['Cone','Wedge','Compare both']},input('wedgeAlpha','Wedge angle of attack α',0,-20,20,.1,'°'),input('M','Freestream Mach',2,1.2,6,.0001,'M∞'),input('thetaCone','Cone half-angle',10,1,35,.1,'°'),g],model:'Steady, inviscid, axisymmetric sharp cone · zero angle of attack',equation:'dVᵣ/dθ = Vθ   ·   Vθ(θc) = 0',limitations:'Adaptive RK4 step doubling and a bracketed shock-angle search. Strong branches and detached cones are outside this release. Full book-example acceptance is pending.'}
 };
 function experimentInputs(id,x={}){
  if(id==='wall'){
@@ -135,6 +136,7 @@ function experimentInputs(id,x={}){
 
  if(id==='collision')return labs.collision.inputs.filter(f=>f.key!=='geometryMode').map(f=>f.key==='thetaUpper'?{...f,label:x.interactionType==='Same-direction shocks'?'First wall angle θ₁':'Lower-wall angle θₗ'}:f.key==='thetaLower'?{...f,label:x.interactionType==='Same-direction shocks'?'Additional second turn':'Upper-wall downward angle θᵤ',help:'Positive magnitude. The second turn is additional, not an absolute wall angle.'}:f.key==='cornerSpacing'?{...f,help:x.interactionType==='Same-direction shocks'?'Axial distance between the two lower-wall corners.':'Upper corner x minus lower corner x. The lower corner is at x = 0.'}:f);
  if(id==='balances')return labs.balances.inputs.filter(f=>f.key!=='M2'||x.balanceMode!=='Solve outlet speed').map(f=>f.key==='T2'&&x.balanceMode==='Solve outlet speed'?{...f,section:'Outlet state'}:f);
+ if(id==='cone')return labs.cone.inputs.filter(f=>f.key!=='wedgeAlpha'||x.bodyGeometry==='Wedge'||x.bodyGeometry==='Compare both').map(f=>f.key==='thetaCone'?{...f,label:x.bodyGeometry==='Wedge'?'Wedge half-angle':x.bodyGeometry==='Compare both'?'Common body half-angle':'Cone half-angle'}:f);
  if(id!=='nozzle')return ['oblique','expansion'].includes(id)?[...labs[id].inputs,cornerView]:labs[id].inputs;
  const type=x.nozzleType??'Converging–diverging';
  return labs.nozzle.inputs.filter(f=>{
@@ -280,6 +282,10 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
  }
  else if(id==='linear'){result=p.linearAirfoil(x);notice=result.warning;rows=[row('Lift coefficient',result.CL,'Cᴸ'),row('Wave-drag coefficient',result.CD,'Cᴰ,wave'),row('Upper front Cp',result.CpUF),row('Upper rear Cp',result.CpUR),row('Lower front Cp',result.CpLF),row('Lower rear Cp',result.CpLR)];scene={kind:'linear',...result,...x};chart={title:'Piecewise surface pressure',xlabel:'Chord position x/c',ylabel:'Pressure coefficient Cp',series:[{name:'Upper surface',points:[[0,result.CpUF],[.5,result.CpUF],[.5,result.CpUR],[1,result.CpUR]]},{name:'Lower surface',points:[[0,result.CpLF],[.5,result.CpLF],[.5,result.CpLR],[1,result.CpLR]]}]};}
 
+ else if(id==='cone'&&['Wedge','Compare both'].includes(x.bodyGeometry)){
+  result=solveBodyLab({...x,gamma:g});notice=result.reason;rows=result.bodyTable.rows.flatMap(r=>r.values.map((v,i)=>({...row(`${result.bodyTable.columns[i]} · ${r.label}`,v,r.unit),panel:'body'})));
+  rows.push(row('Maximum attached wedge turn',p.deg(result.wedge.thetaMax),'°'),row('Maximum wedge half-angle at this incidence',Math.max(0,p.deg(result.wedge.thetaMax)-Math.abs(x.wedgeAlpha??0)),'°'));if(result.cone?.limits)rows.push(row('Maximum attached cone half-angle',result.cone.limits.thetaMaxDeg,'°'),row('Minimum cone Mach for attached shock',result.cone.limits.critical.M,'Mcrit'));scene={kind:result.bodyComparison?'bodyCompare':'wedge',...result};chart=bodyPlots(result)[0]?.chart??{title:'No accepted surface states',xlabel:'η',ylabel:'M',series:[]};
+ }
  else if(id==='cone'){
   if(!Number.isFinite(x.alpha??0)||Math.abs(x.alpha??0)>1e-12)throw new p.PhysicsError('unsupported-incidence','Taylor–Maccoll requires zero angle of attack.');
   const limits=coneLimits(x.M,x.thetaCone,g),boundaryRows=[row('Maximum attached cone half-angle',limits.thetaMaxDeg,'θc,max (°)'),row('Minimum Mach for attached shock',limits.critical.M,'Mcrit')];
@@ -295,10 +301,10 @@ export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(i
 
  else throw new Error('Unknown laboratory.');
  if(id==='rayleigh'||id==='fanno')result.referenceTable=ductReferenceTable(id,result,g);
- if(id==='cone'&&result.status==='ok'){result.relations=conicalRelations(result,x.M,g);result.referenceTable=coneReferenceTable(result.relations);}
+ if(id==='cone'&&!result.bodyLab&&result.status==='ok'){result.relations=conicalRelations(result,x.M,g);result.referenceTable=coneReferenceTable(result.relations);}
  if(result.referenceTable)for(const r of result.referenceTable.rows)r.values.forEach((v,i)=>rows.push({...row(`${result.referenceTable.title} · ${r.label} · ${result.referenceTable.columns[i]}`,v),panel:'reference'}));
 
- return {id,inputs:x,gas:workingGas,model:result.comparison?'Shock–Expansion and numerical MOC · common-domain comparison':id==='nozzle'?nozzleInfo(x).model:id==='wall'&&result.tracking?'Shock–Expansion · direct jump/polar relations · downstream propagation with finite expansion fronts':id==='wall'&&result.interaction?'Regular shock interaction · exact shock/expansion relations · matched pressure and slip direction':id==='wall'&&result.moc?.fitted?'Rotational numerical MOC · fitted regular shocks · streamline stagnation-pressure transport':id==='wall'&&result.moc?'Numerical isentropic 2D method of characteristics · shock-free expanding channels':id==='wall'&&result.channel?'Steady 2D custom channel · local wall streams · first-interaction limit':labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
+ return {id,inputs:x,gas:workingGas,model:result.bodyLab?(result.bodyComparison?'2D wedge at selected incidence · axisymmetric cone at zero incidence':'2D symmetric wedge · weak attached shocks and centered expansions'):result.comparison?'Shock–Expansion and numerical MOC · common-domain comparison':id==='nozzle'?nozzleInfo(x).model:id==='wall'&&result.tracking?'Shock–Expansion · direct jump/polar relations · downstream propagation with finite expansion fronts':id==='wall'&&result.interaction?'Regular shock interaction · exact shock/expansion relations · matched pressure and slip direction':id==='wall'&&result.moc?.fitted?'Rotational numerical MOC · fitted regular shocks · streamline stagnation-pressure transport':id==='wall'&&result.moc?'Numerical isentropic 2D method of characteristics · shock-free expanding channels':id==='wall'&&result.channel?'Steady 2D custom channel · local wall streams · first-interaction limit':labs[id].model,result,rows,shockDetails,chart,scene,checks,notice,version:'0.1.0'};
 }
 
 export function trackingShockDetails(r){const e=r.tracking?.events.find(e=>e.index===r.selectedTrackingEvent);return (e?.waves??[]).filter(w=>w.kind==='Oblique shock').map((w,i)=>shockStateSection({kind:'oblique',title:`E${e.index} · ${e.type} · shock ${i+1}`,location:`x = ${Number(e.x.toPrecision(6))} m · y = ${Number(e.y.toPrecision(6))} m`,before:w.before,after:w.after,gamma:r.gamma,R:r.R,extra:[{label:'Shock angle β',value:p.deg(w.beta),unit:'°'},{label:'Flow turn',value:p.deg(w.after.theta-w.before.theta),unit:'°'}]}));}

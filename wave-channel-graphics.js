@@ -1,4 +1,4 @@
-import {mocDrawing} from './channel-moc-graphics.js?v=20261109-compare-channel';
+import {mocDrawing} from './channel-moc-graphics.js?v=20261109-wedge-cone';
 import {channelOrdinate} from './wave-channel.js';
 import {cornerContourColor,cornerPalette} from './corner-graphics.js';
 export function channelDrawing(s,{txt,line,poly,fmt,quantity,range,showCharacteristics}){
