@@ -2,14 +2,15 @@ import {channelOrdinate} from './wave-channel.js';
 import {fittedState} from './channel-moc-shocks.js';
 import {cornerPalette,cornerContourColor} from './corner-graphics.js';
 export function fittedMocGeometry(s){
- const g=s.geometry,end=g.end,start=-.12*end,xs=[0,end,...g.lower.points.map(p=>p.x),...g.upper.points.map(p=>p.x)].filter(x=>x<=end),ys=xs.flatMap(x=>[channelOrdinate(g.lower,x),channelOrdinate(g.upper,x)]),lo=Math.min(...ys),hi=Math.max(...ys),scale=Math.min(560/(end-start),175/Math.max(hi-lo,.1*end)),X=x=>320+(x-(start+end)/2)*scale,Y=y=>145+((lo+hi)/2-y)*scale;
+ const g=s.geometry,end=g.end,start=-.12*end,xs=[0,end,...g.lower.points.map(p=>p.x),...g.upper.points.map(p=>p.x)].filter(x=>x<=end),ys=xs.flatMap(x=>[channelOrdinate(g.lower,x),channelOrdinate(g.upper,x)]),lo=Math.min(...ys),hi=Math.max(...ys),scale=Math.min(560/(end-start),170/Math.max(hi-lo,.1*end)),X=x=>320+(x-(start+end)/2)*scale,Y=y=>145+((lo+hi)/2-y)*scale;
  return {end,start,lo,hi,scale,X,Y};
 }
 function at(s,row,y){const p=row.parts.find(p=>y>=p.lo-1e-9&&y<=p.hi+1e-9);if(!p)return null;const n=p.z.length,t=Math.max(0,Math.min(n-1,(y-p.lo)/(p.hi-p.lo||1)*(n-1))),j=Math.min(n-2,Math.floor(t)),a=p.z[j],b=p.z[j+1],f=t-j;return fittedState(s,{theta:a.theta+(b.theta-a.theta)*f,l:a.l+(b.l-a.l)*f,k:a.k+(b.k-a.k)*f});}
 export function probeFittedMOC(s,sx,sy){const v=fittedMocGeometry(s),x=(sx-320)/v.scale+(v.start+v.end)/2,y=(145-sy)/v.scale+(v.lo+v.hi)/2,rows=s.moc.rows;if(!rows.length||x<0||x>rows.at(-1).x||y<channelOrdinate(s.geometry.lower,x)||y>channelOrdinate(s.geometry.upper,x))return null;const row=rows.reduce((a,b)=>Math.abs(a.x-x)<Math.abs(b.x-x)?a:b),z=at(s,row,y);return z?{x,y,...z}:null;}
-export function fittedMocDrawing(s,{txt,line,poly,fmt,quantity='mach',showCharacteristics=true}){
+export function fittedMocDrawing(s,{txt,line,poly,fmt,range=null,quantity='mach',showCharacteristics=true}){
  const rows=s.moc.rows,g=s.geometry,v=fittedMocGeometry(s),{X,Y,start,end}=v,last=rows.at(-1),options=['mach','pressure','temperature','density','speed'],key=options.includes(quantity)?quantity:'mach',get=z=>key==='mach'?z.M:key==='pressure'?z.p/1000:key==='temperature'?z.T:key==='density'?z.rho:z.u,labels={mach:'Mach number',pressure:'Static pressure',temperature:'Static temperature',density:'Density',speed:'Flow speed'},units={mach:'M',pressure:'kPa',temperature:'K',density:'kg/m³',speed:'m/s'};
  let min=Infinity,max=-Infinity;for(const row of rows)for(const p of row.parts)for(const z of p.z){const a=get(fittedState(s,z));min=Math.min(min,a);max=Math.max(max,a);}
+ if(range){min=range.min;max=range.max;}
  const color=z=>cornerContourColor((get(z)-min)/(max-min||1)),boundary=wall=>[{x:start,y:channelOrdinate(wall,0)},...wall.points.filter(p=>p.x<end-1e-9),{x:end,y:channelOrdinate(wall,end)}],lower=boundary(g.lower),upper=boundary(g.upper),points=p=>p.map(q=>[X(q.x),Y(q.y)]);
  let inner='<rect width="640" height="300" fill="#fcfdfc"/>';
  inner+='<defs><clipPath id="fitted-domain">'+poly([...points(lower),...points(upper.slice().reverse())],'#fff')+'</clipPath></defs>';

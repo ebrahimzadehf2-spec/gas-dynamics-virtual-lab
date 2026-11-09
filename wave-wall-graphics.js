@@ -1,7 +1,7 @@
-import {channelDrawing} from './wave-channel-graphics.js?v=20261109-fitted-moc';
+import {channelDrawing} from './wave-channel-graphics.js?v=20261109-compare-channel';
 import {cornerContourColor,cornerPalette} from './corner-graphics.js';
-export function wallDrawing(s,{txt,line,poly,fmt,quantity,showCharacteristics}){
- if(s.channel)return channelDrawing(s,{txt,line,poly,fmt,quantity,showCharacteristics});
+export function wallDrawing(s,{txt,line,poly,fmt,quantity,range,showCharacteristics}){
+ if(s.channel)return channelDrawing(s,{txt,line,poly,fmt,quantity,range,showCharacteristics});
  const g=s.geometry,L=g.end,sign=g.side==='Gas above wall'?1:-1,start=-.2*L,end=L*1.04;
  const ys=g.points.map(p=>p.y),ymin=Math.min(...ys)-L*.12,ymax=Math.max(...ys)+L*.12,scale=Math.min(570/(end-start),177/(ymax-ymin));
  const X=x=>35+(x-start)*scale,Y=y=>145-((ymin+ymax)/2-y)*-scale,V=p=>[X(p.x),Y(p.y)];

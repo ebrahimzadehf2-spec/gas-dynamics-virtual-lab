@@ -1,0 +1,12 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {solveChannelComparison,comparisonProfile,comparisonPlots,comparisonExportRows,sampleMOC} from './channel-comparison.js';
+import {trackingPreset} from './wave-tracker.js';import {chapter6Example} from './regular-channel.js';import {calculate,defaults,inputDefinitions} from './labs.js';import {sceneSVG} from './graphics.js';
+for(const name of ['reflection','shock-fan','fans'])test('Compare both: '+name,()=>{
+ const x={...defaults('wall'),...trackingPreset(name),channelSolver:'Compare both',mocResolution:31,comparisonStation:.43,mocLines:'Hidden'},r=solveChannelComparison(x),p=comparisonProfile(r,.43);
+ assert.equal(r.channelMethod,'Compare both');assert.equal(p.samples.length,101);assert.ok(Math.abs(p.x-r.geometry.end*.43)<1e-12);assert.ok(p.samples.every(z=>['se','moc'].every(k=>Number.isFinite(z[k].M)&&z[k].p>0)));
+ assert.equal(comparisonPlots(r,.43).length,7);assert.equal(comparisonExportRows(r,.43).length,2122);
+ const d=calculate('wall',x),v=sceneSVG(d.scene,x,0,'pressure');assert.ok(v.svg.includes('compare0-'));assert.ok(v.svg.includes('compare1-'));assert.ok(v.field.min<=v.field.max);assert.ok(d.rows.some(z=>z.panel==='comparison'));const fields=inputDefinitions('wall',x).map(f=>f.key);assert.ok(fields.includes('comparisonStation')&&fields.includes('mocResolution')&&fields.includes('trackingStep'));assert.ok(!fields.includes('mocStation')&&!fields.includes('trackingStation'));
+});
+test('No downstream comparison is fabricated when MOC rejects the initial shock topology',()=>{const r=solveChannelComparison({...chapter6Example(4),mocResolution:31});assert.equal(r.comparison.end,0);assert.equal(comparisonProfile(r,1),null);assert.equal(comparisonPlots(r,1).length,0);assert.ok(r.comparison.se.tracking.slabs.length);});
+test('Same physical station is clipped to common accepted extent',()=>{const r=solveChannelComparison({...trackingPreset('reflection'),mocResolution:31});r.comparison.end=.4*r.geometry.end;const p=comparisonProfile(r,.9);assert.equal(p.x,r.comparison.end);assert.equal(p.clipped,true);assert.equal(sampleMOC(r.comparison.moc,r.geometry.end+1,.5),null);});
+test('MOC interpolation reproduces a uniform inlet without changing stagnation pressure',()=>{const r=solveChannelComparison({...trackingPreset('fans'),wallSegments:[{angle:0,length:4}],upperWallSegments:[{angle:0,length:4}],mocResolution:31}),p=comparisonProfile(r,.5);for(const z of p.samples){assert.ok(Math.abs(z.moc.M-3)<1e-10);assert.ok(Math.abs(z.moc.p0/z.se.p0-1)<1e-10);}});

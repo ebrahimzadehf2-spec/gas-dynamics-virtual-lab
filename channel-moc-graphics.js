@@ -1,15 +1,17 @@
+import {cornerContourColor,cornerPalette} from './corner-graphics.js';
 import {fittedMocDrawing} from './channel-moc-shocks-graphics.js';
 import {channelOrdinate} from './wave-channel.js';
 const palette=['#2536c7','#0879f5','#00c8dc','#16bf59','#efe51b','#ff9718','#ee2727'];
 const shade=t=>{const v=Math.max(0,Math.min(1,t))*6,i=Math.min(5,Math.floor(v)),f=v-i,rgb=c=>c.match(/[a-f0-9]{2}/gi).map(v=>parseInt(v,16)),a=rgb(palette[i]),b=rgb(palette[i+1]);return '#'+a.map((v,k)=>Math.round(v+(b[k]-v)*f).toString(16).padStart(2,'0')).join('');};
-export function mocDrawing(s,{txt,line,poly,fmt,quantity='mach',showCharacteristics=true}){
- if(s.moc.fitted)return fittedMocDrawing(s,{txt,line,poly,fmt,quantity,showCharacteristics});
- const rows=s.moc.rows,g=s.geometry,last=rows.at(-1),end=g.end,start=-.15*end;
- const samples=[0,end,...g.lower.points.map(p=>p.x),...g.upper.points.map(p=>p.x)].filter(x=>x<=end+1e-9),ys=samples.flatMap(x=>[channelOrdinate(g.lower,x),channelOrdinate(g.upper,x)]),lo=Math.min(...ys),hi=Math.max(...ys),scale=Math.min(560/(end-start),164/Math.max(hi-lo,.1*end)),X=x=>320+(x-(start+end)/2)*scale,Y=y=>145+((lo+hi)/2-y)*scale;
+export function mocDrawing(s,{txt,line,poly,fmt,range=null,quantity='mach',showCharacteristics=true}){
+ if(s.moc.fitted)return fittedMocDrawing(s,{txt,line,poly,fmt,quantity,showCharacteristics,range});
+ const rows=s.moc.rows,g=s.geometry,last=rows.at(-1),end=g.end,start=-.12*end;
+ const samples=[0,end,...g.lower.points.map(p=>p.x),...g.upper.points.map(p=>p.x)].filter(x=>x<=end+1e-9),ys=samples.flatMap(x=>[channelOrdinate(g.lower,x),channelOrdinate(g.upper,x)]),lo=Math.min(...ys),hi=Math.max(...ys),scale=Math.min(560/(end-start),170/Math.max(hi-lo,.1*end)),X=x=>320+(x-(start+end)/2)*scale,Y=y=>145+((lo+hi)/2-y)*scale;
  const options=['mach','pressure','temperature','density','speed'],key=options.includes(quantity)?quantity:'mach',label={mach:'Mach number',pressure:'Static pressure',temperature:'Static temperature',density:'Density',speed:'Flow speed'}[key],unit={mach:'M',pressure:'kPa',temperature:'K',density:'kg/m³',speed:'m/s'}[key];
  const value=M=>{const factor=1+(s.gamma-1)*M*M/2,T=s.s1.T0/factor,p=s.s1.p0/factor**(s.gamma/(s.gamma-1));return key==='mach'?M:key==='pressure'?p/1000:key==='temperature'?T:key==='density'?p/(s.R*T):M*Math.sqrt(s.gamma*s.R*T);};
  let min=Infinity,max=-Infinity;for(const row of rows)for(const M of row.M){const v=value(M);min=Math.min(min,v);max=Math.max(max,v);}
- const color=v=>shade(max-min<1e-10?.5:(v-min)/(max-min)),boundary=wall=>[{x:start,y:channelOrdinate(wall,0)},...wall.points.filter(p=>p.x<end-1e-9),{x:end,y:channelOrdinate(wall,end)}],lower=boundary(g.lower),upper=boundary(g.upper),points=ps=>ps.map(p=>[X(p.x),Y(p.y)]);
+ if(range){min=range.min;max=range.max;}
+ const color=v=>cornerContourColor(max-min<1e-10?.5:(v-min)/(max-min)),boundary=wall=>[{x:start,y:channelOrdinate(wall,0)},...wall.points.filter(p=>p.x<end-1e-9),{x:end,y:channelOrdinate(wall,end)}],lower=boundary(g.lower),upper=boundary(g.upper),points=ps=>ps.map(p=>[X(p.x),Y(p.y)]);
  let inner='<rect width="640" height="300" fill="#fcfdfc"/>'+txt(24,27,'CHARACTERISTIC FIELD','#263c4d',14)+txt(616,27,'Isentropic · numerical MOC','#53616b',13,'end');
  inner+='<defs><clipPath id="moc-domain">'+poly([...points(lower),...points(upper.slice().reverse())],'#fff')+'</clipPath></defs>';
  inner+=poly([...points(lower),[X(end),246],[X(start),246]],'#edf0f2')+poly([...points(upper),[X(end),43],[X(start),43]],'#edf0f2');
@@ -30,5 +32,5 @@ export function mocDrawing(s,{txt,line,poly,fmt,quantity='mach',showCharacterist
  for(const wall of [lower,upper])for(let i=0;i<wall.length-1;i++)inner+=line(X(wall[i].x),Y(wall[i].y),X(wall[i+1].x),Y(wall[i+1].y),'#000',1.4);
  if(last.x<end-1e-8)inner+=line(X(last.x),43,X(last.x),246,'#8e6d42',1,'4 4');
  inner+=txt(24,269,'Numerical field · refine resolution to assess accuracy','#53616b',12)+txt(616,292,showCharacteristics?'Dark: C+ · light: C− · arrows: flow':'Arrows: local flow direction','#53616b',12,'end');
- return {inner,label:'Isentropic characteristic field inside the channel',meta:'MOC with interpolation · no shock fitting or viscous effects',field:{quantity:key,options,label,min,max,units:unit,note:'Computed 2D field · numerical MOC',palette}};
+ return {inner,label:'Isentropic characteristic field inside the channel',meta:'MOC with interpolation · no shock fitting or viscous effects',field:{quantity:key,options,label,min,max,units:unit,note:'Computed 2D field · numerical MOC',palette:cornerPalette}};
 }

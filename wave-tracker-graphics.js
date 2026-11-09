@@ -11,9 +11,10 @@ export function probeTracking(s,px,py){
  const p=trackingProfile(s,x/s.geometry.end);if(!p||y<p.ys[0]||y>p.ys.at(-1))return null;
  const i=p.ys.findIndex((v,i)=>i>0&&y<=v);return {x,y,...p.states[Math.max(0,i-1)]};
 }
-export function trackingDrawing(s,{txt,line,poly,fmt,quantity='mach'}){
+export function trackingDrawing(s,{txt,line,poly,fmt,range=null,quantity='mach'}){
  const {X,Y,end,start}=trackingCoordinates(s),g=s.geometry,t=s.tracking,options=['mach','pressure','temperature','density','speed'],key=options.includes(quantity)?quantity:'mach',value=z=>key==='mach'?z.M:key==='temperature'?z.T:key==='density'?z.rho:key==='speed'?z.u:z.p/1000,label={mach:'Mach number',pressure:'Static pressure',temperature:'Static temperature',density:'Density',speed:'Flow speed'}[key],units={mach:'M',pressure:'kPa',temperature:'K',density:'kg/m³',speed:'m/s'}[key];
  let min=Infinity,max=-Infinity;for(const slab of t.slabs)for(const z of slab.states){const v=value(z);min=Math.min(min,v);max=Math.max(max,v);}if(!Number.isFinite(min))min=max=value(s.s1);
+ if(range){min=range.min;max=range.max;}
  const color=v=>cornerContourColor(max-min<1e-10?.5:(v-min)/(max-min)),boundary=(wall,initial)=>[{x:start,y:initial},...wall.points.filter(p=>p.x<end-1e-9),{x:end,y:channelOrdinate(wall,end)}],lower=boundary(g.lower,0),upper=boundary(g.upper,g.height),V=p=>[X(p.x),Y(p.y)],point=(x,y)=>`${Number(X(x).toFixed(3))},${Number(Y(y).toFixed(3))}`;
  let inner='<rect width="640" height="300" fill="#fcfdfc"/>'+txt(24,27,'SHOCK–EXPANSION','#263c4d',14)+txt(616,27,t.hasFanApproximation?`Fan width ≤ ${fmt(t.step,3)}°`:'Direct jump relations','#53616b',12,'end');
  inner+=poly([...lower.map(V),[X(end),246],[X(start),246]],'#edf0f2')+poly([...upper.map(V),[X(end),43],[X(start),43]],'#edf0f2');

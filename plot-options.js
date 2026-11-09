@@ -1,10 +1,11 @@
-import {trackingPlots} from './wave-tracker.js?v=20261109-fitted-moc';
-import {regularChannelPlots} from './regular-channel.js?v=20261109-fitted-moc';
-import {mocProfilePlots} from './channel-moc.js?v=20261109-fitted-moc';
-import {channelPlots} from './wave-channel.js?v=20261109-fitted-moc';
-import {wallPlots} from './wave-wall.js?v=20261109-fitted-moc';
-import {airfoilPlots} from './airfoil.js?v=20261109-fitted-moc';
-import {sonicRelations} from './reference-relations.js?v=20261109-fitted-moc';
+import {comparisonPlots} from './channel-comparison.js';
+import {trackingPlots} from './wave-tracker.js?v=20261109-compare-channel';
+import {regularChannelPlots} from './regular-channel.js?v=20261109-compare-channel';
+import {mocProfilePlots} from './channel-moc.js?v=20261109-compare-channel';
+import {channelPlots} from './wave-channel.js?v=20261109-compare-channel';
+import {wallPlots} from './wave-wall.js?v=20261109-compare-channel';
+import {airfoilPlots} from './airfoil.js?v=20261109-compare-channel';
+import {sonicRelations} from './reference-relations.js?v=20261109-compare-channel';
 import {linspace,deg,rad,isentropic,isentropicRelations,state,normalShock,obliqueShock,expansion,rayleighRatios,fannoRatios,linearAirfoil} from './physics.js';
 // Each selectable property has its own units and axis. Unavailable states are omitted.
 export function plotOptions(d,time=.001){
@@ -12,7 +13,7 @@ export function plotOptions(d,time=.001){
  const add=(key,label,xlabel,ylabel,points,extra={})=>options.push({key,label,chart:{title:label,xlabel,ylabel,zeroBaseline:false,series:[{name:label,points:points.filter(p=>p.every(Number.isFinite))}],...extra}});
  const family=(prefix,xlabel,samples,properties)=>{for(const [key,label,unit,value] of properties)add(prefix+key,label,xlabel,unit,samples.map(([a,s])=>[a,value(s)]));};
  if(id==='wall'&&r.simpleCorner)return plotOptions({...d,id:r.cornerKind},time);
- if(id==='wall')return r.tracking?trackingPlots(r,x.trackingStation):r.interaction?regularChannelPlots(r):r.moc?mocProfilePlots(r,x.mocStation):r.channel?channelPlots(r):wallPlots(r);
+ if(id==='wall')return r.comparison?comparisonPlots(r,x.comparisonStation):r.tracking?trackingPlots(r,x.trackingStation):r.interaction?regularChannelPlots(r):r.moc?mocProfilePlots(r,x.mocStation):r.channel?channelPlots(r):wallPlots(r);
  if(id==='airfoil')return airfoilPlots(r);
  const original={key:'overview',label:d.chart.title,chart:d.chart};options.push(original);
  if(id==='foundations'){

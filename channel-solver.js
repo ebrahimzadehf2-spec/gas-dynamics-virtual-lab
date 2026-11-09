@@ -1,7 +1,7 @@
 import {solveWaveTracker} from './wave-tracker.js';
 import {regularPattern} from './regular-channel.js';
 import {deg} from './physics.js';
-export function channelSolverName(value){return value==='Method of characteristics'?value:'Shock–Expansion';}
+export function channelSolverName(value){return ['Method of characteristics','Compare both'].includes(value)?value:'Shock–Expansion';}
 // One public shock/expansion method: direct local jump/polar relations are
 // used at each event; finite rarefaction fronts continue the downstream field.
 export function solveShockExpansionChannel(x){
