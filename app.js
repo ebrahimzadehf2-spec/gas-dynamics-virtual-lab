@@ -1,35 +1,35 @@
-import {channelSolverName} from './channel-solver.js?v=20261109-geometry-navigation';
-import {trackingPreset} from './wave-tracker.js?v=20261109-geometry-navigation';
-import {trackingInspectionHTML,selectTrackingEvent,trackingExportRows,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-geometry-navigation';
-import {probeTracking} from './wave-tracker-graphics.js?v=20261109-geometry-navigation';
-import {chapter6Example} from './regular-channel.js?v=20261109-geometry-navigation';
-import {wallPresets} from './wave-wall.js?v=20261109-geometry-navigation';
-import {airfoilTables} from './airfoil-tables.js?v=20261109-geometry-navigation';
-import {airfoilGeometry,segmentSurface,surfaceSegments,presetSegments} from './airfoil.js?v=20261109-geometry-navigation';
+import {channelSolverName} from './channel-solver.js?v=20261109-interaction-sidebar';
+import {trackingPreset} from './wave-tracker.js?v=20261109-interaction-sidebar';
+import {trackingInspectionHTML,selectTrackingEvent,trackingExportRows,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-interaction-sidebar';
+import {probeTracking} from './wave-tracker-graphics.js?v=20261109-interaction-sidebar';
+import {chapter6Example} from './regular-channel.js?v=20261109-interaction-sidebar';
+import {wallPresets} from './wave-wall.js?v=20261109-interaction-sidebar';
+import {airfoilTables} from './airfoil-tables.js?v=20261109-interaction-sidebar';
+import {airfoilGeometry,segmentSurface,surfaceSegments,presetSegments} from './airfoil.js?v=20261109-interaction-sidebar';
 import {nearestChartPoint} from './chart-probe.js?v=20261108-chart-tooltip';
 import {probeCone} from './cone-probe.js?v=20261108-cone-hover';
-import {plotOptions} from './plot-options.js?v=20261109-geometry-navigation';
+import {plotOptions} from './plot-options.js?v=20261109-interaction-sidebar';
 import {selectGas,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {pressureSweepPlan,advancePressure} from './sweep.js?v=20261107-shock-states';
-import {labs,chapters,defaults,inputDefinitions,nozzleInfo,trackingShockDetails} from './labs.js?v=20261109-geometry-navigation';
-import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261109-geometry-navigation';
+import {labs,chapters,defaults,inputDefinitions,nozzleInfo,trackingShockDetails} from './labs.js?v=20261109-interaction-sidebar';
+import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261109-interaction-sidebar';
 const $=id=>document.getElementById(id);let id='rayleigh',inputs={},request=0,current=null,pinned=null,timer,animation=false,frame,lastFrame=0,sceneTime=.001,fieldQuantity='pressure';
 let pendingWaveShape=null,pendingBookCase=null,pendingCustomChannel=false,pendingLegacyCorner=null;
 let displayedChart=null,chartChoices=[],plotSelection={};
-const worker=new Worker(new URL('./worker.js?v=20261109-geometry-navigation',import.meta.url),{type:'module'});
-function renderNav(){ $('chapters').innerHTML=chapters.map(([n,title,,ids])=>`<a href="#${ids[0]}" class="${ids.includes(id)?'active':''}" ${ids.includes(id)?'aria-current="page"':''}><span><span class="nav-title">${title}</span></span></a>`).join('');}
+const worker=new Worker(new URL('./worker.js?v=20261109-interaction-sidebar',import.meta.url),{type:'module'});
+function renderNav(){ $('chapters').innerHTML=chapters.flatMap(c=>c[0]===6?c[3].map(k=>[6,labs[k].title,'',[k]]):[c]).map(([n,title,,ids])=>`<a href="#${ids[0]}" class="${ids.includes(id)?'active':''}" ${ids.includes(id)?'aria-current="page"':''}><span><span class="nav-title">${title}</span></span></a>`).join('');}
 function openLab(){stopSweep();clearTimeout(timer);sweepPositioned=false;sweepFinished=false;let next=location.hash.slice(1)||'rayleigh';if(['oblique','expansion'].includes(next)){pendingLegacyCorner=next;pendingWaveShape=next==='oblique'?'Compression ramp':'Expansion corner';location.hash='wall';return;}if(next==='linear'){location.hash='airfoil';return;}if(!labs[next]){location.hash='rayleigh';return;}id=next;current=null;stopAnimation();inputs=defaults(id);try{let saved=JSON.parse(localStorage.getItem('gdvl-inputs-'+id+(id==='balances'?'-cv2':'')));if(saved&&typeof saved==='object'){for(let k in inputs)if(k in saved)inputs[k]=saved[k];if(id==='wall'&&saved.theta===undefined&&saved.wallSegments?.length)inputs.theta=Math.abs(saved.wallSegments[0].angle);if(id==='airfoil'&&!saved.geometryInput){const old=airfoilGeometry({...inputs,geometryInput:inputs.airfoilShape==='Custom panels'?'Coordinates':'Dimensions'});inputs.upperSegments=surfaceSegments(old.upper);inputs.lowerSegments=surfaceSegments(old.lower);inputs.geometryInput='Angles & lengths';}if(['oblique','expansion'].includes(id)&&saved.cornerColorVersion!==1)inputs.cornerView='Analytical contours';}}catch{}inputs.fluid=gasInfo(inputs).name;if(pendingWaveShape){if(id==='wall'){inputs.wallShape=pendingWaveShape;if(pendingWaveShape!=='Custom wall'){inputs.boundaryMode='Single wall';inputs.theta=Math.abs(wallPresets[pendingWaveShape][0].angle);}inputs.wallSegments=wallPresets[pendingWaveShape].map(p=>({...p,angle:p.angle*(inputs.wallSide==='Gas below wall'?-1:1)}));}if(id==='collision'){inputs.interactionType=pendingWaveShape;inputs.geometryMode='Custom geometry';}pendingWaveShape=null;}if(pendingBookCase){inputs={...inputs,...chapter6Example(pendingBookCase)};pendingBookCase=null;}if(pendingLegacyCorner&&id==='wall'){let legacy=defaults(pendingLegacyCorner);try{legacy={...legacy,...JSON.parse(localStorage.getItem('gdvl-inputs-'+pendingLegacyCorner)||'{}')};}catch{}for(const key of ['M1','T1','p1','gamma','R','fluid','branch','cornerView','theta'])if(legacy[key]!==undefined)inputs[key]=legacy[key];inputs.wallSide='Gas above wall';pendingLegacyCorner=null;}if(pendingCustomChannel&&id==='wall'){inputs.wallShape='Custom wall';inputs.boundaryMode='Channel';inputs.channelSolver='Shock–Expansion';pendingCustomChannel=false;}if(id==='collision')inputs.geometryMode='Custom geometry';if(id==='wall')inputs.channelSolver=channelSolverName(inputs.channelSolver);let l=labs[id];$('tag').textContent=l.tag;$('labTitle').textContent=l.title;$('description').textContent=l.description;$('chapterBadge').textContent=`CH. ${String(l.chapter).padStart(2,'0')}`;$('crumb').textContent=`CHAPTER ${String(l.chapter).padStart(2,'0')}`;$('model').textContent=l.model;$('limitations').textContent=l.limitations;let chapter=chapters.find(x=>x[0]===l.chapter);$('labTabs').hidden=l.chapter===6||chapter[3].length<2;$('labTabs').innerHTML=l.chapter===6||chapter[3].length<2?'':chapter[3].map(k=>`<button type="button" data-lab="${k}" class="${id===k?'active':''}">${labs[k].title}</button>`).join('');$('labTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>location.hash=b.dataset.lab);renderNav();renderInputs();solve();}
-const waveShapes=['Compression ramp','Expansion corner','Custom wall','Wave Interaction'];
+const waveShapes=['Compression ramp','Expansion corner','Custom wall'];
 function waveGeometrySelector(){
- if(labs[id].chapter!==6)return '';
- const value=id==='wall'?inputs.wallShape:id==='collision'?'Wave Interaction':id==='expansion'?'Expansion corner':'Compression ramp';
+ if(id!=='wall')return '';
+ const value=inputs.wallShape;
  return `<div class="input-group"><div class="input-top"><label for="waveGeometrySelect">Geometry</label></div><select id="waveGeometrySelect">${waveShapes.map(v=>`<option ${v===value?'selected':''}>${v}</option>`).join('')}</select><div style="display:flex;gap:12px;margin-top:8px"><button type="button" id="book64" class="text-btn">Example 6–4</button><button type="button" id="book65" class="text-btn">Example 6–5</button></div></div>`;
 }
 function bindWaveGeometrySelector(){
  const select=$('waveGeometrySelect');if(!select)return;
  for(const number of [4,5])$('book6'+number).onclick=()=>{if(id!=='wall'){pendingBookCase=number;location.hash='wall';}else{inputs={...inputs,...chapter6Example(number)};renderInputs();solve();}};
- select.onchange=()=>{const shape=select.value,next=shape==='Wave Interaction'?'collision':'wall';pendingWaveShape=next==='wall'?shape:null;if(id===next)openLab();else location.hash=next;};
+ select.onchange=()=>{pendingWaveShape=select.value;openLab();};
 }
 function wallSegmentEditor(f){
  const key=f.key,segments=inputs[key],side=key==='upperWallSegments'?'Upper wall':inputs.boundaryMode==='Channel'&&inputs.wallShape==='Custom wall'?'Lower wall':'Wall';

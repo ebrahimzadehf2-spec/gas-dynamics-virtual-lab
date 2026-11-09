@@ -193,7 +193,7 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
   }
   const [gx,gy]=V([z.startX+.04*z.H,z.H*.6]);inner+=directedArrow(gx,gy,55,0,'#263c4d');
   const [bx,by]=V(z.B);if(s.interaction){inner+=incidenceGlyph(s.delta,520,156,62,'#263c4d').replaceAll('α =','φ =');}inner+=`<circle cx="${bx}" cy="${by}" r="3" fill="#000000"/>`;
-  inner+=txt(24,24,s.bookCase?`EXAMPLE ${s.bookCase}`:s.same?'SAME-DIRECTION INTERACTION':'OPPOSING SHOCK INTERACTION',undefined,14)+(s.interaction?'':txt(616,24,`φ = ${fmt(s.slipAngle,6)}°`,undefined,17,'end'));
+  if(!s.interaction)inner+=txt(616,24,`φ = ${fmt(s.slipAngle,6)}°`,undefined,17,'end');
   inner+=txt(24,273,`B: x = ${fmt(z.B[0],5)}, y = ${fmt(z.B[1],5)} ${s.geometryMode==='Custom geometry'?'m':'(normalized)'}`,undefined,14)+txt(616,273,s.a.kind,undefined,14,'end');
   label='Analytical wave interaction · signed slip angle · equal geometric scale';meta='Dashed: slip line · solid black: shocks · view ends before wall reflections';
  }
