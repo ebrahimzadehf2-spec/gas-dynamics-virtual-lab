@@ -80,3 +80,5 @@ Wave Interaction uses the same top Geometry & solution panel: mode, both corner 
 The Wave Interaction selector is shown only from Custom wall and while an interaction is active. Compression ramp and Expansion corner omit it.
 
 All laboratories use one compact header: title, model badge and assumptions link share a row, followed by the short description. Redundant chapter breadcrumbs, number badges and taglines are removed from the workspace header.
+
+Supersonic Airfoil Lab uses the same top Geometry & solution panel for shape, geometry definition, solution method and incidence. Surface segment/coordinate editors are grouped under Edit surface geometry. Gas and freestream Mach, temperature and pressure remain in the left column.
