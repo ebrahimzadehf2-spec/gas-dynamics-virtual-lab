@@ -1,8 +1,8 @@
-import {trackingPlots} from './wave-tracker.js?v=20261109-interaction-layout';
-import {regularChannelPlots} from './regular-channel.js?v=20261109-interaction-layout';
-import {mocProfilePlots} from './channel-moc.js?v=20261109-interaction-layout';
-import {channelPlots} from './wave-channel.js?v=20261109-interaction-layout';
-import {wallPlots} from './wave-wall.js?v=20261109-interaction-layout';
+import {trackingPlots} from './wave-tracker.js?v=20261109-corner-merge';
+import {regularChannelPlots} from './regular-channel.js?v=20261109-corner-merge';
+import {mocProfilePlots} from './channel-moc.js?v=20261109-corner-merge';
+import {channelPlots} from './wave-channel.js?v=20261109-corner-merge';
+import {wallPlots} from './wave-wall.js?v=20261109-corner-merge';
 import {airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
 import {sonicRelations} from './reference-relations.js?v=20261108-reference-relations';
 import {linspace,deg,rad,isentropic,isentropicRelations,state,normalShock,obliqueShock,expansion,rayleighRatios,fannoRatios,linearAirfoil} from './physics.js';
@@ -11,6 +11,7 @@ export function plotOptions(d,time=.001){
  const {id,inputs:x,result:r}=d,g=x.gamma??1.4,R=x.R??287,options=[];
  const add=(key,label,xlabel,ylabel,points,extra={})=>options.push({key,label,chart:{title:label,xlabel,ylabel,zeroBaseline:false,series:[{name:label,points:points.filter(p=>p.every(Number.isFinite))}],...extra}});
  const family=(prefix,xlabel,samples,properties)=>{for(const [key,label,unit,value] of properties)add(prefix+key,label,xlabel,unit,samples.map(([a,s])=>[a,value(s)]));};
+ if(id==='wall'&&r.simpleCorner)return plotOptions({...d,id:r.cornerKind},time);
  if(id==='wall')return r.tracking?trackingPlots(r,x.trackingStation):r.interaction?regularChannelPlots(r):r.moc?mocProfilePlots(r,x.mocStation):r.channel?channelPlots(r):wallPlots(r);
  if(id==='airfoil')return airfoilPlots(r);
  const original={key:'overview',label:d.chart.title,chart:d.chart};options.push(original);
@@ -37,6 +38,7 @@ export function plotOptions(d,time=.001){
   else{xlabel='Flow turn θ (°)';samples=linspace(0,Math.max(r.effectiveTurn??x.theta,.001),121).map(t=>[t,expansion(x.M1,rad(t),g)]);}
   family('wave-',xlabel,samples,[['M','Downstream Mach','M₂',s=>s.M2],['p','Pressure ratio','p₂/p₁',s=>s.p],['T','Temperature ratio','T₂/T₁',s=>s.T],['rho','Density ratio','ρ₂/ρ₁',s=>s.rho],['p0','Stagnation-pressure recovery','p₀₂/p₀₁',s=>s.p0]]);
   add('wave-speed','Speed ratio',xlabel,'u₂/u₁',samples.map(([t,z])=>[t,z.M2/x.M1*Math.sqrt(z.T)]));
+  if(r.simpleCorner)family('wave-dimensional-',xlabel,samples.map(([angle,w])=>[angle,state(w.M2,x.T1*w.T,x.p1*1000*w.p,g,R)]),[['p','Downstream pressure','p (kPa)',z=>z.p/1000],['T','Downstream temperature','T (K)',z=>z.T],['rho','Downstream density','ρ (kg/m³)',z=>z.rho],['u','Downstream speed','u (m/s)',z=>z.u],['p0','Downstream stagnation pressure','p₀ (kPa)',z=>z.p0/1000],['T0','Downstream stagnation temperature','T₀ (K)',z=>z.T0]]);
   if(id==='oblique')add('beta','Shock angle',xlabel,'β (°)',samples.map(([t,s])=>[t,deg(s.beta)]));
  }else if(id==='cone'){
   if(!r.history)return [];

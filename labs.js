@@ -1,14 +1,14 @@
-import {channelSolverName,solveShockExpansionChannel} from './channel-solver.js?v=20261109-interaction-layout';
-import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-interaction-layout';
-import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-interaction-layout';
-import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-interaction-layout';
-import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-interaction-layout';
-import {solveWaveChannel} from './wave-channel.js?v=20261109-interaction-layout';
-import {solveWaveWall,wallPlots} from './wave-wall.js?v=20261109-interaction-layout';
+import {channelSolverName,solveShockExpansionChannel} from './channel-solver.js?v=20261109-corner-merge';
+import {solveWaveTracker,trackingPlots} from './wave-tracker.js?v=20261109-corner-merge';
+import {defaultTrackingEvent,selectTrackingEvent,trackingSummaryRows} from './wave-tracker-tables.js?v=20261109-corner-merge';
+import {solveRegularChannel,regularChannelPlots} from './regular-channel.js?v=20261109-corner-merge';
+import {solveChannelMOC,mocProfilePlots} from './channel-moc.js?v=20261109-corner-merge';
+import {solveWaveChannel} from './wave-channel.js?v=20261109-corner-merge';
+import {solveWaveWall,wallPlots,wallGeometry} from './wave-wall.js?v=20261109-corner-merge';
 import {solveAirfoil,airfoilPlots} from './airfoil.js?v=20261108-trailing-edge';
 import {ductReferenceTable,conicalRelations,coneReferenceTable} from './reference-relations.js?v=20261108-reference-relations';
 import {solveInteraction,interactionPair} from './wave-interaction.js?v=20261108-incidence';
-import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-interaction-layout';
+import {expandedInput,validateMachInputs} from './input-ranges.js?v=20261109-corner-merge';
 import {gasInputFields,gasInfo} from './gas-properties.js?v=20261107-output-layout';
 import {controlVolume,controlVolumePreset} from './control-volume.js?v=20261107-gases';
 import {externalJet} from './jet.js?v=20261107-shock-states';
@@ -45,7 +45,7 @@ export const chapters=[
  [3,'Normal shocks','Sound, compression & entropy',['normal']],
  [4,'Rayleigh flow','Heat transfer & thermal choking',['rayleigh']],
  [5,'Fanno flow','Friction & sonic length',['fanno']],
- [6,'Waves & turning','Oblique shocks, expansion & interaction',['wall','oblique','expansion','collision']],
+ [6,'Waves & turning','Oblique shocks, expansion & interaction',['wall','collision']],
  [7,'Unsteady waves','Shock-tube wave system',['tube']],
  [8,'Nozzle flow','Quasi-1D regimes & shock position',['nozzle']],
  [9,'Supersonic airfoils','Linearized and shock–expansion methods',['airfoil']],
@@ -64,6 +64,7 @@ export const labs={
  fanno:{chapter:5,title:'Fanno friction lab',tag:'FRICTIONAL CHOKING',description:'Explore how wall friction drives either Mach branch toward the sonic state.',inputs:[M('M1',.5),T,P,input('lambda','Friction length fᴅ L / D',.2,0,3,.01,''),g],model:'Steady, adiabatic, constant-area flow · Darcy friction convention',equation:'F(M₂) = F(M₁) − fᴅL/D   ·   fᴅ = 4fꜰ',limitations:'Momentum flux decreases through wall shear. Constant gas properties and an imposed total friction parameter are assumed.'},
  wall:{chapter:6,title:'Wave Geometry Lab',tag:'BUILD · TURN · INSPECT',description:'Build a piecewise-straight wall from segment angles and lengths, then inspect its compression shocks, expansion fans and local flow states.',inputs:[
  {key:'wallShape',label:'Wall template',value:'Compression ramp',options:['Compression ramp','Expansion corner','Custom wall']},
+ input('theta','Turn angle',12,0,60,.1,'°'),{key:'branch',label:'Shock branch',value:'weak',options:['weak','strong']},cornerView,
  {key:'boundaryMode',label:'Boundary layout',value:'Single wall',options:['Single wall','Channel']},
  {key:'channelSolver',label:'Channel solution',value:'Shock–Expansion',options:['Shock–Expansion','Method of characteristics']},
  input('trackingStep','Expansion-front width',.5,.25,2,.25,'°'),
@@ -117,7 +118,7 @@ export const labs={
 function experimentInputs(id,x={}){
  if(id==='wall'){
   const channel=x.wallShape==='Custom wall'&&x.boundaryMode==='Channel',moc=channel&&x.channelSolver==='Method of characteristics',tracking=channel&&channelSolverName(x.channelSolver)==='Shock–Expansion';
-  return labs.wall.inputs.filter(f=>f.key!=='wallShape'&&(f.key!=='boundaryMode'||x.wallShape==='Custom wall')&&(!['channelHeight','upperWallSegments','channelSolver'].includes(f.key)||channel)&&(!['trackingStep','trackingStation','trackingRefine'].includes(f.key)||tracking)&&(!['mocResolution','mocStation','mocLines'].includes(f.key)||moc)&&(f.key!=='wallSide'||!channel)).map(f=>f.key==='wallSegments'?{...f,label:channel?'Lower wall segments':'Wall segments'}:f);
+  return labs.wall.inputs.filter(f=>f.key!=='wallShape'&&(!['theta','cornerView'].includes(f.key)||x.wallShape!=='Custom wall')&&(f.key!=='branch'||x.wallShape==='Compression ramp')&&(f.key!=='wallSegments'||x.wallShape==='Custom wall')&&(f.key!=='boundaryMode'||x.wallShape==='Custom wall')&&(!['channelHeight','upperWallSegments','channelSolver'].includes(f.key)||channel)&&(!['trackingStep','trackingStation','trackingRefine'].includes(f.key)||tracking)&&(!['mocResolution','mocStation','mocLines'].includes(f.key)||moc)&&(f.key!=='wallSide'||!channel)).map(f=>f.key==='theta'?{...f,label:x.wallShape==='Expansion corner'?'Expansion turn angle':'Ramp turn angle',max:x.wallShape==='Expansion corner'?60:40}:f.key==='wallSegments'?{...f,label:channel?'Lower wall segments':'Wall segments'}:f);
  }
  if(id==='airfoil')return labs.airfoil.inputs.filter(f=>{
   const flat=x.airfoilShape==='Flat plate',custom=x.airfoilShape==='Custom panels',angles=x.geometryInput==='Angles & lengths';
@@ -145,7 +146,7 @@ function experimentInputs(id,x={}){
   return true;
  }).map(f=>f.key==='backRatio'&&type==='Diverging'?{...f,label:'Back-to-inlet stagnation pressure'}:f.key==='areaRatio'&&type==='Diverging'?{...f,label:'Exit-to-inlet area',unit:'Aₑ/Aᵢ'}:f.key==='minAreaCm2'?{...f,label:type==='Converging'?'Exit area':type==='Diverging'?'Inlet area':'Throat area'}:f);
 }
-export function inputDefinitions(id,x={}){return [...gasInputFields(x,id),...experimentInputs(id,x).filter(f=>!['gamma','R'].includes(f.key)).map(f=>expandedInput(id,f))];}
+export function inputDefinitions(id,x={}){return [...gasInputFields(x,id),...experimentInputs(id,x).filter(f=>!['gamma','R'].includes(f.key)).map(f=>expandedInput(id==='wall'&&x.wallShape==='Expansion corner'?'expansion':id,f))];}
 export function nozzleInfo(x){
  const base=labs.nozzle,type=x.nozzleType??'Converging–diverging';
  if(['External waves','Nozzle + external waves'].includes(x.nozzleView))return {description:x.nozzleView==='Nozzle + external waves'?'Follow the complete schematic planar nozzle and the first pair of waves from its exit lips.':'Match the local jet pressure to the ambient through a centered expansion or a weak attached oblique shock.',model:'Local planar upper-lip model · uniform axial exit · pressure-matched free jet boundary',equation:'p₂ = pₐ   ·   expansion: Δθ = ν(M₂) − ν(Mₑ)   ·   shock: θ–β–M',limitations:'External waves shows a local upper lip. Nozzle + external waves shows the complete schematic planar nozzle and mirrored first lip waves, ending at their first centerline interaction. A sonic-exit fan is schematic in the combined view; use the local view for its simple-wave details. This is not a full interacting or axisymmetric jet solution. Opposite-lip interactions, reflections, shock cells, Mach disks, separation and mixing are not computed. Ambient is treated as a constant-pressure boundary.'};
@@ -155,7 +156,16 @@ export function nozzleInfo(x){
 }
 
 export function defaults(id){return {...Object.fromEntries(labs[id].inputs.map(x=>[x.key,x.value])),...(id==='balances'?controlVolumePreset():{}),fluid:'Air',gamma:1.4,R:287,...(['oblique','expansion'].includes(id)?{cornerView:'Analytical contours',cornerColorVersion:1}:{})};}
-export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(id,x);let g=workingGas.gamma,R=workingGas.R,result,rows=[],chart,scene,checks={},notice=null,shockDetails=[];
+export function calculate(id,x){const workingGas=gasInfo(x);validateMachInputs(id==='wall'&&x.wallShape==='Expansion corner'?'expansion':id,x);let g=workingGas.gamma,R=workingGas.R,result,rows=[],chart,scene,checks={},notice=null,shockDetails=[];
+ if(id==='wall'&&['Compression ramp','Expansion corner'].includes(x.wallShape)){
+  const cornerKind=x.wallShape==='Compression ramp'?'oblique':'expansion',theta=x.theta??Math.abs(x.wallSegments?.[0]?.angle??12),side=x.wallSide==='Gas below wall'?-1:1,turn=side*(cornerKind==='oblique'?theta:-theta),d=calculate(cornerKind,{...x,theta,alpha:0}),ratios=d.result;
+  const s1={...p.state(x.M1,x.T1,x.p1*1000,g,R),theta:0},s2={...p.state(ratios.M2,x.T1*ratios.T,x.p1*1000*ratios.p,g,R),theta:p.rad(turn)},geometry=wallGeometry({...x,wallSegments:[{angle:turn,length:x.wallSegments?.[0]?.length??1}]});
+  const result={...ratios,simpleCorner:true,cornerKind,s1,regions:{1:s1,2:s2},geometry,panels:[{...geometry.panels[0],state:s2}],waves:[],gamma:g,R};
+  const properties=[['Mach',z=>z.M,''],['Pressure',z=>z.p/1000,'kPa'],['Temperature',z=>z.T,'K'],['Density',z=>z.rho,'kg/m³'],['Speed',z=>z.u,'m/s'],['Flow angle',z=>p.deg(z.theta),'°'],['Stagnation pressure',z=>z.p0/1000,'kPa'],['Stagnation temperature',z=>z.T0,'K']];
+  const dimensionalRows=Object.entries(result.regions).flatMap(([n,z])=>properties.map(([label,value,unit])=>({...row(`Region ${n} · ${label}`,value(z),unit),panel:'wall'})));
+  const shockDetails=cornerKind==='oblique'?[shockStateSection({kind:'oblique',title:`${x.branch??'weak'} oblique shock · 1 → 2`,location:'Compression ramp · direct relations',before:s1,after:s2,gamma:g,R,extra:[{label:'Shock angle β',value:p.deg(ratios.beta),unit:'°'},{label:'Flow-turn magnitude',value:theta,unit:'°'}]})]:[];
+  return {...d,id:'wall',inputs:{...x,theta},result,rows:[...d.rows,...dimensionalRows],shockDetails,scene:{...d.scene,mirrorCorner:side<0}};
+ }
  // Chapter 6 uses horizontal incident flow; discard legacy saved incidence.
  if(['oblique','expansion','collision'].includes(id)){x={...x};delete x.alpha;}
  if(id==='foundations'){result=p.state(x.M,x.T1,x.p1*1000,g,R);result.relations=p.isentropicRelations(x.M,g);rows=[row('Stagnation temperature',result.T0,'K'),row('Stagnation pressure',result.p0/1000,'kPa'),row('Speed of sound',result.a,'m/s'),row('Velocity',result.u,'m/s'),row('Density',result.rho,'kg/m³')];const r=result.relations;rows.push(...[

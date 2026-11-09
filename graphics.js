@@ -1,10 +1,10 @@
-import {trackingDrawing} from './wave-tracker-graphics.js?v=20261109-interaction-layout';
-import {wallDrawing} from './wave-wall-graphics.js?v=20261109-interaction-layout';
-import {airfoilDrawing} from './airfoil-graphics.js?v=20261109-interaction-layout';
+import {trackingDrawing} from './wave-tracker-graphics.js?v=20261109-corner-merge';
+import {wallDrawing} from './wave-wall-graphics.js?v=20261109-corner-merge';
+import {airfoilDrawing} from './airfoil-graphics.js?v=20261109-corner-merge';
 import {coneGeometry} from './cone-probe.js?v=20261108-cone-hover';
 import {diagramFontFamily,diagramFontStyle} from './diagram-font.js?v=20261108-scientific-font';
 import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261108-flow-arrows';
-import {regionLabelPosition} from './region-labels.js?v=20261108-interior-labels';
+import {regionLabelPosition,calloutSlot} from './region-labels.js?v=20261109-corner-merge';
 import {readableSceneLabels} from './scene-labels.js?v=20261108-scientific-font';
 import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261107-shock-states';
 export const colors=['#167c70','#dc9b52','#779bb7','#9c84b4'];
@@ -77,7 +77,7 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
  else if(s.kind==='normal'){inner+=poly([[20,70],[315,70],[315,230],[20,230]],shade(f.values[0]))+poly([[315,70],[620,70],[620,230],[315,230]],shade(f.values[1]));inner+=flow()+line(315,53,315,245,'#000000',3)+txt(324,48,'NORMAL SHOCK', '#000000',9);inner+=txt(110,118,'UPSTREAM','#ffffff',9)+txt(110,151,`M₁ ${fmt(s.s1.M)}`,'#ffffff',22)+txt(110,184,`${fmt(s.s1.p/1000)} kPa`,'#ffffff',12)+txt(375,118,'DOWNSTREAM','#ffffff',9)+txt(375,151,`M₂ ${fmt(s.s2.M)}`,'#ffffff',22)+txt(375,184,`${fmt(s.s2.p/1000)} kPa`,'#ffffff',12);label='Uniform analytical regions · pressure jump';}
  else if(s.kind==='duct'){inner+=poly([[40,85],[600,85],[600,215],[40,215]],'#e5efe2');if(s.s2){inner+=poly([[40,86],[320,86],[320,214],[40,214]],shade(f.values[0]))+poly([[320,86],[600,86],[600,214],[320,214]],shade(f.values[1]));inner+=txt(68,130,'INLET',undefined,9)+txt(68,158,`M₁ = ${fmt(s.s1.M)}`,undefined,19)+txt(398,130,'OUTLET',undefined,9)+txt(398,158,`M₂ = ${fmt(s.s2.M)}`,undefined,19);for(let x=90;x<590;x+=80)inner+=arrow(x,187,35)+dot(x+10,187,x);if(s.process==='rayleigh'){for(let x=220;x<420;x+=42)inner+=line(x,44,x,77,'#cb9b60',1.4)+(inputs.q>=0?poly([[x,79],[x-3,73],[x+3,73]],'#cb9b60'):poly([[x,42],[x-3,48],[x+3,48]],'#cb9b60'));inner+=txt(320,33,`${inputs.q>=0?'HEATING':'COOLING'}  q = ${fmt(inputs.q)} kJ/kg`,'#a77944',10,'middle');}else inner+=txt(320,50,`WALL FRICTION · fᴅL/D = ${fmt(inputs.lambda)}`,'#8a7862',10,'middle');label='Illustration of endpoint states · shading is schematic';}else inner+=txt(320,152,'NO STEADY OUTLET FOR THIS INLET','#a3784c',14,'middle');inner+=line(40,85,600,85,'#819a85',3)+line(40,215,600,215,'#819a85',3);}
  else if(s.kind==='oblique'||s.kind==='expansion'){
-  const view=cornerDrawing(s,{...inputs,_cornerQuantity:quantity,_cornerUp:f.values[0],_cornerDown:f.values.at(-1)},{txt,line,poly,shade,fmt});inner+=view.inner;label=view.label;meta=view.meta;
+  const view=cornerDrawing(s,{...inputs,_cornerQuantity:quantity,_cornerUp:f.values[0],_cornerDown:f.values.at(-1)},{txt,line,poly,shade,fmt});inner+=s.mirrorCorner?`<g transform="translate(0 300) scale(1 -1)">${view.inner.replace(/<text ([^>]*?)x="([^"]+)" y="([^"]+)"([^>]*)>/g,(_,pre,x,y,post)=>`<text ${pre}x="${x}" y="${y}"${post} transform="translate(${x} ${y}) scale(1 -1) translate(${-Number(x)} ${-Number(y)})">`)}</g>`:view.inner;label=view.label;meta=view.meta;
   if(inputs.cornerView==='Textbook schematic')field=null;
  }
  else if(s.kind==='nozzle'){
@@ -187,7 +187,7 @@ export function sceneSVG(s,inputs,time=.001,quantity='pressure'){let inner='',la
   for(const {n,point:[xx,yy]} of callouts){
    const downstream=n==='4'||n==='5';
    let lx=downstream?602:Math.max(48,Math.min(530,xx));
-   if(!downstream){while(used.some(x=>Math.abs(x-lx)<30))lx=lx>285?lx-32:lx+32;used.push(lx);}
+   if(!downstream){lx=calloutSlot(lx,used);used.push(lx);}
    const ly=downstream?(n==='5'?110:200):45;
    inner+=line(lx-(downstream?12:0),ly+(downstream?-6:4),xx,yy,'#263c4d',1.3)+`<circle cx="${xx}" cy="${yy}" r="2.4" fill="#263c4d"/>`+`<g data-region-callout="${n}" data-target-x="${xx}" data-target-y="${yy}">${txt(lx,ly,s.regionLabels?.[n]??n,'#17212b',20,'middle')}</g>`;
   }

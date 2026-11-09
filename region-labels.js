@@ -1,5 +1,13 @@
 // Place labels inside the union of a region's painted cells, ignoring internal cuts.
 export function pointInPolygon([x,y],poly){let yes=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const [a,b]=poly[i],[c,d]=poly[j];if((b>y)!==(d>y)&&x<(c-a)*(y-b)/(d-b)+a)yes=!yes;}return yes;}
+// A finite search replaces the former +/-32 oscillation between occupied slots.
+export function calloutSlot(preferred,used,min=48,max=530,gap=32){
+ const p=Math.max(min,Math.min(max,preferred)),candidates=[p,min,max];
+ for(let i=0;i<=Math.ceil((max-min)/gap);i++)candidates.push(Math.min(max,min+i*gap));
+ candidates.sort((a,b)=>Math.abs(a-p)-Math.abs(b-p));
+ const clearance=x=>used.length?Math.min(...used.map(v=>Math.abs(v-x))):Infinity;
+ return candidates.find(x=>clearance(x)>=gap)??candidates.reduce((a,b)=>clearance(b)>clearance(a)?b:a);
+}
 const segmentDistance=(p,a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],d=dx*dx+dy*dy,t=d?Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/d)):0;return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);};
 export function regionLabelPosition(polygons,minimumClearance=12){
  if(!polygons.length)return null;

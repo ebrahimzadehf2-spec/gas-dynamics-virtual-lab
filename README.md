@@ -1,6 +1,6 @@
 # Gas Dynamics Virtual Lab
 
-A working analytical compressible-flow laboratory for *Introduction to Compressible Flows*. Twelve experiments are organized around the ten-chapter book. This is an early implementation; not all book sections or worked examples have been accepted.
+A working analytical compressible-flow laboratory for *Introduction to Compressible Flows*. Experiments are organized around the ten-chapter book. This is an early implementation; not all book sections or worked examples have been accepted.
 
 ## Open the laboratory
 
@@ -62,3 +62,9 @@ Three presets exercise repeated shock reflections, shock–expansion interaction
 `Channel solution` now exposes only Shock–Expansion and Method of characteristics. Former Automatic shock–expansion, Local shock–expansion and Attached-wave tracking saved values migrate to the unified method. `channel-solver.test.mjs` checks the two-option contract, migration, preserved book labels/angles, approximation provenance and MOC separation. Selected events are labelled as direct relations or approximate fan-front-dependent results; approximation provenance propagates to downstream states. The complete suite has 157 tests after this consolidation.
 
 The Wave Interaction Calculator uses one editable dimensional geometry (height/clearance and axial corner separation in metres). Educational/Custom geometry are no longer separate UI modes. Invalid direct-interaction geometries explain an earlier wall encounter or missing downstream intersection and offer a shortcut to Custom wall / Channel / Shock–Expansion for the actual event sequence. The shortcut opens the channel editor; automatic geometry conversion is not claimed. Pure normalized-layout helpers remain available internally for reference tests.
+
+## Merged simple corners and collision rendering fix
+
+Chapter 6 exposes Wave Geometry Lab and Wave Interaction Calculator. The Compression ramp / Expansion corner presets contain the former standalone oblique-shock / PM calculators, including weak/strong branch selection for a single compression corner, sonic-inlet expansion, mirrored gas sides, all five contour variables, textbook views, region/shock tables and dimensional/ratio plots. Legacy #oblique and #expansion URLs migrate their saved parameters into Geometry Lab. Custom wall and channel solvers retain their own scopes. Internal pure calculator entry points remain for references and backward-compatible numerical tests, not duplicate navigation.
+
+A finite callout-slot search replaces an oscillating label-placement loop that froze same-direction collision rendering for H=11.55 m and d=1.44 m. The solution itself completed; label placement blocked the main browser thread and repeated on refresh from saved inputs. A subprocess regression with a timeout protects against reintroducing the freeze. The full suite contains 161 tests after this change.
