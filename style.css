@@ -127,3 +127,5 @@ h1{font-weight:650;letter-spacing:-.7px}h2{font-size:16px;font-weight:650}h3{fon
 @media(min-width:801px){.work-grid:has(.method-comparison){grid-template-columns:210px minmax(0,1fr);grid-template-areas:"controls visual" "outputs outputs"}.work-grid:has(.method-comparison)>.output-column{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}.scene.method-comparison>svg{min-width:0}}
 
 @media(min-width:801px){.sidebar nav{margin-top:24px}}
+
+[hidden]{display:none!important}.lab-header #description{font-size:13px}.model-details{margin:12px 0 0 auto;padding:14px 18px;max-width:520px;background:white;border:1px solid #dce5e8;border-radius:6px;font-size:13px;line-height:1.6}.model-details p{font-size:13px}.scene-caption #sceneMeta{display:none}
