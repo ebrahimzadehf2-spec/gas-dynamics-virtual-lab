@@ -22,8 +22,8 @@ export function expansion(M,theta,g=1.4){gas(g);requireValue(finite(theta)&&thet
 export function rayleighRatios(M,g=1.4){gas(g);positive(M,'Mach');let d=1+g*M*M,p=(g+1)/d,T=(g+1)**2*M*M/d**2,u=(g+1)*M*M/d,rho=1/u,T0=2*(g+1)*M*M/d**2*(1+(g-1)*M*M/2),p0=p*(2/(g+1)*(1+(g-1)*M*M/2))**(g/(g-1));return {p,T,u,rho,T0,p0};}
 export function conservation(s1,s2,g=1.4,R=287,q=0){let cp=gas(g,R).cp;const rel=(x,y)=>Math.abs(x-y)/Math.max(1,Math.abs(x),Math.abs(y));return {mass:rel(s1.rho*s1.u,s2.rho*s2.u),momentum:rel(s1.p+s1.rho*s1.u**2,s2.p+s2.rho*s2.u**2),energy:rel(cp*s1.T0+q,cp*s2.T0),eos:rel(s2.p,s2.rho*R*s2.T)};}
 export function rayleigh({M1=.5,T1=300,p1=101000,q=100000,gamma:g=1.4,R=287,branch='auto'}={}){
- positive(M1,'Inlet Mach');requireValue(finite(q),'Heat must be finite.');let cp=gas(g,R).cp,s1=state(M1,T1,p1,g,R),r1=rayleighRatios(M1,g),T0star=s1.T0/r1.T0,qmax=cp*(T0star-s1.T0),target=(s1.T0+q/cp)/T0star;
- if(q>qmax+1e-8*Math.max(1,Math.abs(qmax)))return {status:'heat-limit',qmax,s1,s2:null,message:'Requested heat exceeds choking heat for this fixed inlet. No steady outlet for these inputs.'};
+ positive(M1,'Inlet Mach');requireValue(finite(q),'Heat must be finite.');let cp=gas(g,R).cp,s1=state(M1,T1,p1,g,R),r1=rayleighRatios(M1,g),T0star=s1.T0/r1.T0,qmax=cp*(T0star-s1.T0),target=Math.min(1,(s1.T0+q/cp)/T0star);
+ if(q>qmax+64*Number.EPSILON*Math.max(1,Math.abs(qmax),cp*s1.T0))return {status:'heat-limit',qmax,s1,s2:null,message:'Requested heat exceeds choking heat for this fixed inlet. No steady outlet for these inputs.'};
  requireValue(target>0,'Cooling would produce nonpositive stagnation temperature.','cooling-limit');
  let b=branch==='auto'?(M1<1?'subsonic':M1>1?'supersonic':null):branch;
  requireValue(b===null||['subsonic','supersonic'].includes(b),'Invalid Rayleigh branch.');

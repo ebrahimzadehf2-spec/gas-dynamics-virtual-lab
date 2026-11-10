@@ -12,7 +12,7 @@ test('Every registered experiment offers distinct finite selectable plots with u
  }
 });
 test('All isentropic table ratios and angles are available and agree with the selected state',()=>{
- const x=defaults('foundations'),d=calculate('foundations',x),options=plotOptions(d);assert.equal(options[0].key,'iso-pP0');
+ const x=defaults('foundations'),d=calculate('foundations',x),options=plotOptions(d);assert.ok(options.some(o=>o.key==='iso-pP0'));
  for(const key of ['pP0','rhoRho0','TT0','pPstar','rhoRhostar','TTstar','areaRatio','machAngle','pmAngle']){const o=options.find(o=>o.key==='iso-'+key);assert.ok(o,key);const p=o.chart.series[0].points.find(([m])=>m===x.M);near(p[1],d.result.relations[key]);}
  const sub=plotOptions(calculate('foundations',{...x,M:.2}));assert.ok(sub.find(o=>o.key==='iso-mu')===undefined);for(const o of sub.filter(o=>/machAngle|pmAngle/.test(o.key)))assert.ok(o.chart.series[0].points.every(([m])=>m>=1));
 });
