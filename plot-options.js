@@ -81,7 +81,7 @@ export function plotOptions(d,time=.001){
   options.filter(o=>o.key.startsWith('tube-profile-')).forEach(o=>o.note=`Analytical infinite-tube similarity solution at t = ${(t*1000).toFixed(3)} ms, before end-wall reflections.`);
  }
  // Existing multi-series charts can also be inspected one curve at a time.
- if(!['foundations','normal','rayleigh'].includes(id)&&d.chart.series.length>1)for(const [i,s] of d.chart.series.entries())options.push({key:'curve-'+i,label:s.name,chart:{...d.chart,title:s.name,series:[s]}});
+ if(!['foundations','normal','rayleigh','fanno'].includes(id)&&d.chart.series.length>1)for(const [i,s] of d.chart.series.entries())options.push({key:'curve-'+i,label:s.name,chart:{...d.chart,title:s.name,series:[s]}});
  if(['rayleigh','fanno'].includes(id))for(const o of options){if(o.label.includes('ratio')){o.label+=` (${o.chart.ylabel})`;o.chart.title=o.label;o.chart.series.forEach(s=>s.name=o.label);}o.chart.markers=[['Inlet',r.s1],['Outlet',r.s2]].filter(([,s])=>s).flatMap(([name,s])=>{const point=o.chart.series[0]?.points.find(p=>Math.abs(p[0]-s.M)<1e-10);return point?[{name,x:point[0],y:point[1],anchor:name==='Outlet'?'end':'start'}]:[]});}
  return options.filter(o=>id!=='normal'||['normal-M','normal-p','normal-rho','normal-T','normal-p0','normal-dsR'].includes(o.key)).filter(o=>o.chart.series.some(s=>s.points.length));
 }
