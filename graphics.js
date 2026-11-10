@@ -1,4 +1,4 @@
-import {ductSystemSVG} from './duct-system-graphics.js?v=20261110-upstream-stations';
+import {ductSystemSVG,rayleighBoundarySVG} from './duct-system-graphics.js?v=20261110-rayleigh-boundaries';
 import {coneAnnotations} from './cone-annotations.js?v=20261110-cone-conditions';
 import {wedgeDrawing} from './wedge-graphics.js?v=20261110-cone-conditions';
 import {trackingDrawing} from './wave-tracker-graphics.js?v=20261109-wedge-cone';
@@ -59,7 +59,7 @@ function regionalField(s,inputs,quantity){
  }else if(['jet','nozzleJet'].includes(s.kind)){values=[s.inlet.p,s.outlet?.p??s.inlet.p,...(s.samples??[]).map(z=>z.p),...(s.nozzle?.points??[]).map(z=>z.P)];units='Pa';note='Local analytical pressure · unresolved regions hatched';}
  return {key,options,values,units,note,read};
 }
-export function sceneSVG(s,inputs,time=.001,quantity='pressure'){if(s.kind==='ductSystem')return ductSystemSVG(s);if(s.kind==='bodyCompare'){
+export function sceneSVG(s,inputs,time=.001,quantity='pressure'){if((s.kind==='ductSystem'&&s.process==='rayleigh'||s.kind==='duct'&&s.process==='rayleigh'&&inputs.bookExample==='4–5')&&s.system?.stations[0]?.x!==-.2){const view=rayleighBoundarySVG(s,inputs);if(view)return view;}if(s.kind==='ductSystem')return ductSystemSVG(s);if(s.kind==='bodyCompare'){
  const states=[{kind:'wedge',wedge:s.wedge},s.cone?.status==='ok'?{kind:'cone',...s.cone}:null],views=states.map(z=>z?sceneSVG(z,inputs,time,quantity):null),fields=views.map(v=>v?.field).filter(Boolean),range={min:Math.min(...fields.map(f=>f.min)),max:Math.max(...fields.map(f=>f.max))};
  const cards=states.map((z,i)=>{const view=z?sceneSVG(z,{...inputs,bodyRange:range},time,quantity):null;let svg=view?.svg??`<svg viewBox="0 0 640 300">${txt(28,145,'Cone: no accepted attached field')}</svg>`;svg=svg.replace('<svg ','<svg width="640" height="300" ').replaceAll(/id="([^"]+)"/g,(_,id)=>`id="body${i}-${id}"`).replaceAll(/url\(#([^)]*)\)/g,(_,id)=>`url(#body${i}-${id})`);return `<g transform="translate(${i*640},30)">${txt(320,-9,i?'Cone · α = 0°':`Wedge · α = ${fmt(deg(s.wedge.alpha))}°`,undefined,16,'middle')}${svg}</g>`;}).join('');
  return {label:'Wedge and cone · matched Mach, gas and half-angle',meta:'Shared freestream ratios and color range · cone incidence is always zero',field:{...fields[0],...range,note:'Common range · each ratio references the same freestream'},svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 330" role="img" aria-label="Wedge and cone comparison">${diagramFontStyle}${cards}</svg>`};
