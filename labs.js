@@ -1,4 +1,4 @@
-import {systemFields,systemDefaults,solveDuctSystem} from './duct-systems.js';
+import {systemFields,systemDefaults,solveDuctSystem} from './duct-systems.js?v=20261110-rayleigh-examples';
 import {ductInputs} from './duct-input.js';
 import {rayleighHeatFromInput} from './rayleigh-input.js?v=20261110-outlet-t0';
 import {solveBodyLab,bodyPlots} from './wedge-cone.js';
