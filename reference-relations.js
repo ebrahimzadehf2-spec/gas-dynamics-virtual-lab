@@ -7,7 +7,7 @@ export function sonicRelations(kind,M,g=1.4){
 export function ductReferenceTable(kind,result,g){
  const stations=[['Inlet',result.s1],...(result.s2?[['Outlet',result.s2]]:[])];
  const values=stations.map(([,s])=>sonicRelations(kind,s.M,g));
- const props=[['Mach number M','M'],...(kind==='rayleigh'?[['T₀/T₀*','T0']]:[]),['T/T*','T'],['p/p*','p'],['p₀/p₀*','p0'],['u/u*','u'],...(kind==='fanno'?[['4fꜰL*/D = fᴅL*/D','F']]:[]),['(s* − s)/R','entropyToStar']];
+ const props=[['Mach number M','M'],...(kind==='rayleigh'?[['T₀/T₀*','T0']]:[]),['T/T*','T'],['p/p*','p'],['p₀/p₀*','p0'],...(kind==='rayleigh'?[['ρ/ρ*','rho']]:[['u/u*','u']]),...(kind==='fanno'?[['4fꜰL*/D = fᴅL*/D','F']]:[]),['(s* − s)/R','entropyToStar']];
  return {title:kind==='fanno'?'Fanno Flow Relations':'Rayleigh Flow Relations',columns:stations.map(([name])=>name),rows:props.map(([label,key])=>({label,values:values.map(r=>r[key])})),note:kind==='fanno'?'* denotes M = 1 on the same Fanno line. fꜰ is the Fanning factor; fᴅ = 4fꜰ. L* is the remaining sonic length.':'* denotes M = 1 on the same Rayleigh line.'};
 }
 export function conicalRelations(result,M,g){

@@ -81,6 +81,6 @@ export function plotOptions(d,time=.001){
   options.filter(o=>o.key.startsWith('tube-profile-')).forEach(o=>o.note=`Analytical infinite-tube similarity solution at t = ${(t*1000).toFixed(3)} ms, before end-wall reflections.`);
  }
  // Existing multi-series charts can also be inspected one curve at a time.
- if(!['foundations','normal'].includes(id)&&d.chart.series.length>1)for(const [i,s] of d.chart.series.entries())options.push({key:'curve-'+i,label:s.name,chart:{...d.chart,title:s.name,series:[s]}});
+ if(!['foundations','normal','rayleigh'].includes(id)&&d.chart.series.length>1)for(const [i,s] of d.chart.series.entries())options.push({key:'curve-'+i,label:s.name,chart:{...d.chart,title:s.name,series:[s]}});
  return options.filter(o=>id!=='normal'||['normal-M','normal-p','normal-rho','normal-T','normal-p0','normal-dsR'].includes(o.key)).filter(o=>o.chart.series.some(s=>s.points.length));
 }
