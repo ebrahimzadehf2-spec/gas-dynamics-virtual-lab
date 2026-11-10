@@ -14,7 +14,11 @@ reservoirExamples.forEach(([label,inputs],i)=>test(label+' recovers consistent i
   const [Mi,Me,pe,q]=expected[i];
   close(d.result.s1.M,Mi);close(d.result.s2.M,Me);close(d.result.s2.p/1000,pe);
   close(d.rows.find(r=>r.label==='Heat transfer').value,q);
-  close(d.result.s1.p0/1000,inputs.reservoirP0);
+  const ref=d.result.stations[0].state;
+  close(ref.M,inputs.supplyReferenceMach);close(ref.p/1000,inputs.reservoirP0);
+  close(ref.p0,d.result.s1.p0);close(ref.T0,d.result.s1.T0);
+  assert.notEqual(ref.M,d.result.s1.M);
+  assert.equal(d.result.referenceTable.columns.length,3);
   close(d.result.s1.T0,inputs.reservoirT0);
   close((d.result.s2.T0-d.result.s1.T0)*1004.5/1000,q);
 }));
