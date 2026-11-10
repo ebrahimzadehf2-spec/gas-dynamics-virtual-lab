@@ -1,5 +1,5 @@
-import {systemFields,systemDefaults,solveDuctSystem} from './duct-systems.js?v=20261110-remove-duplicate-options';
-import {ductInputs} from './duct-input.js?v=20261110-remove-duplicate-options';
+import {systemFields,systemDefaults,solveDuctSystem} from './duct-systems.js?v=20261110-remove-two-stage';
+import {ductInputs} from './duct-input.js?v=20261110-remove-two-stage';
 import {rayleighHeatFromInput} from './rayleigh-input.js?v=20261110-outlet-t0';
 import {solveBodyLab,bodyPlots} from './wedge-cone.js';
 import {solveChannelComparison,comparisonPlots,comparisonExportRows} from './channel-comparison.js';
