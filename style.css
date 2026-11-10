@@ -129,3 +129,5 @@ h1{font-weight:650;letter-spacing:-.7px}h2{font-size:16px;font-weight:650}h3{fon
 @media(min-width:801px){.sidebar nav{margin-top:24px}}
 
 [hidden]{display:none!important}.lab-header #description{font-size:13px}.model-details{margin:12px 0 0 auto;padding:14px 18px;max-width:520px;background:white;border:1px solid #dce5e8;border-radius:6px;font-size:13px;line-height:1.6}.model-details p{font-size:13px}.scene-caption #sceneMeta{display:none}
+
+.scene[data-kind=state]{aspect-ratio:590/170}.scene-card .card-head{padding-top:12px;padding-bottom:8px}.scene-caption{padding:8px 16px}.scene-card{padding-bottom:4px}

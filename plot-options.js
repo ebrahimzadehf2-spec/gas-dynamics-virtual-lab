@@ -19,9 +19,9 @@ export function plotOptions(d,time=.001){
  const original={key:'overview',label:d.chart.title,chart:d.chart};options.push(original);
  if(id==='foundations'){
   const samples=[...new Set([...linspace(.02,Math.max(5,x.M*1.15),201),x.M])].sort((a,b)=>a-b).map(m=>[m,{...state(m,x.T1,x.p1*1000,g,R),...isentropicRelations(m,g)}]);
-  family('iso-','Mach number M',samples,[['pP0','Pressure ratio p/p₀','p/p₀',s=>s.pP0],['rhoRho0','Density ratio ρ/ρ₀','ρ/ρ₀',s=>s.rhoRho0],['TT0','Temperature ratio T/T₀','T/T₀',s=>s.TT0],['pPstar','Pressure ratio p/p*','p/p*',s=>s.pPstar],['rhoRhostar','Density ratio ρ/ρ*','ρ/ρ*',s=>s.rhoRhostar],['TTstar','Temperature ratio T/T*','T/T*',s=>s.TTstar],['areaRatio','Critical area ratio A/A*','A/A*',s=>s.areaRatio],['machAngle','Mach angle μ','μ (°)',s=>s.machAngle??NaN],['pmAngle','Prandtl–Meyer angle ν','ν (°)',s=>s.pmAngle??NaN],['M','Mach number M','M',s=>s.M]]);
+  family('iso-','Mach number M',samples,[['pP0','Pressure ratio p/p₀','p/p₀',s=>s.pP0],['rhoRho0','Density ratio ρ/ρ₀','ρ/ρ₀',s=>s.rhoRho0],['TT0','Temperature ratio T/T₀','T/T₀',s=>s.TT0],['pPstar','Pressure ratio p/p*','p/p*',s=>s.pPstar],['rhoRhostar','Density ratio ρ/ρ*','ρ/ρ*',s=>s.rhoRhostar],['TTstar','Temperature ratio T/T*','T/T*',s=>s.TTstar],['areaRatio','Critical area ratio A/A*','A/A*',s=>s.areaRatio],['machAngle','Mach angle μ','μ (°)',s=>s.machAngle??NaN],['pmAngle','Prandtl–Meyer angle ν','ν (°)',s=>s.pmAngle??NaN]]);
   // Direct ratios are more useful than mixing inverse stagnation ratios by default.
-  options.shift();options.forEach(o=>o.note='Static inlet temperature and pressure are held fixed. Sonic reference uses the same stagnation state. Angle curves start at M ≥ 1; M = 0 is excluded from the area-ratio curve.');
+  options.forEach(o=>o.note='Static inlet temperature and pressure are held fixed. Sonic reference uses the same stagnation state. Angle curves start at M ≥ 1; M = 0 is excluded from the area-ratio curve.');
  }else if(id==='normal'){
   const a=state(x.M1,x.T1,x.p1*1000,g,R),samples=linspace(1,Math.max(5,x.M1*1.1)).map(m=>{const n=normalShock(m,g);return [m,{...n,b:state(n.M2,x.T1*n.T,x.p1*1000*n.p,g,R)}];});
   family('normal-','Upstream Mach M₁',samples,[['M','Downstream Mach','M₂',s=>s.M2],['p','Pressure ratio','p₂/p₁',s=>s.p],['rho','Density ratio','ρ₂/ρ₁',s=>s.rho],['T','Temperature ratio','T₂/T₁',s=>s.T],['p0','Stagnation-pressure recovery','p₀₂/p₀₁',s=>s.p0],['u','Speed ratio','u₂/u₁',s=>s.u],['dsR','Normalized entropy increase','Δs/R',s=>s.ds_R],['u1','Upstream speed','u₁ (m/s)',s=>s.b.u/s.u],['ds','Entropy increase','Δs (J/(kg·K))',s=>R*s.ds_R],['p2','Downstream pressure','p₂ (kPa)',s=>s.b.p/1000],['T2','Downstream temperature','T₂ (K)',s=>s.b.T],['rho2','Downstream density','ρ₂ (kg/m³)',s=>s.b.rho],['u2','Downstream speed','u₂ (m/s)',s=>s.b.u],['p02','Downstream stagnation pressure','p₀₂ (kPa)',s=>s.b.p0/1000],['T02','Stagnation temperature','T₀ (K)',s=>s.b.T0]]);
@@ -81,6 +81,6 @@ export function plotOptions(d,time=.001){
   options.filter(o=>o.key.startsWith('tube-profile-')).forEach(o=>o.note=`Analytical infinite-tube similarity solution at t = ${(t*1000).toFixed(3)} ms, before end-wall reflections.`);
  }
  // Existing multi-series charts can also be inspected one curve at a time.
- if(d.chart.series.length>1)for(const [i,s] of d.chart.series.entries())options.push({key:'curve-'+i,label:s.name,chart:{...d.chart,title:s.name,series:[s]}});
+ if(id!=='foundations'&&d.chart.series.length>1)for(const [i,s] of d.chart.series.entries())options.push({key:'curve-'+i,label:s.name,chart:{...d.chart,title:s.name,series:[s]}});
  return options.filter(o=>o.chart.series.some(s=>s.points.length));
 }
