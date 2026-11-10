@@ -82,5 +82,5 @@ export function plotOptions(d,time=.001){
  }
  // Existing multi-series charts can also be inspected one curve at a time.
  if(!['foundations','normal'].includes(id)&&d.chart.series.length>1)for(const [i,s] of d.chart.series.entries())options.push({key:'curve-'+i,label:s.name,chart:{...d.chart,title:s.name,series:[s]}});
- return options.filter(o=>id!=='normal'||['normal-M','normal-p','normal-rho','normal-T','normal-p0','normal-u','normal-dsR'].includes(o.key)).filter(o=>o.chart.series.some(s=>s.points.length));
+ return options.filter(o=>id!=='normal'||['normal-M','normal-p','normal-rho','normal-T','normal-p0','normal-dsR'].includes(o.key)).filter(o=>o.chart.series.some(s=>s.points.length));
 }

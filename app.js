@@ -12,12 +12,12 @@ import {airfoilTables} from './airfoil-tables.js?v=20261109-wedge-cone';
 import {airfoilGeometry,segmentSurface,surfaceSegments,presetSegments} from './airfoil.js?v=20261109-wedge-cone';
 import {nearestChartPoint} from './chart-probe.js?v=20261109-wedge-cone';
 import {probeCone} from './cone-probe.js?v=20261109-wedge-cone';
-import {plotOptions} from './plot-options.js?v=20261110-normal-layout';
+import {plotOptions} from './plot-options.js?v=20261110-multiple-plots';
 import {selectGas,gasInfo} from './gas-properties.js?v=20261109-wedge-cone';
 import {controlVolumePreset} from './control-volume.js?v=20261109-wedge-cone';
 import {pressureSweepPlan,advancePressure} from './sweep.js?v=20261109-wedge-cone';
 import {labs,chapters,defaults,inputDefinitions,nozzleInfo,trackingShockDetails} from './labs.js?v=20261110-remove-conservation';
-import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261110-normal-layout';
+import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261110-multiple-plots';
 const $=id=>document.getElementById(id);let id='rayleigh',inputs={},request=0,current=null,pinned=null,timer,animation=false,frame,lastFrame=0,sceneTime=.001,fieldQuantity='pressure';
 let pendingWaveShape=null,pendingBookCase=null,pendingCustomChannel=false,pendingLegacyCorner=null;
 let displayedChart=null,chartChoices=[],plotSelection={};
@@ -175,23 +175,25 @@ function bindFieldProbe(){
  scene.onpointermove=inspect;scene.onpointerdown=inspect;scene.onpointerleave=hide;
 }
 $('fieldQuantity').onchange=()=>{fieldQuantity=$('fieldQuantity').value;renderScene();};
+const extraPlotSelections={};
 function updatePlotChoices(){
- chartChoices=plotOptions(current,sceneTime);const select=$('plotQuantity');select.innerHTML=chartChoices.map(o=>`<option value="${o.key}">${o.label}</option>`).join('');if(!chartChoices.some(o=>o.key===plotSelection[id]))plotSelection[id]=chartChoices[0].key;select.value=plotSelection[id];renderSelectedPlot();
+ chartChoices=plotOptions(current,sceneTime);const select=$('plotQuantity');select.innerHTML=chartChoices.map(o=>`<option value="${o.key}">${o.label}</option>`).join('');if(!chartChoices.some(o=>o.key===plotSelection[id]))plotSelection[id]=chartChoices[0].key;select.value=plotSelection[id];renderSelectedPlot();renderPlotPicker();
 }
 function renderSelectedPlot(){
  $('chartProbe').hidden=true;
  if(!current)return;if(id==='tube'&&(plotSelection[id]??'').startsWith('tube-profile-'))chartChoices=plotOptions(current,sceneTime);
- const option=chartChoices.find(o=>o.key===plotSelection[id])??chartChoices[0];if(!option){$('chart').innerHTML='';$('legend').innerHTML='';$('chartTitle').textContent=current.id==='airfoil'?'No accepted surface profile':'No attached-flow profile';$('plotNote').textContent='';return;}displayedChart=option.chart;const chart=chartSVG(displayedChart);$('chartTitle').textContent=displayedChart.title;$('chart').innerHTML=chart.svg;$('legend').innerHTML=chart.legend;$('plotNote').textContent=option.note??'Choose a property to set its own units and axis. Curves show the current model and input conditions.';bindProbe(chart.axis);
+ const option=chartChoices.find(o=>o.key===plotSelection[id])??chartChoices[0];if(!option){$('chart').innerHTML='';$('legend').innerHTML='';$('chartTitle').textContent=current.id==='airfoil'?'No accepted surface profile':'No attached-flow profile';$('plotNote').textContent='';return;}displayedChart=option.chart;const chart=chartSVG(displayedChart);$('chartTitle').textContent=displayedChart.title;$('chart').innerHTML=chart.svg;$('legend').innerHTML=chart.legend;$('plotNote').textContent=option.note??'Choose a property to set its own units and axis. Curves show the current model and input conditions.';bindProbe(chart.axis);renderExtraPlots();
 }
 $('plotQuantity').onchange=()=>{plotSelection[id]=$('plotQuantity').value;renderSelectedPlot();};
-function bindProbe(a){
- const hit=$('chartHit'),svg=hit?.ownerSVGElement,box=$('chartProbe');box.hidden=true;if(!hit||!a)return;
- const hide=()=>{box.hidden=true;$('cursorLine')?.setAttribute('opacity','0');$('cursorPoint')?.setAttribute('opacity','0');};
+function bindProbe(a,root=$('chart'),data=displayedChart){
+ const local=k=>root.querySelector('[id="'+k+'"]');
+ const hit=local('chartHit'),svg=hit?.ownerSVGElement,box=$('chartProbe');box.hidden=true;if(!hit||!a)return;
+ const hide=()=>{box.hidden=true;local('cursorLine')?.setAttribute('opacity','0');local('cursorPoint')?.setAttribute('opacity','0');};
  const inspect=e=>{
-  const matrix=svg.getScreenCTM();if(!matrix)return hide();const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(matrix.inverse()),v=nearestChartPoint(displayedChart,a,q.x,q.y);if(!v)return hide();
-  box.textContent=(displayedChart.series.length>1?v.name+'\n':'')+`${displayedChart.xlabel}: ${fmt(v.x,6)}\n${displayedChart.ylabel}: ${fmt(v.y,6)}`;box.hidden=false;
+  const matrix=svg.getScreenCTM();if(!matrix)return hide();const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const q=pt.matrixTransform(matrix.inverse()),v=nearestChartPoint(data,a,q.x,q.y);if(!v)return hide();
+  box.textContent=(data.series.length>1?v.name+'\n':'')+`${data.xlabel}: ${fmt(v.x,6)}\n${data.ylabel}: ${fmt(v.y,6)}`;box.hidden=false;
   const bounds=box.getBoundingClientRect();box.style.left=Math.max(8,Math.min(innerWidth-bounds.width-8,e.clientX+15))+'px';box.style.top=Math.max(8,Math.min(innerHeight-bounds.height-8,e.clientY+15))+'px';
-  const line=$('cursorLine');line.setAttribute('x1',v.cx);line.setAttribute('x2',v.cx);line.setAttribute('opacity','1');const dot=$('cursorPoint');dot.setAttribute('cx',v.cx);dot.setAttribute('cy',v.cy);dot.setAttribute('opacity','1');
+  const line=local('cursorLine');line.setAttribute('x1',v.cx);line.setAttribute('x2',v.cx);line.setAttribute('opacity','1');const dot=local('cursorPoint');dot.setAttribute('cx',v.cx);dot.setAttribute('cy',v.cy);dot.setAttribute('opacity','1');
  };
  hit.onpointermove=inspect;hit.onpointerdown=inspect;hit.onpointerleave=hide;
 }
@@ -265,3 +267,6 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden&&sweepPlayi
 $('guideButton').onclick=()=>{$('modelDetails').hidden=!$('modelDetails').hidden;};window.addEventListener('hashchange',openLab);openLab();
 
 $('exportPng').onclick=async()=>{if(!current)return;const button=$('exportPng');button.disabled=true;let url;try{const svg=$('scene').querySelector('svg').cloneNode(true);svg.setAttribute('xmlns','http://www.w3.org/2000/svg');const box=svg.viewBox.baseVal;const width=box.width||960,height=box.height||450;svg.setAttribute('width',width);svg.setAttribute('height',height);url=URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(svg)],{type:'image/svg+xml'}));const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url;});const canvas=document.createElement('canvas');canvas.width=width*2;canvas.height=height*2;const ctx=canvas.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw Error('PNG export failed');const link=document.createElement('a'),pngUrl=URL.createObjectURL(blob);link.href=pngUrl;link.download=`gas-dynamics-${id}.png`;link.click();setTimeout(()=>URL.revokeObjectURL(pngUrl),1000);}catch(error){alert('Image export failed. Please use SVG or try again.');}finally{if(url)URL.revokeObjectURL(url);button.disabled=false;}};
+
+function renderPlotPicker(){let box=$('extraPlotPicker');if(!box){box=document.createElement('details');box.id='extraPlotPicker';box.innerHTML='<summary>Show additional plots</summary><div></div>';$('chart').before(box);}const selected=extraPlotSelections[id]??[];box.querySelector('div').innerHTML=chartChoices.map(o=>`<label><input type="checkbox" value="${o.key}" ${selected.includes(o.key)?'checked':''}> ${o.label}</label>`).join('');box.onchange=()=>{extraPlotSelections[id]=[...box.querySelectorAll('input:checked')].map(e=>e.value);renderExtraPlots();};}
+function renderExtraPlots(){let box=$('extraPlots');if(!box){box=document.createElement('div');box.id='extraPlots';$('legend').after(box);}box.innerHTML='';for(const key of extraPlotSelections[id]??[]){if(key===plotSelection[id])continue;const option=chartChoices.find(o=>o.key===key);if(!option)continue;const view=chartSVG(option.chart),card=document.createElement('section');card.className='additional-plot';const title=document.createElement('h3');title.textContent=option.label;card.append(title);const drawing=document.createElement('div');drawing.innerHTML=view.svg;card.append(drawing);const legend=document.createElement('div');legend.className='legend';legend.innerHTML=view.legend;card.append(legend);box.append(card);bindProbe(view.axis,drawing,option.chart);}}
