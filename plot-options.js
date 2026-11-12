@@ -1,3 +1,4 @@
+import {ductLongitudinalPlots} from './duct-contours.js?v=20261112-duct-contours';
 import {bodyPlots} from './wedge-cone.js';
 import {comparisonPlots} from './channel-comparison.js';
 import {trackingPlots} from './wave-tracker.js?v=20261109-wedge-cone';
@@ -17,6 +18,7 @@ export function plotOptions(d,time=.001){
  if(id==='wall'&&r.simpleCorner)return plotOptions({...d,id:r.cornerKind},time);
  if(id==='wall')return r.comparison?comparisonPlots(r,x.comparisonStation):r.tracking?trackingPlots(r,x.trackingStation):r.interaction?regularChannelPlots(r):r.moc?mocProfilePlots(r,x.mocStation):r.channel?channelPlots(r):wallPlots(r);
  if(id==='airfoil')return airfoilPlots(r);
+ if(['rayleigh','fanno'].includes(id))options.push(...ductLongitudinalPlots(id,r));
  const original={key:'overview',label:d.chart.title,chart:d.chart};options.push(original);
  if(id==='foundations'){
   const samples=[...new Set([...linspace(.02,Math.max(5,x.M*1.15),201),x.M])].sort((a,b)=>a-b).map(m=>[m,{...state(m,x.T1,x.p1*1000,g,R),...isentropicRelations(m,g)}]);
@@ -32,7 +34,7 @@ export function plotOptions(d,time=.001){
   const ref=fn(x.M1,g),cp=g*R/(g-1),physical=s=>({p:r.s1.p*s.p/ref.p,T:r.s1.T*s.T/ref.T,rho:r.s1.rho*s.rho/ref.rho,u:r.s1.u*s.u/ref.u,T0:r.s1.T0*(s.T0??1)/(ref.T0??1),p0:r.s1.p0*s.p0/ref.p0});
   family(id+'-dim-','Mach number M',samples.map(([m,s])=>[m,physical(s)]),[['p','Static pressure','p (kPa)',s=>s.p/1000],['T','Static temperature','T (K)',s=>s.T],['rho','Density','ρ (kg/m³)',s=>s.rho],['u','Flow speed','u (m/s)',s=>s.u],['T0','Stagnation temperature','T₀ (K)',s=>s.T0],['p0','Stagnation pressure','p₀ (kPa)',s=>s.p0/1000]]);
   if(id==='rayleigh')add('rayleigh-heat','Heat relative to inlet','Mach number M','q (kJ/kg)',samples.map(([m,s])=>[m,cp*(physical(s).T0-r.s1.T0)/1000]));
-  options.forEach(o=>o.note='Theoretical locus anchored to the inlet state. Not every plotted point is reachable from that inlet; branch and choking constraints still apply.');
+  options.filter(o=>!o.key.includes('-axial-')).forEach(o=>o.note='Theoretical locus anchored to the inlet state. Not every plotted point is reachable from that inlet; branch and choking constraints still apply.');
   add('entropy-star','Entropy deficit to sonic reference','Mach number M','(s* − s)/R',ms.map(m=>[m,sonicRelations(id,m,g).entropyToStar]));
   if(id==='fanno')add('friction','Available friction length','Mach number M','fᴅL*/D',ms.map(m=>[m,fn(m,g).F]));
  }else if(id==='oblique'||id==='expansion'){
@@ -83,6 +85,6 @@ export function plotOptions(d,time=.001){
  }
  // Existing multi-series charts can also be inspected one curve at a time.
  if(!['foundations','normal','rayleigh','fanno'].includes(id)&&d.chart.series.length>1)for(const [i,s] of d.chart.series.entries())options.push({key:'curve-'+i,label:s.name,chart:{...d.chart,title:s.name,series:[s]}});
- if(['rayleigh','fanno'].includes(id))for(const o of options){if(o.label.includes('ratio')){o.label+=` (${o.chart.ylabel})`;o.chart.title=o.label;o.chart.series.forEach(s=>s.name=o.label);}o.chart.markers=[['Inlet',r.s1],['Outlet',r.s2]].filter(([,s])=>s).flatMap(([name,s])=>{const point=o.chart.series[0]?.points.find(p=>Math.abs(p[0]-s.M)<1e-10);return point?[{name,x:point[0],y:point[1],anchor:name==='Outlet'?'end':'start'}]:[]});}
+ if(['rayleigh','fanno'].includes(id))for(const o of options){if(o.key.includes('-axial-'))continue;if(o.label.includes('ratio')){o.label+=` (${o.chart.ylabel})`;o.chart.title=o.label;o.chart.series.forEach(s=>s.name=o.label);}o.chart.markers=[['Inlet',r.s1],['Outlet',r.s2]].filter(([,s])=>s).flatMap(([name,s])=>{const point=o.chart.series[0]?.points.find(p=>Math.abs(p[0]-s.M)<1e-10);return point?[{name,x:point[0],y:point[1],anchor:name==='Outlet'?'end':'start'}]:[]});}
  return options.filter(o=>id!=='normal'||['normal-M','normal-p','normal-rho','normal-T','normal-p0','normal-dsR'].includes(o.key)).filter(o=>o.chart.series.some(s=>s.points.length));
 }
