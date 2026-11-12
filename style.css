@@ -133,3 +133,5 @@ h1{font-weight:650;letter-spacing:-.7px}h2{font-size:16px;font-weight:650}h3{fon
 .scene[data-kind=state]{aspect-ratio:640/170}.scene-card .card-head{padding-top:12px;padding-bottom:8px}.scene-caption{padding:8px 16px}.scene-card{padding-bottom:4px}
 
 #extraPlotPicker{margin:8px 20px 16px;font-size:13px}#extraPlotPicker summary{cursor:pointer;color:#137d73}#extraPlotPicker>div{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;padding-top:12px}#extraPlotPicker label{display:flex;align-items:center;gap:6px}.additional-plot{border-top:1px solid #dce5e8;padding:14px 0;margin-top:14px}.additional-plot h3{margin:0 20px 8px;font-size:15px}.additional-plot svg{width:100%;display:block}
+
+.fanno-geometry-settings{grid-column:1/-1;margin:16px 0 4px;padding-top:12px;border-top:1px solid #dce5e8}.fanno-geometry-settings summary{cursor:pointer;color:var(--teal);font-size:14px;font-weight:600}.fanno-geometry-settings .input-group:last-child{border-bottom:0}

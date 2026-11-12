@@ -1,4 +1,4 @@
-import {fannoSystemDrawing} from './fanno-system-graphics.js?v=20261112-fanno-system';
+import {fannoSystemDrawing} from './fanno-system-graphics.js?v=20261112-fanno-solve-for';
 import {ductContourDrawing} from './duct-contours.js?v=20261112-fanno-system';
 import {uniformDiagramText} from './diagram-typography.js?v=20261112-diagram-labels';
 import {ductSystemSVG,rayleighBoundarySVG} from './duct-system-graphics.js?v=20261112-fanno-system';

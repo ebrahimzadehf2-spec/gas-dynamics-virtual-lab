@@ -91,11 +91,40 @@ test('Operating condition unifies the inverse tasks without a Known data menu',(
  const inv={...sonic,fannoUnknown:'Reservoir pressure',backPressure:d.result.backPressure/1000},v=calculate('fanno',inv);near(v.result.supplyPressure,d.result.supplyPressure);near(v.result.lambda,d.result.lambda);
  const fi=inputDefinitions('fanno',inv);assert.ok(!fi.some(f=>f.key==='reservoirP0'));assert.ok(fi.some(f=>f.key==='backPressure'));
  const shock=migrateFannoInputs({...base,lambda:.15,fannoCondition:fannoConditions[4]}),f=calculate('fanno',shock),i=calculate('fanno',{...shock,fannoUnknown:'Friction parameter',backPressure:f.result.backPressure/1000});near(i.result.lambda,.15);
- assert.deepEqual(inputDefinitions('fanno',shock).find(f=>f.key==='fannoUnknown').options,['Back pressure','Friction parameter']);
+ assert.deepEqual(inputDefinitions('fanno',shock).find(f=>f.key==='fannoUnknown').options,['Back pressure','Reservoir pressure','Friction parameter']);
 });
 test('Former inverse selections migrate once and condition changes reset incompatible unknowns',()=>{
  for(const [mode,condition,unknown]of [[fannoSolves[1],fannoConditions[5],'Reservoir pressure'],[fannoSolves[2],fannoConditions[4],'Friction parameter']]){
   const m=migrateFannoInputs({...base,fannoSystemSolve:mode});assert.equal(m.fannoCondition,condition);assert.equal(m.fannoUnknown,unknown);assert.deepEqual(migrateFannoInputs(m),m);
-  const change=migrateFannoInputs({...m,fannoCondition:fannoConditions[0]});assert.equal(change.fannoUnknown,'Back pressure');assert.equal(change.fannoSystemSolve,fannoSolves[0]);
+  const change=migrateFannoInputs({...m,fannoCondition:fannoConditions[0]});assert.equal(change.fannoUnknown,'Shock location / flow regime');assert.equal(change.fannoSystemSolve,fannoSolves[0]);
+ }
+});
+
+test('Every condition exposes Solve for with only the supported unknowns and secondary nozzle geometry',()=>{
+ for(const condition of fannoConditions){
+  const x=migrateFannoInputs({...base,fannoCondition:condition}),fields=inputDefinitions('fanno',x),solve=fields.find(f=>f.key==='fannoUnknown');assert.ok(solve,condition);
+  assert.deepEqual(solve.options,condition===fannoConditions[0]?['Shock location / flow regime']:condition===fannoConditions[5]?['Back pressure','Reservoir pressure']:['Back pressure','Reservoir pressure','Friction parameter']);
+  for(const key of ['nozzleLength','nozzleContraction'])assert.equal(fields.find(f=>f.key===key).geometrySetting,true);
+  assert.equal(fields.find(f=>f.key==='systemAreaRatio').geometrySetting,undefined);
+  if(condition===fannoConditions[0])assert.equal(x.fannoUnknown,'Shock location / flow regime');
+ }
+});
+test('Reservoir pressure and friction inversions recover all four fixed operating conditions',()=>{
+ for(const gamma of [1.2,1.4,1.667])for(const condition of fannoConditions.slice(1,5)){
+  const x=migrateFannoInputs({...base,gamma,lambda:.05,fannoCondition:condition}),f=calculate('fanno',x),pb=f.result.backPressure/1000;
+  const p=calculate('fanno',{...x,fannoUnknown:'Reservoir pressure',backPressure:pb,reservoirP0:123});near(p.result.supplyPressure,f.result.supplyPressure);near(p.result.s2.M,f.result.s2.M);
+  const l=calculate('fanno',{...x,fannoUnknown:'Friction parameter',backPressure:pb,lambda:9,frictionInput:'Length and friction factor',hydraulicDiameter:.03,frictionFactor:.001});near(l.result.lambda,.05);near(l.result.backPressure,f.result.backPressure);assert.ok(l.checks.mass<1e-7);
+  const pf=inputDefinitions('fanno',{...x,fannoUnknown:'Reservoir pressure'});assert.ok(!pf.some(f=>f.key==='reservoirP0'));assert.ok(pf.some(f=>f.key==='lambda'));assert.ok(pf.some(f=>f.key==='backPressure'));
+  const lf=inputDefinitions('fanno',{...x,fannoUnknown:'Friction parameter'});assert.ok(!lf.some(f=>['lambda','frictionInput','frictionFactor'].includes(f.key)));assert.ok(lf.some(f=>f.key==='reservoirP0'));
+  assert.throws(()=>calculate('fanno',{...x,fannoUnknown:'Friction parameter',backPressure:600}),/must lie between/);
+ }
+});
+test('Nozzle drawing length and inlet area do not alter duct states or pressure thresholds',()=>{
+ for(const condition of fannoConditions){
+  const x=migrateFannoInputs({...base,fannoCondition:condition,backRatio:.6}),a=calculate('fanno',x),b=calculate('fanno',{...x,nozzleLength:3,nozzleContraction:8});
+  for(const key of ['M','p','T','p0','T0','u','rho']){near(a.result.s1[key],b.result.s1[key]);near(a.result.s2[key],b.result.s2[key]);}
+  near(a.result.backPressure,b.result.backPressure);near(a.result.lambda,b.result.lambda);near(a.result.massFlow,b.result.massFlow);
+  for(const key of Object.keys(a.result.thresholds))if(a.result.thresholds[key]!==null)near(a.result.thresholds[key],b.result.thresholds[key]);
+  if(a.result.shockPart==='nozzle')assert.ok(Math.abs(a.result.shockX-b.result.shockX)>.1);
  }
 });

@@ -14,10 +14,10 @@ export function fannoSystemDrawing(s,inputs,quantity='pressure'){
  else body+=text(435,55,r.regime,'middle',14);
  body+=`<path d="M${throat} ${cy-15}V${cy+15}" stroke="#4d827a" stroke-width="1" stroke-dasharray="3 3"/>`;
  if(r.massFlow>1e-12)for(const t of [.08,.3,.6,.87]){const xx=X(t*g.totalLength);body+=`<path d="M${xx-12} ${cy}h24l-6 -4m6 4l-6 4" fill="none" stroke="#40575d" stroke-width="1.5"/>`;}
- body+=text(throat,290,'Throat','middle',14)+text(join,314,`Duct inlet · M = ${fmt(r.s1.M)}`,'middle')+text(end,314,`Duct exit · M = ${fmt(r.s2.M)}`,'end');
- body+=text(join,340,`p = ${fmt(r.s1.p/1000)} kPa`,'middle')+text(end,340,`pᵦ = ${fmt(r.backPressure/1000)} kPa`,'end');
+ body+=text(throat,290,'Throat','middle',14)+text(380,314,`Duct inlet · M = ${fmt(r.s1.M)}`,'middle')+text(end,314,`Duct exit · M = ${fmt(r.s2.M)}`,'end');
+ body+=text(380,340,`p = ${fmt(r.s1.p/1000)} kPa`,'middle')+text(end,340,`pᵦ = ${fmt(r.backPressure/1000)} kPa`,'end');
  body+=`<path d="M135 370H745" stroke="#91a3a1"/>`;
- for(const [pos,label,anchor]of [[0,'Nozzle inlet','start'],[g.ductStart,'Duct inlet','middle'],[g.totalLength,'Duct exit','end']]){const xx=X(pos);body+=`<path d="M${xx} 365V375" stroke="#91a3a1"/>`+text(xx,395,`${label} · x = ${fmt(pos)} m`,anchor,13);}
+ for(const [pos,label,anchor]of [[0,'Nozzle inlet','start'],[g.ductStart,'Duct inlet','middle'],[g.totalLength,'Duct exit','end']]){const xx=X(pos);body+=`<path d="M${xx} 365V375" stroke="#91a3a1"/>`;if(pos!==g.ductStart||xx-135>180&&745-xx>230)body+=text(xx,395,`${label} · x = ${fmt(pos)} m`,anchor,13);}
  body+=text(400,424,'Isentropic nozzle · constant friction in duct · steady one-dimensional flow','middle',13);
  return {svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 435" role="img" aria-label="Reservoir, converging-diverging nozzle and Fanno duct: ${r.regime}"><title>${r.regime}</title>${body}</svg>`,label:prop.label+' along nozzle and Fanno duct',meta:r.regime,field:{quantity:key,options:Object.keys(ductProperties),label:prop.label,units:prop.units,min,max,palette:ductPalette,note:'Isentropic nozzle · Fanno duct · normal-shock jumps'}};
 }

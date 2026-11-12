@@ -4,7 +4,8 @@ import {gasInfo} from './gas-properties.js';
 export const fannoSystemMode='Nozzle + Fanno duct';
 export const fannoConditions=['Vary back pressure','No shock (matched supersonic exit)','Shock at nozzle throat (limit)','Shock at nozzle exit','Shock at duct exit','Sonic at duct exit'];
 export const fannoSolves=['Back pressure / shock state','Minimum supply pressure (sonic duct exit)','Friction length (shock at duct exit)'];
-export const fannoUnknowns=['Back pressure','Reservoir pressure','Friction parameter'];
+export const fannoUnknowns=['Back pressure','Reservoir pressure','Friction parameter','Shock location / flow regime'];
+export function fannoSolveOptions(condition){return condition===fannoConditions[0]?[fannoUnknowns[3]]:condition===fannoConditions[5]?fannoUnknowns.slice(0,2):fannoUnknowns.slice(0,3);}
 export const fannoSystemDefaults={fannoInterfaceVersion:1,fannoUnknown:'Back pressure',fannoCondition:'Shock at duct exit',fannoSystemSolve:fannoSolves[0],backRatio:.5,nozzleLength:1,nozzleContraction:3};
 const root=(f,a,b)=>bisect(f,a,b,{ftol:1e-11,xtol:1e-12}).value;
 const F=(M,g)=>Math.max(0,fannoRatios(M,g).F);
@@ -97,8 +98,8 @@ export function migrateFannoInputs(raw){
   else x.fannoUnknown=fannoUnknowns[0];
   x.fannoInterfaceVersion=2;
  }
- if(x.fannoCondition!==fannoConditions[5]&&x.fannoUnknown===fannoUnknowns[1]||x.fannoCondition!==fannoConditions[4]&&x.fannoUnknown===fannoUnknowns[2])x.fannoUnknown=fannoUnknowns[0];
- if(!fannoUnknowns.includes(x.fannoUnknown))x.fannoUnknown=fannoUnknowns[0];
+ const options=fannoSolveOptions(x.fannoCondition);
+ if(!options.includes(x.fannoUnknown))x.fannoUnknown=options[0];
  x.fannoSystemSolve=x.fannoUnknown===fannoUnknowns[1]?fannoSolves[1]:x.fannoUnknown===fannoUnknowns[2]?fannoSolves[2]:fannoSolves[0];
  return x;
 }
@@ -108,19 +109,52 @@ export function fannoSystemFields(raw){
  const ranges={reservoirP0:[1,1500],reservoirT0:[100,2000],systemAreaRatio:[1.01,10],nozzleContraction:[1.01,10],nozzleLength:[.1,10],ductLength:[.01,10],ductArea:[.00001,.02],lambda:[0,1.5],hydraulicDiameter:[.001,.5],frictionFactor:[0,.05],backPressure:[1,1500]};
  const n=(key,label,value,min,max,unit='',step=.01)=>({key,label,value,min,max,unit,step,...(ranges[key]?{sliderMin:ranges[key][0],sliderMax:ranges[key][1]}:{})}),select=(key,label,value,options)=>({key,label,value,options});
  const fields=[select('ductProblem','Problem type',fannoSystemMode,['Single duct',fannoSystemMode]),select('fannoCondition','Operating condition',fannoConditions[4],fannoConditions)];
- if(condition===fannoConditions[4]||condition===fannoConditions[5])fields.push(select('fannoUnknown','Solve for',fannoUnknowns[0],condition===fannoConditions[4]?[fannoUnknowns[0],fannoUnknowns[2]]:[fannoUnknowns[0],fannoUnknowns[1]]));
+ fields.push(select('fannoUnknown','Solve for',fannoUnknowns[0],fannoSolveOptions(condition)));
  if(solve!==fannoSolves[1])fields.push(n('reservoirP0','Reservoir pressure',500,.00001,1e9,'kPa'));
  fields.push(n('reservoirT0','Reservoir temperature',400,1,1e5,'K'),n('systemAreaRatio','Nozzle exit / throat area',2,1.000001,1000,'Aₑ/Aₜ'),n('nozzleContraction','Nozzle inlet / throat area',3,1.000001,1000,'Aᵢ/Aₜ'),n('nozzleLength','Nozzle length',1,.000001,1e6,'m'),n('ductLength','Duct length',1,.000001,1e6,'m'),n('ductArea','Duct cross-sectional area',.002,1e-10,1e5,'m²'));
- if(solve===fannoSolves[0]&&condition!==fannoConditions[5]){
+ if(x.fannoUnknown!==fannoUnknowns[2]&&condition!==fannoConditions[5]){
   fields.push(select('frictionInput','Friction input','Dimensionless',['Dimensionless','Length and friction factor']));
   if(x.frictionInput==='Length and friction factor')fields.push(n('hydraulicDiameter','Hydraulic diameter',.05,.000001,1000,'m'),n('frictionFactor','Friction factor',.005,0,1),select('frictionConvention','Friction convention','Fanning',['Fanning','Darcy']));
   else fields.push(n('lambda','Friction length fᴅL/D',.2,0,10));
-  if(condition===fannoConditions[0])fields.push(n('backRatio','Back / reservoir pressure',.5,.000001,1,'pᵦ/p₀',.001));
- }else if(solve!==fannoSolves[0])fields.push(n('backPressure',solve===fannoSolves[1]?'Sonic duct exit pressure':'Pressure after duct exit shock',100,.00001,1e9,'kPa'));
- return fields;
+ }
+ if(condition===fannoConditions[0])fields.push(n('backRatio','Back / reservoir pressure',.5,.000001,1,'pᵦ/p₀',.001));
+ else if(x.fannoUnknown!==fannoUnknowns[0])fields.push(n('backPressure',condition===fannoConditions[5]?'Sonic duct exit pressure':'Duct exit / back pressure',100,.00001,1e9,'kPa'));
+ return fields.map(f=>['nozzleLength','nozzleContraction'].includes(f.key)?{...f,geometrySetting:true}:f);
+}
+function fixedCondition(m,condition){
+ if(condition===fannoConditions[1])return {valid:m.L<=F(m.sup.M,m.g)+1e-10,outlet:m.L<=F(m.sup.M,m.g)+1e-10?m.advance(m.sup,m.L):null};
+ if(condition===fannoConditions[2])return m.at(0);
+ if(condition===fannoConditions[3])return m.at(1);
+ if(condition===fannoConditions[4])return m.at(2);
+ throw Error('Choose a fixed operating condition for this inverse calculation.');
+}
+function solveFannoInverse(x){
+ requireValue(Number.isFinite(x.backPressure)&&x.backPressure>0,'Duct exit / back pressure must be finite and positive.');
+ const targetPressure=x.backPressure;
+ const forward={...x,fannoUnknown:fannoUnknowns[0],fannoSystemSolve:fannoSolves[0]};
+ let d;
+ if(x.fannoUnknown===fannoUnknowns[1]){
+  const reference=solveFannoSystem({...forward,reservoirP0:1});
+  const P=targetPressure/reference.result.backRatio;
+  d=solveFannoSystem({...forward,reservoirP0:P});
+ }else{
+  requireValue(Number.isFinite(x.reservoirP0)&&x.reservoirP0>0,'Reservoir pressure must be finite and positive.');
+  const clean={...forward,lambda:0,frictionInput:'Dimensionless'},m0=model(clean),condition=x.fannoCondition;
+  const entry=condition===fannoConditions[2]?m0.sub:condition===fannoConditions[3]?m0.jump(m0.sup):m0.sup;
+  const limit=F(entry.M,m0.g),target=targetPressure/x.reservoirP0;
+  const pressure=L=>{const z=fixedCondition(model(clean,{L}),condition);requireValue(z.valid,'The selected shock topology cannot reach this friction parameter.');return z.outlet.p;};
+  const low=pressure(0),high=pressure(limit),min=Math.min(low,high),max=Math.max(low,high);
+  requireValue(target>=min-1e-10&&target<=max+1e-10,`For this operating condition, back pressure must lie between ${(min*x.reservoirP0).toPrecision(6)} and ${(max*x.reservoirP0).toPrecision(6)} kPa. The friction parameter must lie between 0 and ${limit.toPrecision(6)}.`);
+  const L=root(l=>pressure(l)-Math.max(min,Math.min(max,target)),0,limit);
+  d=solveFannoSystem({...clean,lambda:L});
+ }
+ d.inputs={...x,reservoirP0:d.result.supplyPressure/1000,lambda:d.result.lambda};
+ d.result.solvedFor=x.fannoUnknown;
+ return d;
 }
 export function solveFannoSystem(raw){
  const merged={...fannoSystemDefaults,...raw},x=merged.fannoInterfaceVersion===2?migrateFannoInputs(merged):merged,solve=x.fannoSystemSolve,condition=x.fannoCondition;
+ if(x.fannoInterfaceVersion===2&&[fannoUnknowns[1],fannoUnknowns[2]].includes(x.fannoUnknown))return solveFannoInverse(x);
  let m=model(x),P=x.reservoirP0??500,chosen,regime,notice='',ratio,calculated={};
  requireValue(fannoSolves.includes(solve),'Select the known data for the nozzle–duct system.');
  if(solve===fannoSolves[1]||condition===fannoConditions[5]){
