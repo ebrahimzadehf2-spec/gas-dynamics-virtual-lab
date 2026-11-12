@@ -1,0 +1,13 @@
+import {fannoSystemMode,fannoConditions} from './fanno-system.js?v=20261113-rainbow-physical';
+
+// Chapter 5, Examples 5-1 through 5-6. The book uses Fanning f.
+const system={ductProblem:fannoSystemMode,fannoInterfaceVersion:2,frictionInput:'Dimensionless',fannoUnknown:'Back pressure'};
+export const fannoExamples=[
+ {number:1,inputs:{ductProblem:'Single duct',fannoInput:'Friction length',M1:.6,p1:150,T1:300,frictionInput:'Length and friction factor',hydraulicDiameter:.03,ductLength:.45,frictionFactor:.005,frictionConvention:'Fanning'}},
+ {number:2,inputs:{ductProblem:'Single duct',fannoInput:'Outlet Mach',M1:2.5,targetMach:1.5,hydraulicDiameter:.05,frictionFactor:.02,frictionConvention:'Fanning'},note:'The required length and maximum length (sonic exit) answer the two parts. Inlet pressure and temperature are reference values for visualization; they do not affect either length.'},
+ {number:3,inputs:{...system,fannoCondition:fannoConditions[1],fannoUnknown:'Reservoir pressure',systemAreaRatio:5.42,backPressure:101.35,ductLength:2.44,ductArea:1.22*2.44,hydraulicDiameter:2*1.22*2.44/(1.22+2.44),lambda:.02*2.44/(2*1.22*2.44/(1.22+2.44)),reservoirT0:300},note:'Minimum supply pressure for the specified supersonic duct flow. The reference reservoir temperature does not affect the pressure solution.'},
+ {number:4,inputs:{...system,fannoCondition:fannoConditions[4],fannoUnknown:'Friction parameter',reservoirP0:800,reservoirT0:300,systemAreaRatio:2.4,backPressure:300}},
+ {number:5,inputs:{...system,fannoCondition:fannoConditions[2],reservoirP0:1034.2,reservoirT0:305.56,systemAreaRatio:3.33,lambda:.3,ductLength:.6,hydraulicDiameter:.05,frictionFactor:.00625},note:'Select throat, nozzle exit, or duct exit under Operating condition for the three parts. L/D = 12; the displayed diameter sets the drawing scale.'},
+ {number:6,inputs:{...system,fannoCondition:fannoConditions[0],fannoUnknown:'Shock location / flow regime',reservoirP0:304,reservoirT0:840,systemAreaRatio:4.23456790123457,lambda:.6,backRatio:50.66/304,backPressure:50.66,ductLength:3,hydraulicDiameter:.05,frictionFactor:.0025},note:'The nozzle supplies the specified duct inlet: M = 3, T = 300 K, p₀ = 304 kPa. L/D = 60; divide the reported shock distance by D = 0.05 m to obtain x/D.'}
+];
+export function fannoExample(number){return fannoExamples.find(x=>x.number===Number(number));}
