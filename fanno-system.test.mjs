@@ -79,3 +79,23 @@ test('Playback crosses each system landmark exactly in both directions at fixed 
   assert.ok(done);for(const m of plan.milestones)assert.ok(visited.has(m.pressure));
  }
 });
+
+test('Operating condition unifies the inverse tasks without a Known data menu',()=>{
+ const sonic=migrateFannoInputs({...base,fannoCondition:fannoConditions[5]});
+ const fs=inputDefinitions('fanno',sonic);
+ assert.ok(!fs.some(f=>f.label==='Known data'||f.key==='fannoSystemSolve'));
+ assert.ok(fs.find(f=>f.key==='fannoCondition').options.includes('Sonic at duct exit'));
+ assert.deepEqual(fs.find(f=>f.key==='fannoUnknown').options,['Back pressure','Reservoir pressure']);
+ assert.ok(!fs.some(f=>f.key==='lambda'||f.key==='frictionFactor'||f.key==='frictionInput'));
+ const d=calculate('fanno',sonic);near(d.result.s2.M,1);assert.equal(d.result.shockX,null);near(d.result.lambda,fannoRatios(d.result.s1.M,sonic.gamma).F);
+ const inv={...sonic,fannoUnknown:'Reservoir pressure',backPressure:d.result.backPressure/1000},v=calculate('fanno',inv);near(v.result.supplyPressure,d.result.supplyPressure);near(v.result.lambda,d.result.lambda);
+ const fi=inputDefinitions('fanno',inv);assert.ok(!fi.some(f=>f.key==='reservoirP0'));assert.ok(fi.some(f=>f.key==='backPressure'));
+ const shock=migrateFannoInputs({...base,lambda:.15,fannoCondition:fannoConditions[4]}),f=calculate('fanno',shock),i=calculate('fanno',{...shock,fannoUnknown:'Friction parameter',backPressure:f.result.backPressure/1000});near(i.result.lambda,.15);
+ assert.deepEqual(inputDefinitions('fanno',shock).find(f=>f.key==='fannoUnknown').options,['Back pressure','Friction parameter']);
+});
+test('Former inverse selections migrate once and condition changes reset incompatible unknowns',()=>{
+ for(const [mode,condition,unknown]of [[fannoSolves[1],fannoConditions[5],'Reservoir pressure'],[fannoSolves[2],fannoConditions[4],'Friction parameter']]){
+  const m=migrateFannoInputs({...base,fannoSystemSolve:mode});assert.equal(m.fannoCondition,condition);assert.equal(m.fannoUnknown,unknown);assert.deepEqual(migrateFannoInputs(m),m);
+  const change=migrateFannoInputs({...m,fannoCondition:fannoConditions[0]});assert.equal(change.fannoUnknown,'Back pressure');assert.equal(change.fannoSystemSolve,fannoSolves[0]);
+ }
+});
