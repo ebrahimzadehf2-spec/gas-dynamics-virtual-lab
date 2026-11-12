@@ -16,7 +16,7 @@ export function trackingDrawing(s,{txt,line,poly,fmt,range=null,quantity='mach'}
  let min=Infinity,max=-Infinity;for(const slab of t.slabs)for(const z of slab.states){const v=value(z);min=Math.min(min,v);max=Math.max(max,v);}if(!Number.isFinite(min))min=max=value(s.s1);
  if(range){min=range.min;max=range.max;}
  const color=v=>cornerContourColor(max-min<1e-10?.5:(v-min)/(max-min)),boundary=(wall,initial)=>[{x:start,y:initial},...wall.points.filter(p=>p.x<end-1e-9),{x:end,y:channelOrdinate(wall,end)}],lower=boundary(g.lower,0),upper=boundary(g.upper,g.height),V=p=>[X(p.x),Y(p.y)],point=(x,y)=>`${Number(X(x).toFixed(3))},${Number(Y(y).toFixed(3))}`;
- let inner='<rect width="640" height="300" fill="#fcfdfc"/>'+txt(24,27,'SHOCK–EXPANSION','#263c4d',14)+txt(616,27,t.hasFanApproximation?`Fan width ≤ ${fmt(t.step,3)}°`:'Direct jump relations','#53616b',12,'end');
+ let inner='<rect width="640" height="300" fill="#fcfdfc"/>'+txt(24,27,'SHOCK–EXPANSION','#263c4d',14)+txt(616,27,t.hasFanApproximation?`Δθfan = ${fmt(t.step,3)}°`:'Direct jump relations','#53616b',12,'end');
  inner+=poly([...lower.map(V),[X(end),246],[X(start),246]],'#edf0f2')+poly([...upper.map(V),[X(end),43],[X(start),43]],'#edf0f2');
  inner+='<defs><clipPath id="tracking-domain">'+poly([...lower.map(V),...upper.slice().reverse().map(V)],'#fff')+'</clipPath></defs><g clip-path="url(#tracking-domain)">';
  inner+=poly([[X(start),Y(0)],[X(0),Y(0)],[X(0),Y(g.height)],[X(start),Y(g.height)]],color(value(s.s1)));

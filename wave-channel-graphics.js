@@ -7,7 +7,7 @@ export function channelDrawing(s,{txt,line,poly,fmt,quantity,range,showCharacter
  const X=x=>320+(x-(L+start)/2)*scale,Y=y=>145+((lo+hi)/2-y)*scale,V=p=>[X(p.x),Y(p.y)];
  const vals=Object.values(s.regions).map(z=>z.p/1000),min=Math.min(...vals),max=Math.max(...vals),color=p=>cornerContourColor(max-min<1e-10?.5:(p/1000-min)/(max-min));
  let inner='<rect width="640" height="300" fill="#fcfdfc"/><defs><clipPath id="channel-view"><rect x="24" y="43" width="592" height="203"/></clipPath></defs>';
- inner+=txt(24,27,'CUSTOM CHANNEL','#263c4d',14)+txt(616,27,`Inlet height = ${fmt(g.height,4)} m`,'#53616b',13,'end');
+ inner+=txt(24,27,'CUSTOM CHANNEL','#263c4d',14)+txt(616,27,`H = ${fmt(g.height,4)} m`,'#53616b',13,'end');
  const boundary=(wall,side)=>[{x:start,y:side==='L'?0:g.height},...wall.points.filter(p=>p.x<L-1e-9),{x:L,y:channelOrdinate(wall,L)}];
  const lower=boundary(g.lower,'L'),upper=boundary(g.upper,'U');
  inner+='<g clip-path="url(#channel-view)" stroke-linecap="round" stroke-linejoin="round">';
@@ -28,6 +28,6 @@ export function channelDrawing(s,{txt,line,poly,fmt,quantity,range,showCharacter
  const y=Y(g.height/2),xx=X(start+.02*L);inner+=line(xx,y,xx+32,y,'#536977',1.4)+poly([[xx+32,y],[xx+26,y-3],[xx+26,y+3]],'#536977')+txt(xx+16,y-12,'1','#263c4d',14,'middle');
  if(s.limitX!==null){const xx=X(s.limitX);inner+=`<rect x="${xx}" y="43" width="${Math.max(0,X(L)-xx)}" height="203" fill="#ffffff" opacity=".7"/>`+line(xx,43,xx,246,'#8e6d42',1,'4 4');}
  inner+='</g>';
- inner+=txt(24,270,s.limitX!==null?`Local solution ends at x = ${fmt(s.limitX,5)} m`:`Shared channel length = ${fmt(L,5)} m`,'#53616b',13)+txt(616,292,'L: lower wall · U: upper wall','#53616b',12,'end');
+ inner+=txt(24,270,s.limitX!==null?`Local solution ends at x = ${fmt(s.limitX,5)} m`:`L = ${fmt(L,5)} m`,'#53616b',13)+txt(616,292,'L: lower wall · U: upper wall','#53616b',12,'end');
  return {inner,label:'Custom channel · two independent piecewise walls',meta:'Local wall states · pressure-colored boundaries · unresolved reflections omitted',field:s.moc?null:{quantity:'pressure',options:['pressure'],min,max,units:'kPa',label:'Surface pressure',note:'Local lower- and upper-wall states',palette:cornerPalette}};
 }

@@ -1,4 +1,4 @@
-import {channelDrawing} from './wave-channel-graphics.js?v=20261109-wedge-cone';
+import {channelDrawing} from './wave-channel-graphics.js?v=20261112-diagram-labels';
 import {cornerContourColor,cornerPalette} from './corner-graphics.js';
 export function wallDrawing(s,{txt,line,poly,fmt,quantity,range,showCharacteristics}){
  if(s.channel)return channelDrawing(s,{txt,line,poly,fmt,quantity,range,showCharacteristics});
