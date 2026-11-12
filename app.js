@@ -115,7 +115,21 @@ function pendingAirfoilScene(){
  try{return sceneSVG({kind:'airfoil',geometry:airfoilGeometry(inputs),models:[],alpha:(inputs.alpha??0)*Math.PI/180},inputs).svg;}
  catch{return '<div class="error-display">Check airfoil geometry.</div>';}
 }
-function solve({stream=false}={}){$('ductImageNote').hidden=true;$('ductChartNote').hidden=true;$('fieldProbe').hidden=true;$('chartProbe').hidden=true;$('flowRelationsPanel').hidden=true;$('regionTablePanel').hidden=true;$('trackingEventPanel').hidden=true;request++;solvePending=true;if(!stream)current=null;$('status').textContent=stream?'Updating…':'Solving…';$('status').className='status';$('comparison').hidden=true;for(const key of ['exportJson','exportCsv','pin','exportSvg'])$(key).disabled=true;if(!stream||!current){$('isentropicPanel').hidden=true;$('results').innerHTML='<div class="result-row"><span class="result-label">Computing a new state…</span></div>';$('notice').hidden=true;$('scene').innerHTML=pendingAirfoilScene();$('chart').innerHTML='';$('legend').textContent='';$('chartTitle').textContent='Property map';}stopAnimation();worker.postMessage({request,id,inputs});}
+function solve({stream=false}={}){
+ // Keep the accepted view mounted while a pressure-sweep frame is calculated.
+ // Hiding tables/notes here collapses the page and triggers browser scroll anchoring.
+ const keepView=stream&&current?.id===id;
+ $('fieldProbe').hidden=true;$('chartProbe').hidden=true;request++;solvePending=true;
+ if(!keepView){
+  current=null;
+  for(const key of ['ductImageNote','ductChartNote','flowRelationsPanel','regionTablePanel','trackingEventPanel'])$(key).hidden=true;
+  $('status').textContent='Solving…';$('status').className='status';$('comparison').hidden=true;
+  for(const key of ['exportJson','exportCsv','pin','exportSvg'])$(key).disabled=true;
+  $('isentropicPanel').hidden=true;$('results').innerHTML='<div class="result-row"><span class="result-label">Computing a new state…</span></div>';
+  $('notice').hidden=true;$('scene').innerHTML=pendingAirfoilScene();$('chart').innerHTML='';$('legend').textContent='';$('chartTitle').textContent='Property map';
+ }
+ stopAnimation();worker.postMessage({request,id,inputs});
+}
 
 worker.onmessage=({data})=>{if(data.request!==request)return;solvePending=false;if(!data.ok){current=null;stopSweep();syncSweep();$('sweepState').textContent='No accepted state for these inputs.';$('status').textContent=data.code==='detached'?'Detached':'Check inputs';$('status').className='status error';$('notice').hidden=false;$('notice').textContent=data.error;if(id==='collision'&&data.code==='geometry-limit'){const link=document.createElement('button');link.type='button';link.className='text-btn';link.textContent='Open Custom wall / Channel';link.style.display='block';link.style.marginTop='12px';link.onclick=()=>{pendingCustomChannel=true;location.hash='wall';};$('notice').appendChild(link);}$('scene').innerHTML='<div class="error-display">No field is displayed for these inputs.<br>The selected physical model has no accepted solution.</div>';$('results').innerHTML='';renderShockDetails([]);$('fieldControls').hidden=true;$('fieldLabel').textContent='No accepted flow field';$('sceneMeta').textContent='';$('chart').innerHTML='';$('legend').textContent='';$('plotQuantity').innerHTML='';$('plotNote').textContent='';return;}current=data.data;try{localStorage.setItem('gdvl-inputs-'+id+(id==='balances'?'-cv2':''),JSON.stringify(inputs));}catch{}renderResult();syncSweep();continueSweep();};
 worker.onerror=()=>{solvePending=false;stopSweep();syncSweep();$('status').textContent='Worker error';$('notice').hidden=false;$('notice').textContent='The calculation worker could not start. Serve this folder over HTTP(S) with module support.';};
