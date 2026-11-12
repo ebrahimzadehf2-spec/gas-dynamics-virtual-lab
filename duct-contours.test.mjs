@@ -18,3 +18,16 @@ test('Connected heat/shock/nozzle and Fanno shocks preserve discontinuities in t
  for(const [id,x]of [['rayleigh',{ductProblem:'Heat + shock + converging nozzle',systemInletType:'Static duct inlet',M1:1.6,T1:200,p1:56,backPressure:120}],['fanno',{ductProblem:'CD nozzle + prescribed shock',lambda:.15,shockCase:'Duct exit'}]]){const d=run(id,x),r=d.result;assert.ok(r.longitudinal.some((z,i,a)=>i&&z.x===a[i-1].x&&z.state.p!==a[i-1].state.p));const view=sceneSVG(d.scene,d.inputs);assert.match(view.svg,/Normal shock/);assert.ok(view.svg.includes(`offset="${100*r.shockAt}%"`));assert.doesNotMatch(view.svg,/NaN|undefined/);}
 });
 test('Exceeded choking limit does not invent a longitudinal field',()=>{const d=run('rayleigh',{q:1000});assert.equal(d.result.s2,null);assert.equal(d.result.longitudinal,undefined);assert.doesNotMatch(sceneSVG(d.scene,d.inputs).svg,/data-duct-contour=/);});
+
+test('System diagrams place entry nozzles before the friction duct and the Rayleigh exit nozzle after its shock',()=>{
+ for(const shockCase of ['Nozzle throat (limit)','Nozzle exit','Duct exit']){
+  const d=run('fanno',{ductProblem:'CD nozzle + prescribed shock',shockCase,lambda:.1}),v=sceneSVG(d.scene,d.inputs);
+  assert.match(v.svg,/C–D nozzle/);assert.match(v.svg,/Reservoir/);
+  assert.match(v.svg,/M120 105L185 135L270 105/);assert.match(v.svg,/M270 105H735/);
+  if(shockCase==='Nozzle throat (limit)')assert.doesNotMatch(v.svg,/data-shock/);
+  else assert.ok(v.svg.includes(`data-shock="true" d="M${shockCase==='Nozzle exit'?270:735} 105V215"`));
+ }
+ const d=run('rayleigh',{ductProblem:'Heat + shock + converging nozzle',systemInletType:'Static duct inlet',M1:1.6,T1:200,p1:56,backPressure:120}),v=sceneSVG(d.scene,d.inputs);
+ assert.match(v.svg,/data-shock="true" d="M500 105V215"/);assert.match(v.svg,/M65 105H540/);assert.match(v.svg,/id="exitContour"/);
+ assert.match(v.svg,/Nozzle outlet/);assert.doesNotMatch(v.svg,/NaN|undefined|Infinity/);
+});
