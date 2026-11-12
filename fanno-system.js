@@ -69,16 +69,17 @@ function bounds(m){
 export function fannoPressurePlan(x){
  if((x.fannoSystemSolve??fannoSolves[0])!==fannoSolves[0])return {enabled:false,min:.001,max:1,milestones:[],message:'Select Back pressure under Solve for to vary pressure at fixed geometry and friction.'};
  const m=model(x),b=bounds(m),marks=[];
- const add=(pressure,label)=>{if(Number.isFinite(pressure)&&pressure>0&&pressure<=1)marks.push({pressure,label});};
- if(b.noShock)add(b.noShock.outlet.p,'No shock · matched supersonic exit');
+ // The demo follows only changes resolved inside the nozzle/duct. For the usual
+ // shock branch, stop at the duct-exit/choking bound and the sonic-throat limit.
+ const min=b.low,max=b.long?1:b.onset,enabled=max-min>1e-10;
+ const add=(pressure,label)=>{if(Number.isFinite(pressure)&&pressure>=min-1e-10&&pressure<=max+1e-10)marks.push({pressure:Math.max(min,Math.min(max,pressure)),label});};
  if(b.ductExit)add(b.ductExit.outlet.p,'Shock at duct exit');
  if(b.nozzleExit)add(b.nozzleExit.outlet.p,'Shock at nozzle exit');
  if(!b.long)add(b.onset,'Sonic throat · zero shock strength');
- else add(b.onset,'Friction-choked duct · subsonic nozzle');
+ else {add(b.onset,'Friction-choked duct · subsonic nozzle');add(1,'No flow');}
  if(b.ymax!==null&&b.ymax<2)add(b.low,'Friction-choked duct exit');
- add(1,'No flow');
  marks.sort((a,b)=>a.pressure-b.pressure);
- return {enabled:true,min:Math.max(1e-6,Math.min(.001,b.low/10)),max:1,milestones:marks,message:'Fixed nozzle geometry, supply conditions and duct friction; increase back pressure to move the shock upstream.',limits:{throat:b.long?null:b.onset,nozzleExit:b.nozzleExit?.outlet.p??null,ductExit:b.ductExit?.outlet.p??null,noShock:b.noShock?.outlet.p??null,sonicExit:b.low}};
+ return {enabled,min,max,milestones:marks,message:!enabled?'No finite internal-shock pressure interval for this friction length. Reduce duct friction to move the shock.':b.long?'Subsonic internal-flow branch, from sonic duct exit to no flow. External pressure adjustment is excluded.':'Internal-shock range only: duct exit / choking limit to sonic throat. External pressure adjustment and the fully subsonic branch are excluded.',limits:{throat:b.long?null:b.onset,nozzleExit:b.nozzleExit?.outlet.p??null,ductExit:b.ductExit?.outlet.p??null,noShock:b.noShock?.outlet.p??null,sonicExit:b.low}};
 }
 export function migrateFannoInputs(raw){
  const x={...raw},old=x.ductProblem;

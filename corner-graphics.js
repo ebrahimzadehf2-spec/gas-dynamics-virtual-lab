@@ -1,5 +1,5 @@
 import {linspace,prandtlMeyer,deg} from './physics.js';
-export const cornerPalette=['#8ea6dc','#80b7dd','#85cdd6','#a2cfad','#e0d89b','#e3b68f','#dc9999'];
+export const cornerPalette=['#2536c7','#0879f5','#00c8dc','#16bf59','#efe51b','#ff9718','#ee2727'];
 export function cornerContourColor(t){const v=Math.max(0,Math.min(1,t))*(cornerPalette.length-1),i=Math.min(cornerPalette.length-2,Math.floor(v)),f=v-i;const a=cornerPalette[i].match(/[a-f0-9]{2}/gi).map(v=>parseInt(v,16)),b=cornerPalette[i+1].match(/[a-f0-9]{2}/gi).map(v=>parseInt(v,16));return '#'+a.map((v,k)=>Math.round(v+(b[k]-v)*f).toString(16).padStart(2,'0')).join('');}
 // A flow-aligned local corner: horizontal approach wall, one ramp, no vertical face.
 export function cornerDrawing(s,inputs,{txt,line,poly,shade,fmt}){

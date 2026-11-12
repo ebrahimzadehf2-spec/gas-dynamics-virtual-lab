@@ -1,5 +1,5 @@
-import {channelDrawing} from './wave-channel-graphics.js?v=20261112-diagram-labels';
-import {cornerContourColor,cornerPalette} from './corner-graphics.js';
+import {channelDrawing} from './wave-channel-graphics.js?v=20261113-rainbow-physical';
+import {cornerContourColor,cornerPalette} from './corner-graphics.js?v=20261113-rainbow-physical';
 export function wallDrawing(s,{txt,line,poly,fmt,quantity,range,showCharacteristics}){
  if(s.channel)return channelDrawing(s,{txt,line,poly,fmt,quantity,range,showCharacteristics});
  const g=s.geometry,L=g.end,sign=g.side==='Gas above wall'?1:-1,start=-.2*L,end=L*1.04;

@@ -1,4 +1,4 @@
-import {fannoSystemMode,fannoSystemFields,fannoSystemDefaults,solveFannoSystem} from './fanno-system.js?v=20261112-fanno-solve-for';
+import {fannoSystemMode,fannoSystemFields,fannoSystemDefaults,solveFannoSystem} from './fanno-system.js?v=20261113-rainbow-physical';
 import * as p from './physics.js?v=20261110-rayleigh-audit';
 import {gasInfo} from './gas-properties.js';
 const select=(key,label,value,options)=>({key,label,value,options});

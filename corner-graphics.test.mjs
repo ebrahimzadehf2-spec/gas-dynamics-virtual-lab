@@ -17,7 +17,7 @@ test('Analytical contours remain available and do not change scientific wave res
  }
 });
 
-test('Colored contours are the default, share their muted legend palette and recover speed ratios',()=>{
+test('Colored contours are the default, share their rainbow legend palette and recover speed ratios',()=>{
  for(const id of ['oblique','expansion']){
   const x=defaults(id);assert.equal(x.cornerView,'Analytical contours');const d=calculate(id,x),v=sceneSVG(d.scene,x,.001,'speed');assert.equal(v.field.units,'u/u₁');assert.equal(v.field.palette.length,7);const lo=Math.min(1,d.result.M2/x.M1*Math.sqrt(d.result.T)),hi=Math.max(1,d.result.M2/x.M1*Math.sqrt(d.result.T));assert.ok(Math.abs(v.field.min-lo)<1e-10&&Math.abs(v.field.max-hi)<1e-10);assert.ok(v.svg.includes(v.field.palette[0])&&v.svg.includes(v.field.palette.at(-1)));
  }

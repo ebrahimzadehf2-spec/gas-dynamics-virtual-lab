@@ -4,7 +4,7 @@ import {solveFannoSystem,fannoConditions,fannoSolves,fannoPressurePlan,migrateFa
 import {solveDuctSystem,systemDefaults} from './duct-systems.js';
 import {calculate,defaults,inputDefinitions} from './labs.js';
 import {sceneSVG} from './graphics.js';
-import {fannoRatios,normalShock,areaMach} from './physics.js';
+import {fannoRatios,normalShock,areaMach,machFromArea} from './physics.js';
 import {advancePressure} from './sweep.js';
 const base={...defaults('fanno'),ductProblem:fannoSystemMode,lambda:.2,systemAreaRatio:2,reservoirP0:500,reservoirT0:400};
 const run=x=>solveFannoSystem({...base,...x});
@@ -127,4 +127,17 @@ test('Nozzle drawing length and inlet area do not alter duct states or pressure 
   for(const key of Object.keys(a.result.thresholds))if(a.result.thresholds[key]!==null)near(a.result.thresholds[key],b.result.thresholds[key]);
   if(a.result.shockPart==='nozzle')assert.ok(Math.abs(a.result.shockX-b.result.shockX)>.1);
  }
+});
+
+test('The usual pressure demo stops at the duct-exit shock and sonic-throat bounds',()=>{
+ const plan=fannoPressurePlan(base);near(plan.min,plan.limits.ductExit);near(plan.max,plan.limits.throat);
+ assert.ok(plan.min>plan.limits.noShock);assert.ok(plan.max<1);assert.ok(!plan.milestones.some(m=>/No flow|matched supersonic/.test(m.label)));
+ for(let i=0;i<=40;i++){const backRatio=plan.min+(plan.max-plan.min)*i/40,d=run({fannoCondition:fannoConditions[0],backRatio});near(d.result.s2.p,d.result.backPressure);assert.equal(d.notice,'');assert.ok(!/external|Unchoked/.test(d.result.regime));}
+});
+test('Long and degenerate ducts keep only the resolved internal-flow interval',()=>{
+ for(const lambda of [.5,1,5,10]){
+  const x={...base,lambda},plan=fannoPressurePlan(x);assert.ok(plan.min>0);assert.ok(plan.max<=1);assert.ok(plan.max>=plan.min);
+  if(plan.enabled)for(let i=0;i<=12;i++){const backRatio=plan.min+(plan.max-plan.min)*i/12,d=solveFannoSystem({...x,fannoCondition:fannoConditions[0],backRatio});near(d.result.s2.p,d.result.backPressure,1e-6);assert.ok(d.checks.mass<1e-6);}
+ }
+ const g=base.gamma,lambda=fannoRatios(machFromArea(base.systemAreaRatio,'subsonic',g),g).F,plan=fannoPressurePlan({...base,lambda});assert.equal(plan.enabled,false);assert.match(plan.message,/No finite/);
 });

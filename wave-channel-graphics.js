@@ -1,6 +1,6 @@
-import {mocDrawing} from './channel-moc-graphics.js?v=20261109-wedge-cone';
+import {mocDrawing} from './channel-moc-graphics.js?v=20261113-rainbow-physical';
 import {channelOrdinate} from './wave-channel.js';
-import {cornerContourColor,cornerPalette} from './corner-graphics.js';
+import {cornerContourColor,cornerPalette} from './corner-graphics.js?v=20261113-rainbow-physical';
 export function channelDrawing(s,{txt,line,poly,fmt,quantity,range,showCharacteristics}){
  if(s.moc?.rows.length)return mocDrawing(s,{txt,line,poly,fmt,quantity,range,showCharacteristics});
  const g=s.geometry,L=g.end,start=-.18*L,heights=[0,L,...g.lower.points.map(p=>p.x),...g.upper.points.map(p=>p.x)].filter(x=>x<=L+1e-10).flatMap(x=>[channelOrdinate(g.lower,x),channelOrdinate(g.upper,x)]),lo=Math.min(...heights),hi=Math.max(...heights),scale=Math.min(560/(L-start),160/Math.max(hi-lo,.12*L));

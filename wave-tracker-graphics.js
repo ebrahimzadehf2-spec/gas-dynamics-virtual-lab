@@ -1,6 +1,6 @@
 import {channelOrdinate} from './wave-channel.js';
 import {trackingProfile} from './wave-tracker.js';
-import {cornerContourColor,cornerPalette} from './corner-graphics.js';
+import {cornerContourColor,cornerPalette} from './corner-graphics.js?v=20261113-rainbow-physical';
 export function trackingCoordinates(s){
  const g=s.geometry,end=g.end,start=-.12*end,xs=[0,end,...g.lower.points.map(p=>p.x),...g.upper.points.map(p=>p.x)].filter(x=>x<=end+1e-9),ys=xs.flatMap(x=>[channelOrdinate(g.lower,x),channelOrdinate(g.upper,x)]),lo=Math.min(...ys),hi=Math.max(...ys),scale=Math.min(560/(end-start),170/Math.max(hi-lo,.1*end));
  return {end,start,lo,hi,scale,X:x=>320+(x-(start+end)/2)*scale,Y:y=>145+((lo+hi)/2-y)*scale};

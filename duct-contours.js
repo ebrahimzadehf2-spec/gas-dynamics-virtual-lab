@@ -12,7 +12,7 @@ export function ductProfile(id,result,inputs){
 }
 export const ductProperties={pressure:{label:'Static pressure',symbol:'p',units:'kPa',get:s=>s.p/1000},mach:{label:'Mach number',symbol:'M',units:'',get:s=>s.M},temperature:{label:'Static temperature',symbol:'T',units:'K',get:s=>s.T},density:{label:'Density',symbol:'ρ',units:'kg/m³',get:s=>s.rho},speed:{label:'Flow speed',symbol:'u',units:'m/s',get:s=>s.u}};
 const fmt=v=>Number(v.toPrecision(5)).toString();
-export const ductPalette=['#9ebed2','#c1dce0','#dbe8cf','#e9ddbc','#d6aa8f'];
+export const ductPalette=['#2536c7','#0879f5','#00c8dc','#16bf59','#efe51b','#ff9718','#ee2727'];
 function color(t){const a=Math.max(0,Math.min(1,t))*(ductPalette.length-1),i=Math.min(ductPalette.length-2,Math.floor(a)),f=a-i;const rgb=h=>h.match(/[a-f\d]{2}/gi).map(x=>parseInt(x,16)),p=rgb(ductPalette[i]),q=rgb(ductPalette[i+1]);return '#'+p.map((v,k)=>Math.round(v+(q[k]-v)*f).toString(16).padStart(2,'0')).join('');}
 export function ductContourDrawing(s,inputs,quantity='pressure'){
  if(!['rayleigh','fanno'].includes(s.process))return null;

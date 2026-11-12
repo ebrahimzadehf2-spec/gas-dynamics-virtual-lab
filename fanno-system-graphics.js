@@ -1,4 +1,4 @@
-import {ductProperties,ductPalette} from './duct-contours.js';
+import {ductProperties,ductPalette} from './duct-contours.js?v=20261113-rainbow-physical';
 const fmt=v=>Number(v.toPrecision(5)).toString();
 function tint(t){const a=Math.max(0,Math.min(1,t))*(ductPalette.length-1),i=Math.min(ductPalette.length-2,Math.floor(a)),f=a-i,rgb=h=>h.match(/[a-f\d]{2}/gi).map(x=>parseInt(x,16)),p=rgb(ductPalette[i]),q=rgb(ductPalette[i+1]);return '#'+p.map((v,k)=>Math.round(v+(q[k]-v)*f).toString(16).padStart(2,'0')).join('');}
 export function fannoSystemDrawing(s,inputs,quantity='pressure'){

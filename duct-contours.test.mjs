@@ -31,3 +31,8 @@ test('System diagrams place entry nozzles before the friction duct and the Rayle
  assert.match(v.svg,/data-shock="true" d="M500 105V215"/);assert.match(v.svg,/M65 105H540/);assert.match(v.svg,/id="exitContour"/);
  assert.match(v.svg,/Nozzle outlet/);assert.doesNotMatch(v.svg,/NaN|undefined|Infinity/);
 });
+
+test('Duct and corner fields use blue-to-red rainbow scales that match their legends',async()=>{
+ const {ductPalette}=await import('./duct-contours.js');const {cornerPalette}=await import('./corner-graphics.js');assert.deepEqual(ductPalette,cornerPalette);assert.equal(ductPalette.length,7);assert.equal(ductPalette[0],'#2536c7');assert.equal(ductPalette.at(-1),'#ee2727');
+ for(const id of ['rayleigh','fanno']){const d=run(id),v=sceneSVG(d.scene,d.inputs,.001,'pressure');assert.deepEqual(v.field.palette,ductPalette);assert.ok(v.svg.includes(ductPalette[0]));assert.ok(v.svg.includes(ductPalette.at(-1)));}
+});
