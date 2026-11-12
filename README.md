@@ -82,3 +82,8 @@ The Wave Interaction selector is shown only from Custom wall and while an intera
 All laboratories use one compact header: title, model badge and assumptions link share a row, followed by the short description. Redundant chapter breadcrumbs, number badges and taglines are removed from the workspace header.
 
 Supersonic Airfoil Lab uses the same top Geometry & solution panel for shape, geometry definition, solution method and incidence. Surface segment/coordinate editors are grouped under Edit surface geometry. Gas and freestream Mach, temperature and pressure remain in the left column.
+
+
+### Unified Fanno nozzle–duct system
+
+The Fanno menu contains Single duct and Nozzle + Fanno duct. The latter combines the former minimum-supply, exit-shock/friction, prescribed-shock and shock-location interfaces. A single geometry supports four landmark states plus continuous back-pressure inversion and steady playback. The solver preserves isentropic nozzle mass flow, normal-shock jumps and Fanno friction length; it also handles unchoked/no-flow and friction-choked long-duct limits. Minimum-supply pressure and exit-shock friction remain available under Known data. Legacy saved input modes migrate into this interface. Run `node --test fanno-system.test.mjs` for cross-checks against the original solvers, conservation, pressure inversion, choking, migration and playback landmarks.
