@@ -1,3 +1,4 @@
+import {ramjetInletDrawing} from './ramjet-inlet-graphics.js?v=20261113-ramjet';
 import {fannoSystemDrawing} from './fanno-system-graphics.js?v=20261113-rainbow-physical';
 import {ductContourDrawing} from './duct-contours.js?v=20261113-rainbow-physical';
 import {uniformDiagramText} from './diagram-typography.js?v=20261112-diagram-labels';
@@ -229,5 +230,5 @@ function renderChartSVG(c){const W=640,H=266,L=c.leftMargin??100,R=23,T=15,B=49;
  return {svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(c.title)}"><title>${esc(c.title)}</title>${diagramFontStyle}${inner}<line id="cursorLine" x1="0" y1="${T}" x2="0" y2="${H-B}" stroke="#8caa8d" stroke-dasharray="3 3" opacity="0"/><circle id="cursorPoint" r="4" fill="#17212b" stroke="#fff" stroke-width="1.5" opacity="0" pointer-events="none"/><rect id="chartHit" x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent"/></svg>`,legend:c.series.map((s,i)=>`<span><i style="background:${colors[i%colors.length]}"></i>${esc(s.name)}</span>`).join(''),axis:{xmin,xmax,ymin,ymax,L,R,W,H,T,B}};
 }
 
-export function sceneSVG(...args){const view=args[0].kind==='fannoSystem'?fannoSystemDrawing(args[0],args[1],args[3]):ductContourDrawing(args[0],args[1],args[3])??renderSceneSVG(...args);return {...view,svg:uniformDiagramText(view.svg)};}
+export function sceneSVG(...args){const view=args[0].kind==='ramjetInlet'?ramjetInletDrawing(args[0],args[1],args[3]):args[0].kind==='fannoSystem'?fannoSystemDrawing(args[0],args[1],args[3]):ductContourDrawing(args[0],args[1],args[3])??renderSceneSVG(...args);return {...view,svg:uniformDiagramText(view.svg)};}
 export function chartSVG(...args){const view=renderChartSVG(...args);return {...view,svg:uniformDiagramText(view.svg)};}
