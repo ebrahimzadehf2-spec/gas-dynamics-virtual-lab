@@ -58,6 +58,14 @@ test('Mirrored inlet reverses flow angles and pressure polar but preserves shock
  for(let i=0;i<pa.series.length;i++)for(let j=0;j<pa.series[i].points.length;j++){near(pa.series[i].points[j][0],-pb.series[i].points[j][0]);near(pa.series[i].points[j][1],pb.series[i].points[j][1]);}
  const {V}=inletViewGeometry(b);
  for(const cell of b.geometry.cells){const p=cell.poly.reduce((s,p)=>[s[0]+p[0]/cell.poly.length,s[1]+p[1]/cell.poly.length],[0,0]),v=probeInlet(b,...V(p));assert.equal(v.region,cell.region);near(v.y,b.geometry.H-p[1]);near(v.theta,cell.state.theta);}
- const svg=ramjetInletDrawing(b,x).svg;assert.match(svg,/data-inlet-solid="ramp"/);assert.match(svg,/data-inlet-solid="reflecting-wall"/);assert.match(svg,/Solid ramp/);assert.match(svg,/Reflecting wall/);assert.doesNotMatch(svg,/NaN|undefined|Infinity/);
+ const svg=ramjetInletDrawing(b,x).svg;assert.match(svg,/data-inlet-solid="ramp"/);assert.match(svg,/data-inlet-solid="reflecting-wall"/);assert.match(svg,/θw = 8°/);assert.match(svg,/Wall/);assert.doesNotMatch(svg,/NaN|undefined|Infinity/);
  const fields=inputDefinitions('wall',{...defaults('wall'),...x});assert.deepEqual(fields.find(f=>f.key==='ramjetOrientation').options,ramjetOrientations);
+});
+
+test('All inlet annotations are real visible SVG text elements without backgrounds',()=>{
+ for(const orientation of ramjetOrientations){const x={...ramjetPreset,ramjetOrientation:orientation},svg=ramjetInletDrawing(solveRamjetInlet(x),x).svg;
+ assert.equal((svg.match(/<text /g)||[]).length,9);
+ for(const label of ['M₁ = 2','θw = 8°','θ₃ = 0°','β₁','β₂','1','2','3','Wall'])assert.ok(svg.includes('>'+label+'</text>'),label);
+ assert.doesNotMatch(svg,/<rect\b/);assert.match(svg,/fill="#ffffff"/);
+ }
 });
