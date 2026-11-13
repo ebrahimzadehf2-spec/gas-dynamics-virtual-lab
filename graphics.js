@@ -1,4 +1,4 @@
-import {ramjetInletDrawing} from './ramjet-inlet-graphics.js?v=20261114-white-inlet';
+import {ramjetInletDrawing} from './ramjet-inlet-graphics.js?v=20261114-restored-inlet-text';
 import {fannoSystemDrawing} from './fanno-system-graphics.js?v=20261113-rainbow-physical';
 import {ductContourDrawing} from './duct-contours.js?v=20261113-rainbow-physical';
 import {uniformDiagramText} from './diagram-typography.js?v=20261112-diagram-labels';
