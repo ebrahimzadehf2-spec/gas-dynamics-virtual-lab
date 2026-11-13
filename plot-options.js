@@ -1,6 +1,6 @@
 import {ramjetPlots} from './ramjet-inlet.js?v=20261113-inlet-clearance';
 import {ductLongitudinalPlots} from './duct-contours.js?v=20261112-duct-contours';
-import {bodyPlots} from './wedge-cone.js?v=20261114-wedge-wall';
+import {bodyPlots} from './wedge-cone.js?v=20261114-both-walls';
 import {comparisonPlots} from './channel-comparison.js';
 import {trackingPlots} from './wave-tracker.js?v=20261109-wedge-cone';
 import {regularChannelPlots} from './regular-channel.js?v=20261109-wedge-cone';

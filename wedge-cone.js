@@ -1,4 +1,4 @@
-import {solveWedgeWall,wedgeWallPlots} from './wedge-wall.js?v=20261114-wedge-wall';
+import {solveWedgeWall,wedgeWallPlots} from './wedge-wall.js?v=20261114-both-walls';
 import {obliqueShock,expansion,shockLimit,isentropic,rad,deg} from './physics.js';
 import {requireValue,finite} from './numerics.js';
 import {cone} from './cone.js';
@@ -26,7 +26,7 @@ export function solveBodyLab(x){
  r.bodyTable={columns:columns.map(c=>c.name),statuses:columns.map(c=>c.status),rows:[{label:'Wave angle β to incident flow',unit:'°',values:columns.map(c=>c.beta==null?null:deg(c.beta))},{label:'Signed flow turn from inlet',unit:'°',values:columns.map(c=>c.turn==null?null:deg(c.turn))},...bodyProperties.map(([,label,unit,get])=>({label,unit,values:columns.map(c=>c.state?get(c.state):null)}))]};
  if(mode==='Wedge'&&x.nearbyWall&&x.nearbyWall!=='None'){
  r.wallReflection=solveWedgeWall(x,wedge);const q=r.wallReflection,states=Object.values(q.regions);
- r.bodyTable={columns:['Region 1 · freestream','Region 2 · wall-side shock','Region 3 · reflected shock','Region 4 · opposite face'],statuses:states.map(()=>'ok'),rows:[{label:'Wave angle β to incident flow',unit:'°',values:[null,deg(q.face.beta),deg(q.shock.beta),deg(q.other.beta)]},{label:'Flow direction',unit:'°',values:states.map(z=>deg(z.theta))},...bodyProperties.map(([,label,unit,get])=>({label,unit,values:states.map(get)}))]};
+ r.bodyTable={columns:['Region 1 · freestream','Region 2 · wall-side shock','Region 3 · reflected shock','Region 4 · opposite face',...(q.both?['Region 5 · upper reflection']:[])],statuses:states.map(()=>'ok'),rows:[{label:'Wave angle β to incident flow',unit:'°',values:[null,deg(q.face.beta),deg(q.shock.beta),deg(q.other.beta),...(q.both?[deg(q.upperReflection.shock.beta)]:[])]},{label:'Flow direction',unit:'°',values:states.map(z=>deg(z.theta))},...bodyProperties.map(([,label,unit,get])=>({label,unit,values:states.map(get)}))]};
  }
  return r;
 }

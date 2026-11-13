@@ -138,4 +138,4 @@ h1{font-weight:650;letter-spacing:-.7px}h2{font-size:16px;font-weight:650}h3{fon
 
 #examplesPanel[hidden]{display:none}#examplesPanel{padding:16px 18px}#examplesPanel .input-group{margin:0;padding:0;border:0}#examplesPanel label{font-size:15px;font-weight:600}#examplesPanel select{width:100%;margin-top:8px}
 
-.scene:has(svg[data-wedge-wall]){aspect-ratio:auto}.scene svg[data-wedge-wall]{height:auto}
+.scene:has(svg[data-wedge-wall]){aspect-ratio:2/1}.scene svg[data-wedge-wall]{height:100%}

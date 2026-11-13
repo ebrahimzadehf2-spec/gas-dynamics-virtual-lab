@@ -34,3 +34,15 @@ test('Wall controls appear only for Wedge; free-stream cone, comparison, and wed
  assert.throws(()=>calculate('cone',{...input,wedgeAlpha:15}),/compression|attached/);
  assert.throws(()=>calculate('cone',{...input,thetaCone:20}),/reflected|regular/);
 });
+test('Both walls solve two reflections, fill the common domain, and show incidence at the standard size',()=>{
+ for(const alpha of [0,2,-2]){const x={...input,nearbyWall:'Both walls',wedgeAlpha:alpha},d=calculate('cone',x),q=d.result.wallReflection,{V}=wedgeWallView(q);
+ assert.equal(Object.keys(q.regions).length,5);assert.equal(d.shockDetails.length,4);
+ assert.ok(d.result.bodyTable.rows.every(r=>r.values.length===5));
+ near(q.regions[3].theta,0);near(q.regions[5].theta,0);
+ if(alpha===0){near(q.regions[2].M,q.regions[4].M);near(q.regions[3].p,q.regions[5].p);}
+ assert.ok(q.end>q.hit&&q.end>q.upperReflection.hit);assert.ok(q.end<q.next&&q.end<q.upperReflection.next);
+ for(let i=0;i<30;i++)for(let j=0;j<35;j++){const p=[q.start+(q.end-q.start)*(i+.29)/30,-q.H+2*q.H*(j+.39)/35],body=p[0]>=0&&Math.abs(p[1])<q.mt*p[0],cells=q.cells.filter(c=>pointInPolygon(p,c.poly));assert.equal(cells.length,body?0:1);const z=probeWedgeWall(d.result,...V(p));assert.equal(z===null,body);}
+ const svg=sceneSVG(d.scene,x).svg;assert.match(svg,/viewBox="0 0 640 300"/);assert.match(svg,new RegExp('data-incidence-angle="'+alpha+'"'));assert.ok(svg.includes('α = '+alpha+'°'));
+ assert.equal(plotOptions(d)[0].chart.series[1].points.length,3);
+ }
+});
