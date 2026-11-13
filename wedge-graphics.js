@@ -12,9 +12,9 @@ export function wedgeDrawing(s,{txt,line,poly,fmt,quantity='pressure',inputs={},
   inner+=poly([[x,y],wall,at(waveAngle)],fill(f.surface));
   if(f.kind==='Oblique shock')inner+=line(x,y,...at(waveAngle),'#000',2);
   inner+=arrow(x+L*.55,y-f.sign*(L*.55*Math.tan(w.theta)+18),45,f.wall);
-  inner+=txt(300,f.sign>0?52:251,`${f.side}: ${f.kind} · M = ${fmt(f.surface.M,4)}`,undefined,13);
+  inner+=txt(300,f.sign>0?52:251,`${f.side==='Upper'?'2':'3'} · ${f.side}: ${f.kind} · M = ${fmt(f.surface.M,4)}`,undefined,13);
  }
  inner+=poly([[x,y],at(w.theta),at(-w.theta)],'#d7d9d5','#283943',1.7)+txt(340,147,`θ = ${fmt(deg(w.theta))}°`,undefined,14)+incidence(32,153,rad(deg(w.alpha)),76);
- inner+='</g>';inner+=txt(18,22,'WEDGE · 2D',undefined,14)+txt(164,22,`M∞ = ${fmt(w.M,5)} · p∞ = ${fmt(inputs.p1??101,5)} kPa · T∞ = ${fmt(inputs.T1??300,5)} K`,undefined,12);
+ inner+='</g>';inner+=txt(18,22,'WEDGE · 2D',undefined,14)+txt(164,22,`1 · M∞ = ${fmt(w.M,5)} · p∞ = ${fmt(inputs.p1??101,5)} kPa · T∞ = ${fmt(inputs.T1??300,5)} K`,undefined,12);
  return {inner,label:'Wedge · upper and lower surface states',meta:'α is signed inlet-flow direction relative to the horizontal body axis · black: shocks',field:{quantity:key,options,min,max,label:{mach:'Mach number M',pressure:'Static pressure',temperature:'Static temperature',density:'Density'}[key],units:{mach:'M',pressure:'p/p∞',temperature:'T/T∞',density:'ρ/ρ∞'}[key],note:'Ratios reference the common freestream'}};
 }

@@ -1,7 +1,8 @@
-import {pressureTurningPlot} from './pressure-turning.js?v=20261114-pressure-turning';
-import {ramjetPlots} from './ramjet-inlet.js?v=20261114-pressure-turning';
+import {annotateTurningRegions} from './turning-region-markers.js?v=20261114-region-markers';
+import {pressureTurningPlot} from './pressure-turning.js?v=20261114-region-markers';
+import {ramjetPlots} from './ramjet-inlet.js?v=20261114-region-markers';
 import {ductLongitudinalPlots} from './duct-contours.js?v=20261112-duct-contours';
-import {bodyPlots} from './wedge-cone.js?v=20261114-pressure-turning';
+import {bodyPlots} from './wedge-cone.js?v=20261114-region-markers';
 import {comparisonPlots} from './channel-comparison.js';
 import {trackingPlots} from './wave-tracker.js?v=20261109-wedge-cone';
 import {regularChannelPlots} from './regular-channel.js?v=20261109-wedge-cone';
@@ -92,4 +93,4 @@ function basePlotOptions(d,time=.001){
  return options.filter(o=>id!=='normal'||['normal-M','normal-p','normal-rho','normal-T','normal-p0','normal-dsR'].includes(o.key)).filter(o=>o.chart.series.some(s=>s.points.length));
 }
 
-export function plotOptions(d,time=.001){const plots=basePlotOptions(d,time),turning=pressureTurningPlot(d);return turning?[...plots,turning]:plots;}
+export function plotOptions(d,time=.001){const plots=basePlotOptions(d,time),turning=pressureTurningPlot(d);return (turning?[...plots,turning]:plots).map(p=>annotateTurningRegions(d,p));}
