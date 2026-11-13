@@ -1,4 +1,4 @@
-import {solveWedgeWall,wedgeWallPlots} from './wedge-wall.js?v=20261114-both-walls';
+import {solveWedgeWall,wedgeWallPlots} from './wedge-wall.js?v=20261114-pressure-turning';
 import {obliqueShock,expansion,shockLimit,isentropic,rad,deg} from './physics.js';
 import {requireValue,finite} from './numerics.js';
 import {cone} from './cone.js';

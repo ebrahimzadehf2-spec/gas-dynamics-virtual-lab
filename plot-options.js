@@ -1,6 +1,7 @@
+import {pressureTurningPlot} from './pressure-turning.js?v=20261114-pressure-turning';
 import {ramjetPlots} from './ramjet-inlet.js?v=20261113-inlet-clearance';
 import {ductLongitudinalPlots} from './duct-contours.js?v=20261112-duct-contours';
-import {bodyPlots} from './wedge-cone.js?v=20261114-both-walls';
+import {bodyPlots} from './wedge-cone.js?v=20261114-pressure-turning';
 import {comparisonPlots} from './channel-comparison.js';
 import {trackingPlots} from './wave-tracker.js?v=20261109-wedge-cone';
 import {regularChannelPlots} from './regular-channel.js?v=20261109-wedge-cone';
@@ -11,13 +12,13 @@ import {airfoilPlots} from './airfoil.js?v=20261109-wedge-cone';
 import {sonicRelations} from './reference-relations.js?v=20261109-wedge-cone';
 import {linspace,deg,rad,isentropic,isentropicRelations,state,normalShock,obliqueShock,expansion,rayleighRatios,fannoRatios,linearAirfoil} from './physics.js';
 // Each selectable property has its own units and axis. Unavailable states are omitted.
-export function plotOptions(d,time=.001){
+function basePlotOptions(d,time=.001){
  if(d.result.ramjet)return ramjetPlots(d.result);
  if(d.result.ductSystem)return d.result.plots;
  const {id,inputs:x,result:r}=d,g=x.gamma??1.4,R=x.R??287,options=[];
  const add=(key,label,xlabel,ylabel,points,extra={})=>options.push({key,label,chart:{title:label,xlabel,ylabel,zeroBaseline:false,series:[{name:label,points:points.filter(p=>p.every(Number.isFinite))}],...extra}});
  const family=(prefix,xlabel,samples,properties)=>{for(const [key,label,unit,value] of properties)add(prefix+key,label,xlabel,unit,samples.map(([a,s])=>[a,value(s)]));};
- if(id==='wall'&&r.simpleCorner)return plotOptions({...d,id:r.cornerKind},time);
+ if(id==='wall'&&r.simpleCorner)return basePlotOptions({...d,id:r.cornerKind},time);
  if(id==='wall')return r.comparison?comparisonPlots(r,x.comparisonStation):r.tracking?trackingPlots(r,x.trackingStation):r.interaction?regularChannelPlots(r):r.moc?mocProfilePlots(r,x.mocStation):r.channel?channelPlots(r):wallPlots(r);
  if(id==='airfoil')return airfoilPlots(r);
  if(['rayleigh','fanno'].includes(id))options.push(...ductLongitudinalPlots(id,r));
@@ -90,3 +91,5 @@ export function plotOptions(d,time=.001){
  if(['rayleigh','fanno'].includes(id))for(const o of options){if(o.key.includes('-axial-'))continue;if(o.label.includes('ratio')){o.label+=` (${o.chart.ylabel})`;o.chart.title=o.label;o.chart.series.forEach(s=>s.name=o.label);}o.chart.markers=[['Inlet',r.s1],['Outlet',r.s2]].filter(([,s])=>s).flatMap(([name,s])=>{const point=o.chart.series[0]?.points.find(p=>Math.abs(p[0]-s.M)<1e-10);return point?[{name,x:point[0],y:point[1],anchor:name==='Outlet'?'end':'start'}]:[]});}
  return options.filter(o=>id!=='normal'||['normal-M','normal-p','normal-rho','normal-T','normal-p0','normal-dsR'].includes(o.key)).filter(o=>o.chart.series.some(s=>s.points.length));
 }
+
+export function plotOptions(d,time=.001){const plots=basePlotOptions(d,time),turning=pressureTurningPlot(d);return turning?[...plots,turning]:plots;}
