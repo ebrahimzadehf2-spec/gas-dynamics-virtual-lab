@@ -1,16 +1,17 @@
-import {ramjetInletDrawing} from './ramjet-inlet-graphics.js?v=20261114-restored-inlet-text';
-import {fannoSystemDrawing} from './fanno-system-graphics.js?v=20261113-rainbow-physical';
+import {wedgeWallDrawing} from './wedge-wall.js?v=20261114-wedge-wall';
+import {ramjetInletDrawing} from './ramjet-inlet-graphics.js?v=20261114-wedge-wall';
+import {fannoSystemDrawing} from './fanno-system-graphics.js?v=20261114-wedge-wall';
 import {ductContourDrawing} from './duct-contours.js?v=20261113-rainbow-physical';
 import {uniformDiagramText} from './diagram-typography.js?v=20261112-diagram-labels';
-import {ductSystemSVG,rayleighBoundarySVG} from './duct-system-graphics.js?v=20261112-fanno-system';
+import {ductSystemSVG,rayleighBoundarySVG} from './duct-system-graphics.js?v=20261114-wedge-wall';
 import {coneAnnotations} from './cone-annotations.js?v=20261110-cone-conditions';
-import {wedgeDrawing} from './wedge-graphics.js?v=20261112-fanno-system';
-import {trackingDrawing} from './wave-tracker-graphics.js?v=20261113-rainbow-physical';
-import {wallDrawing} from './wave-wall-graphics.js?v=20261113-rainbow-physical';
-import {airfoilDrawing} from './airfoil-graphics.js?v=20261112-fanno-system';
+import {wedgeDrawing} from './wedge-graphics.js?v=20261114-wedge-wall';
+import {trackingDrawing} from './wave-tracker-graphics.js?v=20261114-wedge-wall';
+import {wallDrawing} from './wave-wall-graphics.js?v=20261114-wedge-wall';
+import {airfoilDrawing} from './airfoil-graphics.js?v=20261114-wedge-wall';
 import {coneGeometry} from './cone-probe.js?v=20261110-cone-conditions';
 import {diagramFontFamily,diagramFontStyle} from './diagram-font.js?v=20261109-wedge-cone';
-import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261113-rainbow-physical';
+import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261114-wedge-wall';
 import {regionLabelPosition,calloutSlot} from './region-labels.js?v=20261109-wedge-cone';
 import {readableSceneLabels} from './scene-labels.js?v=20261112-diagram-labels';
 import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261110-rayleigh-audit';
@@ -230,5 +231,5 @@ function renderChartSVG(c){const W=640,H=266,L=c.leftMargin??100,R=23,T=15,B=49;
  return {svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(c.title)}"><title>${esc(c.title)}</title>${diagramFontStyle}${inner}<line id="cursorLine" x1="0" y1="${T}" x2="0" y2="${H-B}" stroke="#8caa8d" stroke-dasharray="3 3" opacity="0"/><circle id="cursorPoint" r="4" fill="#17212b" stroke="#fff" stroke-width="1.5" opacity="0" pointer-events="none"/><rect id="chartHit" x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="transparent"/></svg>`,legend:c.series.map((s,i)=>`<span><i style="background:${colors[i%colors.length]}"></i>${esc(s.name)}</span>`).join(''),axis:{xmin,xmax,ymin,ymax,L,R,W,H,T,B}};
 }
 
-export function sceneSVG(...args){const view=args[0].kind==='ramjetInlet'?ramjetInletDrawing(args[0],args[1],args[3]):args[0].kind==='fannoSystem'?fannoSystemDrawing(args[0],args[1],args[3]):ductContourDrawing(args[0],args[1],args[3])??renderSceneSVG(...args);return {...view,svg:uniformDiagramText(view.svg)};}
+export function sceneSVG(...args){const view=args[0].wallReflection?wedgeWallDrawing(args[0],args[1],args[3]):args[0].kind==='ramjetInlet'?ramjetInletDrawing(args[0],args[1],args[3]):args[0].kind==='fannoSystem'?fannoSystemDrawing(args[0],args[1],args[3]):ductContourDrawing(args[0],args[1],args[3])??renderSceneSVG(...args);return {...view,svg:uniformDiagramText(view.svg)};}
 export function chartSVG(...args){const view=renderChartSVG(...args);return {...view,svg:uniformDiagramText(view.svg)};}

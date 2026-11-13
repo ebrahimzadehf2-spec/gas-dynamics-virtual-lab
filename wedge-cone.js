@@ -1,3 +1,4 @@
+import {solveWedgeWall,wedgeWallPlots} from './wedge-wall.js?v=20261114-wedge-wall';
 import {obliqueShock,expansion,shockLimit,isentropic,rad,deg} from './physics.js';
 import {requireValue,finite} from './numerics.js';
 import {cone} from './cone.js';
@@ -23,9 +24,13 @@ export function solveBodyLab(x){
  if(c){const accepted=wedge.faces.filter(f=>f.surface).length+(c.status==='ok'?1:0);r.status=accepted===3?'ok':accepted?'partial':'unsupported';}
  const columns=[...(c?[{name:'Cone · α = 0°',state:c.status==='ok'?{...c.surface,p0:c.history[0].p*isentropic(c.Mpost,x.gamma).p0p/isentropic(x.M,x.gamma).p0p,u:c.surface.M/x.M*Math.sqrt(c.surface.T)}:null,beta:c.beta,turn:c.thetaCone,status:c.status}]:[]),...wedge.faces.map(f=>({name:`Wedge ${f.side.toLowerCase()} · ${f.kind}`,state:f.surface,beta:f.beta,turn:f.turn,status:f.status}))];
  r.bodyTable={columns:columns.map(c=>c.name),statuses:columns.map(c=>c.status),rows:[{label:'Wave angle β to incident flow',unit:'°',values:columns.map(c=>c.beta==null?null:deg(c.beta))},{label:'Signed flow turn from inlet',unit:'°',values:columns.map(c=>c.turn==null?null:deg(c.turn))},...bodyProperties.map(([,label,unit,get])=>({label,unit,values:columns.map(c=>c.state?get(c.state):null)}))]};
+ if(mode==='Wedge'&&x.nearbyWall&&x.nearbyWall!=='None'){
+ r.wallReflection=solveWedgeWall(x,wedge);const q=r.wallReflection,states=Object.values(q.regions);
+ r.bodyTable={columns:['Region 1 · freestream','Region 2 · wall-side shock','Region 3 · reflected shock','Region 4 · opposite face'],statuses:states.map(()=>'ok'),rows:[{label:'Wave angle β to incident flow',unit:'°',values:[null,deg(q.face.beta),deg(q.shock.beta),deg(q.other.beta)]},{label:'Flow direction',unit:'°',values:states.map(z=>deg(z.theta))},...bodyProperties.map(([,label,unit,get])=>({label,unit,values:states.map(get)}))]};
+ }
  return r;
 }
 export function bodyPlots(r){
- if(!r.bodyLab)return [];const c=r.cone;
+ if(r.wallReflection)return wedgeWallPlots(r);if(!r.bodyLab)return [];const c=r.cone;
  return bodyProperties.map(([key,label,unit,get])=>({key:'body-'+key,label:label.replace('Surface ',''),note:'Normalized angular coordinate within each body’s own surface-to-wave layer; different physical polar angles. Wedge curves show uniform surface-side states, excluding expansion-fan interiors.',chart:{title:label.replace('Surface ',''),xlabel:'Surface → wave · normalized angular coordinate η',ylabel:unit||'M',zeroBaseline:false,series:[...(c?.history?[{name:'Cone · α = 0°',points:c.history.slice().reverse().map(z=>[(z.theta-c.thetaCone)/(c.beta-c.thetaCone),get({...z,p0:c.history[0].p*isentropic(c.Mpost,r.wedge.gamma).p0p/isentropic(r.wedge.M,r.wedge.gamma).p0p,u:z.M/r.wedge.M*Math.sqrt(z.T)})])}]:[]),...r.wedge.faces.filter(f=>f.surface).map((f,i)=>({name:`Wedge ${f.side.toLowerCase()} · uniform`,dash:i?'6 3':'',points:[[0,get(f.surface)],[1,get(f.surface)]]}))]}}));
 }
