@@ -1,4 +1,4 @@
-import {fannoExamples} from './fanno-examples.js?v=20261113-fanno-examples';
+import {fannoExamples} from './fanno-examples.js?v=20261113-example-notes';
 import {fannoSystemMode,fannoSolves,fannoConditions,fannoPressurePlan,migrateFannoInputs} from './fanno-system.js?v=20261113-rainbow-physical';
 import {rayleighDistributionNote,fannoDistributionNote} from './duct-contours.js?v=20261113-rainbow-physical';
 import {uniformDiagramText} from './diagram-typography.js?v=20261112-diagram-labels';
