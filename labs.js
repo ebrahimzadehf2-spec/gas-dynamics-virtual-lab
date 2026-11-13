@@ -1,4 +1,4 @@
-import {ramjetMode,ramjetOrientations,solveRamjetInlet,ramjetPlots} from './ramjet-inlet.js?v=20261113-inlet-orientation';
+import {ramjetMode,ramjetOrientations,solveRamjetInlet,ramjetPlots} from './ramjet-inlet.js?v=20261113-inlet-clearance';
 import {ductProfile} from './duct-contours.js?v=20261113-rainbow-physical';
 import {stateInputFields,stateInputDefaults,normalizeStateInputs} from './state-inputs.js?v=20261112-state-inputs';
 import {systemFields,systemDefaults,solveDuctSystem} from './duct-systems.js?v=20261113-rainbow-physical';

@@ -1,14 +1,14 @@
 import {cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261113-rainbow-physical';
 import {regionLabelPosition,pointInPolygon} from './region-labels.js';
 const quantities={pressure:['Static pressure','kPa',z=>z.p/1000],mach:['Mach number','M',z=>z.M],temperature:['Static temperature','K',z=>z.T],density:['Density','kg/m³',z=>z.rho],speed:['Flow speed','m/s',z=>z.u]};
-export function inletViewGeometry(r){const g=r.geometry,scale=Math.min(550/(g.end-g.start),190/g.H),ox=45-g.start*scale,oy=280;return {scale,ox,oy,V:([x,y])=>[ox+x*scale,oy-(r.mirror?g.H-y:y)*scale]};}
+export function inletViewGeometry(r){const g=r.geometry,scale=Math.min(550/(g.end-g.start),215/g.H),ox=45-g.start*scale,oy=280;return {scale,ox,oy,V:([x,y])=>[ox+x*scale,oy-(r.mirror?g.H-y:y)*scale]};}
 export function probeInlet(r,x,y){const {scale,ox,oy}=inletViewGeometry(r),physical=[(x-ox)/scale,(oy-y)/scale],p=[physical[0],r.mirror?r.geometry.H-physical[1]:physical[1]],cell=r.geometry.cells.find(c=>pointInPolygon(p,c.poly));return cell?{...cell.state,x:physical[0],y:physical[1],region:cell.region}:null;}
 export function ramjetInletDrawing(r,inputs,quantity='pressure'){
  const key=quantities[quantity]?quantity:'pressure',[label,units,read]=quantities[key],values=Object.values(r.regions).map(read),min=Math.min(...values),max=Math.max(...values),{V,scale}=inletViewGeometry(r),g=r.geometry;
  const text=(p,t,size=13,anchor='middle')=>`<text x="${p[0]}" y="${p[1]}" font-size="${size}" text-anchor="${anchor}" fill="#17212b">${t}</text>`,poly=(p,fill)=>`<polygon points="${p.map(V).map(p=>p.join(',')).join(' ')}" fill="${fill}"/>`,line=(a,b,width=2,color='#000000',dash='')=>`<line x1="${V(a)[0]}" y1="${V(a)[1]}" x2="${V(b)[0]}" y2="${V(b)[1]}" stroke="${color}" stroke-width="${width}" ${dash?`stroke-dasharray="${dash}"`:''}/>`;
  let inner='<defs><marker id="inletArrow" markerWidth="7" markerHeight="7" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6" fill="#315965"/></marker><clipPath id="inletGas">'+poly(g.domain,'white')+'</clipPath></defs>';
- const solid='#a8adb3',pad=16/scale;
- inner+=`<g data-inlet-solid="ramp">`+poly([[0,g.H],[g.end,g.H],[g.end,g.H-g.mt*g.end]],solid)+line([0,g.H],[g.end,g.H],1.3,'#4c5964')+line([g.end,g.H],[g.end,g.H-g.mt*g.end],1.3,'#4c5964')+'</g>';
+ const solid='#a8adb3',rampSolid='#d5b488',pad=16/scale;
+ inner+=`<g data-inlet-solid="ramp">`+poly([[0,g.H],[g.end,g.H],[g.end,g.H-g.mt*g.end]],rampSolid)+line([0,g.H],[g.end,g.H],1.3,'#4c5964')+line([g.end,g.H],[g.end,g.H-g.mt*g.end],1.3,'#4c5964')+'</g>';
  inner+=`<g data-inlet-solid="reflecting-wall">`+poly([[g.start,0],[g.end,0],[g.end,-pad],[g.start,-pad]],solid)+'</g>';
  for(const c of g.cells)inner+=poly(c.poly,inputs.cornerView==='Textbook schematic'?'#f5f9fa':cornerContourColor((read(c.state)-min)/(max-min||1)));
  inner+='<g clip-path="url(#inletGas)">';

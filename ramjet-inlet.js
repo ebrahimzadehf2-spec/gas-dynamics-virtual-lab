@@ -14,7 +14,7 @@ export function solveRamjetInlet(x){
  const s2={...state(a.M2,s1.T*a.T,s1.p*a.p,g,R),theta:sign*t};
  requireValue(s2.M>1&&t<=shockLimit(s2.M,g).theta,'No attached weak regular-reflection solution can return this flow to the horizontal wall. Mach reflection is outside this model.','reflection-limit');
  const b=obliqueShock(s2.M,t,g,'weak'),s3={...state(b.M2,s2.T*b.T,s2.p*b.p,g,R),theta:0};
- const mi=Math.tan(a.beta),mr=Math.tan(b.beta-t),mt=Math.tan(t),hit=H/mi,next=(H+mr*hit)/(mr+mt),end=hit+.88*(next-hit),start=-.22*H;
+ const mi=Math.tan(a.beta),mr=Math.tan(b.beta-t),mt=Math.tan(t),hit=H/mi,next=(H+mr*hit)/(mr+mt),end=hit+.58*(next-hit),start=-.22*H;
  requireValue(mr>0&&end>hit&&H-mt*end>0,'The reflected shock does not have a valid downstream segment in this geometry.');
  const domain=[[start,0],[end,0],[end,H-mt*end],[0,H],[start,H]],inc=p=>p[1]-H+mi*p[0],ref=p=>p[1]-mr*(p[0]-hit);
  const cells=[{region:1,poly:clipPolygon(domain,p=>-inc(p)),state:s1},{region:2,poly:clipPolygon(clipPolygon(domain,inc),ref),state:s2},{region:3,poly:clipPolygon(domain,p=>-ref(p)),state:s3}];
