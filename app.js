@@ -1,5 +1,5 @@
-import {ramjetMode,ramjetPreset,ramjetDescription,ramjetLimit} from './ramjet-inlet.js?v=20261113-ramjet';
-import {probeInlet} from './ramjet-inlet-graphics.js?v=20261113-ramjet';
+import {ramjetMode,ramjetPreset,ramjetDescription,ramjetLimit} from './ramjet-inlet.js?v=20261113-inlet-orientation';
+import {probeInlet} from './ramjet-inlet-graphics.js?v=20261113-inlet-orientation';
 import {fannoExamples} from './fanno-examples.js?v=20261113-example-notes';
 import {fannoSystemMode,fannoSolves,fannoConditions,fannoPressurePlan,migrateFannoInputs} from './fanno-system.js?v=20261113-rainbow-physical';
 import {rayleighDistributionNote,fannoDistributionNote} from './duct-contours.js?v=20261113-rainbow-physical';
@@ -21,16 +21,16 @@ import {airfoilTables} from './airfoil-tables.js?v=20261109-wedge-cone';
 import {airfoilGeometry,segmentSurface,surfaceSegments,presetSegments} from './airfoil.js?v=20261109-wedge-cone';
 import {nearestChartPoint} from './chart-probe.js?v=20261109-wedge-cone';
 import {probeCone} from './cone-probe.js?v=20261109-wedge-cone';
-import {plotOptions} from './plot-options.js?v=20261113-ramjet';
+import {plotOptions} from './plot-options.js?v=20261113-inlet-orientation';
 import {selectGas,gasInfo} from './gas-properties.js?v=20261109-wedge-cone';
 import {controlVolumePreset} from './control-volume.js?v=20261109-wedge-cone';
 import {pressureSweepPlan,advancePressure} from './sweep.js?v=20261109-wedge-cone';
-import {labs,chapters,defaults,inputDefinitions,nozzleInfo,trackingShockDetails} from './labs.js?v=20261113-ramjet';
-import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261113-ramjet';
+import {labs,chapters,defaults,inputDefinitions,nozzleInfo,trackingShockDetails} from './labs.js?v=20261113-inlet-orientation';
+import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261113-inlet-orientation';
 const $=id=>document.getElementById(id);let id='rayleigh',inputs={},request=0,current=null,pinned=null,timer,animation=false,frame,lastFrame=0,sceneTime=.001,fieldQuantity='pressure';
 let pendingWaveShape=null,pendingBookCase=null,pendingCustomChannel=false,pendingLegacyCorner=null;
 let displayedChart=null,chartChoices=[],plotSelection={};
-const worker=new Worker(new URL('./worker.js?v=20261113-ramjet',import.meta.url),{type:'module'});
+const worker=new Worker(new URL('./worker.js?v=20261113-inlet-orientation',import.meta.url),{type:'module'});
 function renderNav(){ $('chapters').innerHTML=chapters.map(([n,title,,ids])=>`<a href="#${ids[0]}" class="${ids.includes(id)?'active':''}" ${ids.includes(id)?'aria-current="page"':''}><span><span class="nav-title">${title}</span></span></a>`).join('');}
 function openLab(){stopSweep();clearTimeout(timer);sweepPositioned=false;sweepFinished=false;let next=location.hash.slice(1)||'rayleigh';if(['oblique','expansion'].includes(next)){pendingLegacyCorner=next;pendingWaveShape=next==='oblique'?'Compression ramp':'Expansion corner';location.hash='wall';return;}if(next==='balances'){location.hash='foundations';return;}if(next==='linear'){location.hash='airfoil';return;}if(!labs[next]){location.hash='rayleigh';return;}id=next;current=null;stopAnimation();inputs=defaults(id);try{let saved=JSON.parse(localStorage.getItem('gdvl-inputs-'+id+(id==='balances'?'-cv2':'')));if(saved&&typeof saved==='object'){for(let k in inputs)if(k in saved)inputs[k]=saved[k];if(id==='wall'&&saved.theta===undefined&&saved.wallSegments?.length)inputs.theta=Math.abs(saved.wallSegments[0].angle);if(id==='airfoil'&&!saved.geometryInput){const old=airfoilGeometry({...inputs,geometryInput:inputs.airfoilShape==='Custom panels'?'Coordinates':'Dimensions'});inputs.upperSegments=surfaceSegments(old.upper);inputs.lowerSegments=surfaceSegments(old.lower);inputs.geometryInput='Angles & lengths';}if(['oblique','expansion'].includes(id)&&saved.cornerColorVersion!==1)inputs.cornerView='Analytical contours';}}catch{}inputs.fluid=gasInfo(inputs).name;if(pendingWaveShape){if(id==='wall'){if(pendingWaveShape===ramjetMode)inputs={...inputs,...ramjetPreset};inputs.wallShape=pendingWaveShape;if(pendingWaveShape!=='Custom wall'&&pendingWaveShape!==ramjetMode){inputs.boundaryMode='Single wall';inputs.theta=Math.abs(wallPresets[pendingWaveShape][0].angle);}if(pendingWaveShape!==ramjetMode)inputs.wallSegments=wallPresets[pendingWaveShape].map(p=>({...p,angle:p.angle*(inputs.wallSide==='Gas below wall'?-1:1)}));}if(id==='collision'){inputs.interactionType=pendingWaveShape;inputs.geometryMode='Custom geometry';}pendingWaveShape=null;}if(pendingBookCase){inputs={...inputs,...chapter6Example(pendingBookCase)};pendingBookCase=null;}if(pendingLegacyCorner&&id==='wall'){let legacy=defaults(pendingLegacyCorner);try{legacy={...legacy,...JSON.parse(localStorage.getItem('gdvl-inputs-'+pendingLegacyCorner)||'{}')};}catch{}for(const key of ['M1','T1','p1','gamma','R','fluid','branch','cornerView','theta'])if(legacy[key]!==undefined)inputs[key]=legacy[key];inputs.wallSide='Gas above wall';pendingLegacyCorner=null;}if(pendingCustomChannel&&id==='wall'){inputs.wallShape='Custom wall';inputs.boundaryMode='Channel';inputs.channelSolver='Shock–Expansion';pendingCustomChannel=false;}if(id==='collision')inputs.geometryMode='Custom geometry';if(id==='wall')inputs.channelSolver=channelSolverName(inputs.channelSolver);let l=labs[id];$('labTitle').textContent=l.chapter===6?'Supersonic Wave Lab':l.title;$('description').textContent=l.description;$('model').textContent=l.model;$('limitations').textContent=l.limitations;let chapter=chapters.find(x=>x[0]===l.chapter);$('labTabs').hidden=l.chapter===6||chapter[3].length<2;$('labTabs').innerHTML=l.chapter===6||chapter[3].length<2?'':chapter[3].map(k=>`<button type="button" data-lab="${k}" class="${id===k?'active':''}">${labs[k].title}</button>`).join('');$('labTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>location.hash=b.dataset.lab);renderNav();renderInputs();solve();}
 const waveShapes=['Compression ramp','Expansion corner','Custom wall',ramjetMode];
@@ -89,7 +89,7 @@ function arrangeWallInputs(){
  panel.hidden=!active;if(!active){panel.innerHTML='';return;}
  const editorsOpen=panel.querySelector('#wallEditors')?.open??false,settingsOpen=panel.querySelector('#wallSolverSettings')?.open??false;
  panel.innerHTML=`<div class="card-head"><h2>Geometry & solution</h2></div><div id="wallSetupControls" class="wall-setup-grid"></div><div class="wall-setup-details"><details id="wallEditors" ${editorsOpen?'open':''}><summary>${id==='airfoil'?'Edit surface geometry':'Edit wall segments'}</summary><div id="wallEditorControls" class="wall-editor-grid"></div></details><details id="wallSolverSettings" ${settingsOpen?'open':''}><summary>Solver settings</summary><div id="wallSolverControls" class="wall-setup-grid"></div></details></div>`;
- for(const key of ['bodyGeometry','thetaCone','wedgeAlpha','waveGeometrySelect','waveInteractionSelect','theta','branch','cornerView','boundaryMode','channelSolver','channelHeight','wallSide','thetaUpper','thetaLower','cornerSpacing','airfoilShape','geometryInput','airfoilMethod','alpha','thickness','peak','camber']){
+ for(const key of ['bodyGeometry','thetaCone','wedgeAlpha','waveGeometrySelect','waveInteractionSelect','theta','branch','cornerView','boundaryMode','channelSolver','channelHeight','ramjetOrientation','wallSide','thetaUpper','thetaLower','cornerSpacing','airfoilShape','geometryInput','airfoilMethod','alpha','thickness','peak','camber']){
   const control=$(key.startsWith('wave')?key:'value-'+key);if(control)$('wallSetupControls').append(control.closest('.input-group'));
  }
  for(const key of ['wallSegments','upperWallSegments']){const editor=$('editor-'+key);if(editor)$('wallEditorControls').append(editor.closest('.input-group'));}
@@ -327,7 +327,7 @@ function renderExamples(){
  }
  if(id==='wall'){
   entries=[4,5].map(n=>({value:'6–'+n,label:'Example 6–'+n,apply:()=>{inputs={...inputs,...chapter6Example(n),bookExample:'6–'+n};}}));
-  entries.push({value:'6–9',label:'Example 6–9 · Ramjet inlet',note:'Two weak shocks turn the flow down by 8° and back to the duct axis. Inlet pressure and temperature are reference values for dimensional properties.',apply:()=>{inputs={...inputs,...ramjetPreset};}});
+  entries.push({value:'6–9',label:'Example 6–9 · Ramjet inlet',note:'Two weak shocks turn the flow by 8° and back to the duct axis. Inlet orientation selects the upper or lower reflecting wall. Inlet pressure and temperature are reference values for dimensional properties.',apply:()=>{inputs={...inputs,...ramjetPreset};}});
   entries.push({value:'expansion',label:'Expansion example',apply:()=>{inputs={...inputs,wallShape:'Custom wall',boundaryMode:'Channel',channelSolver:'Method of characteristics',M1:3,channelHeight:1,wallSegments:[{angle:-8,length:6}],upperWallSegments:[{angle:8,length:6}],mocResolution:81,mocStation:1,mocLines:'Shown',bookExample:'expansion'};}});
   for(const [value,label] of [['reflection','Shock reflections'],['shock-fan','Shock + expansion'],['fans','Two expansion fans']])entries.push({value,label,apply:()=>{inputs={...inputs,...trackingPreset(value),channelSolver:inputs.channelSolver,bookExample:value};}});
  }

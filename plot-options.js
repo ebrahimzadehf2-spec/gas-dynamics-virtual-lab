@@ -1,4 +1,4 @@
-import {ramjetPlots} from './ramjet-inlet.js?v=20261113-ramjet';
+import {ramjetPlots} from './ramjet-inlet.js?v=20261113-inlet-orientation';
 import {ductLongitudinalPlots} from './duct-contours.js?v=20261112-duct-contours';
 import {bodyPlots} from './wedge-cone.js';
 import {comparisonPlots} from './channel-comparison.js';

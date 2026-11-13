@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ramjetMode,ramjetPreset,solveRamjetInlet,ramjetPlots} from './ramjet-inlet.js';
+import {ramjetMode,ramjetPreset,ramjetOrientations,solveRamjetInlet,ramjetPlots} from './ramjet-inlet.js';
 import {ramjetInletDrawing,inletViewGeometry,probeInlet} from './ramjet-inlet-graphics.js';
 import {defaults,calculate,inputDefinitions} from './labs.js';
 import {plotOptions} from './plot-options.js';
@@ -48,4 +48,16 @@ test('Unsupported reflected shocks and invalid inputs are rejected without a fab
  assert.throws(()=>solveRamjetInlet({...ramjetPreset,theta:20}),/regular-reflection/);
  assert.throws(()=>solveRamjetInlet({...ramjetPreset,M1:1}),/supersonic/);
  assert.throws(()=>solveRamjetInlet({...ramjetPreset,channelHeight:0}),/positive/);
+});
+test('Mirrored inlet reverses flow angles and pressure polar but preserves shock strengths',()=>{
+ const a=solveRamjetInlet(ramjetPreset),x={...ramjetPreset,ramjetOrientation:ramjetOrientations[1]},b=solveRamjetInlet(x);
+ assert.ok(b.mirror);near(b.regions[2].theta,-a.regions[2].theta);
+ for(const n of [1,2,3])for(const k of ['M','p','T','rho','u','p0','T0'])near(b.regions[n][k],a.regions[n][k]);
+ near(b.a.beta,a.a.beta);near(b.b.beta,a.b.beta);
+ const pa=ramjetPlots(a)[0].chart,pb=ramjetPlots(b)[0].chart;
+ for(let i=0;i<pa.series.length;i++)for(let j=0;j<pa.series[i].points.length;j++){near(pa.series[i].points[j][0],-pb.series[i].points[j][0]);near(pa.series[i].points[j][1],pb.series[i].points[j][1]);}
+ const {V}=inletViewGeometry(b);
+ for(const cell of b.geometry.cells){const p=cell.poly.reduce((s,p)=>[s[0]+p[0]/cell.poly.length,s[1]+p[1]/cell.poly.length],[0,0]),v=probeInlet(b,...V(p));assert.equal(v.region,cell.region);near(v.y,b.geometry.H-p[1]);near(v.theta,cell.state.theta);}
+ const svg=ramjetInletDrawing(b,x).svg;assert.match(svg,/data-inlet-solid="ramp"/);assert.match(svg,/data-inlet-solid="reflecting-wall"/);assert.match(svg,/Solid ramp/);assert.match(svg,/Reflecting wall/);assert.doesNotMatch(svg,/NaN|undefined|Infinity/);
+ const fields=inputDefinitions('wall',{...defaults('wall'),...x});assert.deepEqual(fields.find(f=>f.key==='ramjetOrientation').options,ramjetOrientations);
 });
