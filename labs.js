@@ -74,7 +74,7 @@ export const labs={
  input('theta','Turn angle',12,0,60,.1,'°'),{key:'branch',label:'Shock branch',value:'weak',options:['weak','strong']},cornerView,
  {key:'boundaryMode',label:'Boundary layout',value:'Single wall',options:['Single wall','Channel']},
  {key:'channelSolver',label:'Channel solution',value:'Shock–Expansion',options:['Shock–Expansion','Method of characteristics','Compare both']},
- input('trackingStep','Expansion-front width',.5,.25,2,.25,'°'),
+ input('trackingStep','Fan angular step Δθfan',.5,.25,2,.25,'°'),
  input('comparisonStation','Comparison station x/L',1,0,1,.01,''),
  input('trackingStation','Profile station x/L',1,0,1,.01,''),
  {key:'trackingRefine',label:'Check front refinement',value:'Off',options:['Off','On']},

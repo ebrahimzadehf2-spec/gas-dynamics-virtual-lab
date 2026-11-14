@@ -16,7 +16,7 @@ export function trackingDrawing(s,{txt,line,poly,fmt,range=null,quantity='mach'}
  let min=Infinity,max=-Infinity;for(const slab of t.slabs)for(const z of slab.states){const v=value(z);min=Math.min(min,v);max=Math.max(max,v);}if(!Number.isFinite(min))min=max=value(s.s1);
  if(range){min=range.min;max=range.max;}
  const color=v=>cornerContourColor(max-min<1e-10?.5:(v-min)/(max-min)),boundary=(wall,initial)=>[{x:start,y:initial},...wall.points.filter(p=>p.x<end-1e-9),{x:end,y:channelOrdinate(wall,end)}],lower=boundary(g.lower,0),upper=boundary(g.upper,g.height),V=p=>[X(p.x),Y(p.y)],point=(x,y)=>`${Number(X(x).toFixed(3))},${Number(Y(y).toFixed(3))}`;
- let inner='<rect width="640" height="300" fill="#fcfdfc"/>'+txt(24,27,'SHOCK–EXPANSION','#263c4d',14)+txt(616,27,t.hasFanApproximation?`Δθfan = ${fmt(t.step,3)}°`:'Direct jump relations','#53616b',12,'end');
+ let inner='<rect width="640" height="300" fill="#fcfdfc"/>'+txt(24,27,'SHOCK–EXPANSION','#263c4d',14);
  inner+=poly([...lower.map(V),[X(end),246],[X(start),246]],'#edf0f2')+poly([...upper.map(V),[X(end),43],[X(start),43]],'#edf0f2');
  inner+='<defs><clipPath id="tracking-domain">'+poly([...lower.map(V),...upper.slice().reverse().map(V)],'#fff')+'</clipPath></defs><g clip-path="url(#tracking-domain)">';
  inner+=poly([[X(start),Y(0)],[X(0),Y(0)],[X(0),Y(g.height)],[X(start),Y(g.height)]],color(value(s.s1)));
@@ -25,8 +25,9 @@ export function trackingDrawing(s,{txt,line,poly,fmt,range=null,quantity='mach'}
   paths.set(bucket,(paths.get(bucket)??'')+d);
  }
  for(const [bucket,d]of paths)inner+=`<path d="${d}" fill="${cornerContourColor(bucket/255)}" shape-rendering="crispEdges"/>`;
+ const lineEnd=t.events.find(e=>e.type==='Wave interaction')?.x??end;
  for(const kind of ['Expansion front','Slip line','Oblique shock']){
-  const d=t.traces.filter(f=>f.kind===kind).map(f=>`M${point(f.origin.x,f.origin.y)}L${point(f.end.x,f.end.y)}`).join('');
+  const d=t.traces.filter(f=>f.kind===kind&&f.origin.x<lineEnd-1e-9).map(f=>{const stop=Math.min(f.end.x,lineEnd),fraction=(stop-f.origin.x)/(f.end.x-f.origin.x),y=f.origin.y+fraction*(f.end.y-f.origin.y);return `M${point(f.origin.x,f.origin.y)}L${point(stop,y)}`;}).join('');
   if(d)inner+=`<path d="${d}" fill="none" stroke="${kind==='Oblique shock'?'#000000':kind==='Slip line'?'#273746':'#35638d'}" stroke-width="${kind==='Oblique shock'?1.35:kind==='Slip line'?.8:.45}" ${kind==='Slip line'?'stroke-dasharray="4 3"':''} stroke-opacity="${kind==='Expansion front'?.48:1}"/>`;
  }
  for(const fraction of [.15,.45,.75,.97]){const p=trackingProfile(s,fraction*t.endX/end);if(!p)continue;for(const eta of [.2,.5,.8]){
@@ -38,6 +39,6 @@ export function trackingDrawing(s,{txt,line,poly,fmt,range=null,quantity='mach'}
  inner+='</g>';
  for(const wall of [lower,upper])for(let i=0;i<wall.length-1;i++)inner+=line(...V(wall[i]),...V(wall[i+1]),'#111',1.6);
  if(s.limitX!==null)inner+=line(X(t.endX),43,X(t.endX),246,'#8e6d42',1,'4 4');
- inner+=txt(24,269,`Solved x = ${fmt(t.endX,5)} / ${fmt(end,5)} m`,'#53616b',12)+txt(616,269,'Black: shocks · dashed: slip lines','#53616b',12,'end')+txt(24,292,t.hasFanApproximation?'Direct relations + approximate fan interactions':'Direct shock relations · inspect events below','#53616b',12);
+ inner+=txt(24,269,`Solved distance from inlet: ${fmt(t.endX,5)} m`,'#53616b',12)+txt(616,269,`Channel length: ${fmt(end,5)} m`,'#53616b',12,'end')+txt(24,292,t.hasFanApproximation?'Direct relations + approximate fan interactions':'Direct shock relations · inspect events below','#53616b',12);
  return {inner,label:'Attached shocks, expansion fronts and slip-line interactions',meta:'Event-driven wave tracking · finite expansion fronts · no detached or subsonic continuation',field:{quantity:key,options,label,min,max,units,note:t.hasFanApproximation?'Direct relations + finite-fan approximation':'Direct shock–expansion states',palette:cornerPalette}};
 }
