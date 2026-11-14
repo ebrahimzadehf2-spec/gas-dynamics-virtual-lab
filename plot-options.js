@@ -93,4 +93,4 @@ function basePlotOptions(d,time=.001){
  return options.filter(o=>id!=='normal'||['normal-M','normal-p','normal-rho','normal-T','normal-p0','normal-dsR'].includes(o.key)).filter(o=>o.chart.series.some(s=>s.points.length));
 }
 
-export function plotOptions(d,time=.001){const plots=basePlotOptions(d,time),turning=pressureTurningPlot(d);return (turning?[...plots,turning]:plots).map(p=>annotateTurningRegions(d,p));}
+export function plotOptions(d,time=.001){if(d.id==='collision'){const turning=pressureTurningPlot(d);return turning?[annotateTurningRegions(d,turning)]:[];}const plots=basePlotOptions(d,time),turning=pressureTurningPlot(d);return (turning?[...plots,turning]:plots).map(p=>annotateTurningRegions(d,p));}

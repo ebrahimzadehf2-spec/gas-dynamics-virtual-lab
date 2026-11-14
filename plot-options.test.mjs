@@ -7,7 +7,7 @@ import {chartSVG} from './graphics.js';
 const near=(a,b)=>assert.ok(Math.abs(a-b)<1e-8*Math.max(1,Math.abs(a),Math.abs(b)));
 test('Every registered experiment offers distinct finite selectable plots with units',()=>{
  for(const id of Object.keys(labs)){
-  const x=defaults(id),options=plotOptions(calculate(id,x));assert.ok(options.length>1,id);assert.equal(new Set(options.map(o=>o.key)).size,options.length);
+  const x=defaults(id),options=plotOptions(calculate(id,x));assert.ok(id==='collision'?options.length===1:options.length>1,id);assert.equal(new Set(options.map(o=>o.key)).size,options.length);
   for(const o of options){assert.ok(o.chart.xlabel);assert.ok(o.chart.ylabel);assert.ok(o.chart.series.some(s=>s.points.length));assert.ok(!/NaN|Infinity|undefined/.test(chartSVG(o.chart).svg),id+' '+o.key);}
  }
 });

@@ -45,9 +45,18 @@ test('Unified UI geometry always exposes dimensions and produces finite contours
  for(const interactionType of ['Opposing shocks','Same-direction shocks'])for(const geometryMode of ['Educational','Custom geometry']){
   const x={...defaults('collision'),interactionType,geometryMode},d=calculate('collision',x);
   assert.ok(inputDefinitions('collision',x).some(f=>f.key==='channelHeight'));assert.ok(!inputDefinitions('collision',x).some(f=>f.key==='geometryMode'));assert.equal(d.result.geometryMode,'Custom geometry');assert.ok(d.rows.find(r=>r.label==='Interaction location x').unit==='m');
-  assert.equal(d.shockDetails.length,interactionType==='Opposing shocks'?4:3);
+  assert.equal(d.shockDetails.filter(s=>s.kind!=='cumulative').length,interactionType==='Opposing shocks'?4:3);
   for(const q of ['pressure','mach','temperature','density']){
    const v=sceneSVG(d.scene,x,.001,q);assert.ok(Number.isFinite(v.field.min)&&Number.isFinite(v.field.max));assert.ok(!/NaN|Infinity/.test(v.svg));
   }
+ }
+});
+test('Overall 1-to-4 and 1-to-5 summaries retain signed turn and cumulative entropy',()=>{
+ const d=calculate('collision',{...defaults('collision'),thetaUpper:10,thetaLower:20}),groups=d.shockDetails;
+ for(const n of [4,5]){
+  const total=groups.find(q=>q.title===`Overall change · 1 → ${n}`);assert.ok(total);
+  const ds=total.extra.find(e=>e.label==='Entropy rise Δs').value;
+  near(ds,-d.gas.R*Math.log(d.result.regions[n].p0/d.result.regions[1].p0));
+  near(total.extra.find(e=>e.label==='Net flow turn Δθ').value,d.result.slipAngle);
  }
 });
