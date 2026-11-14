@@ -143,3 +143,5 @@ h1{font-weight:650;letter-spacing:-.7px}h2{font-size:16px;font-weight:650}h3{fon
 .typed-input-group .typed-value{margin-top:10px}.typed-value .number-wrap{position:relative}.typed-value .typed-value-unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:13px;color:#40576a}.typed-value .number-wrap:has(.typed-value-unit) input{padding-right:68px}.typed-value>.range-labels{margin-bottom:0}
 
 @media(min-width:1101px){.collision-setup .wall-setup-grid{grid-template-columns:repeat(6,minmax(0,1fr));gap:10px 14px}.collision-setup .input-top label{font-size:13px;line-height:1.3}.collision-setup select,.collision-setup input[type=number]{font-size:14px;padding:8px}.collision-setup .input-top{min-height:34px;align-items:flex-start}}
+
+.collision-file-actions{margin-top:18px;padding:16px;display:flex;gap:8px}.scene+#notice{margin:12px 20px;font-size:14px;line-height:1.6}
