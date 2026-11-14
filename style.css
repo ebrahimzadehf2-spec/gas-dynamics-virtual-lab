@@ -147,3 +147,5 @@ h1{font-weight:650;letter-spacing:-.7px}h2{font-size:16px;font-weight:650}h3{fon
 .collision-file-actions{margin-top:18px;padding:16px;display:flex;gap:8px}.scene+#notice{margin:12px 20px;font-size:14px;line-height:1.6}
 
 .plot-formula{margin-top:10px;white-space:pre-line;font-size:14px;line-height:1.7;color:#172d3c;overflow-wrap:anywhere}
+
+.scene:has(svg[data-custom-wall]){aspect-ratio:auto}.scene svg[data-custom-wall]{height:auto}
