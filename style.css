@@ -149,3 +149,5 @@ h1{font-weight:650;letter-spacing:-.7px}h2{font-size:16px;font-weight:650}h3{fon
 .plot-formula{margin-top:10px;white-space:pre-line;font-size:14px;line-height:1.7;color:#172d3c;overflow-wrap:anywhere}
 
 .scene:has(svg[data-custom-wall]){aspect-ratio:auto}.scene svg[data-custom-wall]{height:auto}
+
+.final-result-summary{padding:14px 18px;font-size:14px;line-height:1.55}.final-result-summary strong,.final-result-summary span{display:block;font-size:15px}.final-result-summary p{font-size:13px;margin:6px 0 0}

@@ -1,6 +1,6 @@
 const degrees=a=>a*180/Math.PI;
 export function defaultTrackingEvent(r){
- const es=r.tracking.events;return (es.find(e=>e.match&&e.incoming.includes('Oblique shock'))??es.find(e=>e.match)??es.find(e=>e.type==='Wall reflection')??es[0])?.index??null;
+ const es=r.tracking.events;return (es.find(e=>e.bookCase)??es.at(-1))?.index??null;
 }
 export function selectTrackingEvent(r,index){
  const e=r.tracking.events.find(e=>e.index===Number(index))??r.tracking.events[0];

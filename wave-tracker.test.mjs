@@ -40,7 +40,7 @@ test('Straight channels generate no waves; physical and computation limits retai
 });
 test('Profile, all contour quantities, selected-event tables, shock inspection and exports stay synchronized',()=>{
  const x={...defaults('wall'),...trackingPreset('reflection')},d=calculate('wall',x),r=d.result;
- assert.equal(r.selectedTrackingEvent,2);selectTrackingEvent(r,4);assert.equal(trackingShockDetails(r).length,1);assert.ok(trackingInspectionHTML(r,String).includes('E4'));
+ assert.equal(r.selectedTrackingEvent,r.tracking.events.at(-1).index);selectTrackingEvent(r,4);assert.equal(trackingShockDetails(r).length,1);assert.ok(trackingInspectionHTML(r,String).includes('E4'));
  for(const quantity of ['pressure','mach','temperature','density','speed']){const view=sceneSVG({...r,kind:'wall'},x,0,quantity);assert.equal(view.field.quantity,quantity);assert.ok(!/NaN|undefined/.test(view.svg));}
  const c=trackingCoordinates(r),v=probeTracking(r,c.X(.5),c.Y(.5)),p=trackingProfile(r,.5);assert.ok(v&&v.M>1&&p);assert.equal(probeTracking(r,c.X(-1),c.Y(.5)),null);
  const rows=trackingExportRows(r);assert.ok(rows.some(z=>z.label.includes('E4')&&z.label.includes('Mach')));assert.ok(rows.every(z=>Number.isFinite(z.value)));

@@ -1,4 +1,4 @@
-import {shockFanDrawing} from './shock-fan-example.js?v=20261114-example67';
+import {shockFanDrawing} from './shock-fan-example.js?v=20261114-final-view';
 import {wedgeWallDrawing} from './wedge-wall.js?v=20261114-region-markers';
 import {ramjetInletDrawing} from './ramjet-inlet-graphics.js?v=20261114-region-markers';
 import {fannoSystemDrawing} from './fanno-system-graphics.js?v=20261114-region-markers';
@@ -7,7 +7,7 @@ import {uniformDiagramText} from './diagram-typography.js?v=20261112-diagram-lab
 import {ductSystemSVG,rayleighBoundarySVG} from './duct-system-graphics.js?v=20261114-region-markers';
 import {coneAnnotations} from './cone-annotations.js?v=20261110-cone-conditions';
 import {wedgeDrawing} from './wedge-graphics.js?v=20261114-region-markers';
-import {trackingDrawing,trackingCoordinates} from './wave-tracker-graphics.js?v=20261114-custom-regions';
+import {trackingDrawing,trackingCoordinates} from './wave-tracker-graphics.js?v=20261114-final-view';
 import {wallDrawing} from './wave-wall-graphics.js?v=20261114-region-markers';
 import {airfoilDrawing} from './airfoil-graphics.js?v=20261114-region-markers';
 import {coneGeometry} from './cone-probe.js?v=20261110-cone-conditions';

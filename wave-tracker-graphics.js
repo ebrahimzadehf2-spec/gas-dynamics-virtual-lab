@@ -1,4 +1,3 @@
-import {calloutSlot} from './region-labels.js';
 import {channelOrdinate} from './wave-channel.js';
 import {trackingProfile} from './wave-tracker.js';
 import {cornerContourColor,cornerPalette} from './corner-graphics.js?v=20261113-rainbow-physical';
@@ -46,13 +45,10 @@ export function trackingDrawing(s,{txt,line,poly,fmt,range=null,quantity='mach'}
   const points=[[X(slab.left),Y(slab.bottoms[i])],[X(slab.right),Y(slab.tops[i])],[X(slab.right),Y(slab.tops[i+1])],[X(slab.left),Y(slab.bottoms[i+1])]],area=Math.abs(points.reduce((sum,a,j)=>{const b=points[(j+1)%4];return sum+a[0]*b[1]-a[1]*b[0];},0))/2;
   if(area>(labelCells.get(id)?.area??0))labelCells.set(id,{area,points,point:points.reduce((c,p)=>[c[0]+p[0]/4,c[1]+p[1]/4],[0,0])});
  }
- const regionCallouts=[],usedLabels=[];
  for(const [id,group]of grouped){const cell=labelCells.get(id);if(!cell)continue;const [px,py]=cell.point,name=group.names.join('/'),width=Math.max(...cell.points.map(p=>p[0]))-Math.min(...cell.points.map(p=>p[0])),thickness=cell.area/Math.max(1,width);
-  if(width>name.length*9+10&&thickness>20)inner+=`<g data-tracked-region="${name}">${txt(px,py+5,name,'#ffffff',17,'middle')}</g>`;
-  else{const ly=calloutSlot(py,usedLabels,62,height-72,25);usedLabels.push(ly);regionCallouts.push(line(px,py,620,ly-5,'#263c4d',.9)+`<g data-tracked-region="${name}">${txt(624,ly,name,'#17212b',16,'end')}</g>`);}
+  inner+=`<g data-tracked-region="${name}">${txt(px,py+5,name,'#ffffff',16,'middle')}</g>`;
  }
- const event=t.events.find(e=>e.index===s.selectedTrackingEvent);if(event){inner+=`<circle cx="${X(event.x)}" cy="${Y(event.y)}" r="4" fill="white" stroke="#000" stroke-width="1.4"/>`+txt(X(event.x)+7,Y(event.y)-8,`E${event.index}`,'#17212b',12);}
- inner+='</g>'+regionCallouts.join('');
+ inner+='</g>';
  for(const wall of [lower,upper])for(let i=0;i<wall.length-1;i++)inner+=line(...V(wall[i]),...V(wall[i+1]),'#111',1.6);
  if(s.limitX!==null)inner+=line(X(t.endX),43,X(t.endX),height-54,'#8e6d42',1,'4 4');
  inner+=txt(24,height-31,`Solved distance from inlet: ${fmt(t.endX,5)} m`,'#53616b',12)+txt(616,height-31,`Channel length: ${fmt(end,5)} m`,'#53616b',12,'end')+txt(24,height-8,t.hasFanApproximation?'Direct relations + approximate fan interactions':'Direct shock relations · inspect events below','#53616b',12);
