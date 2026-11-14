@@ -16,24 +16,24 @@ import {fittedInspectionHTML,fittedPointHTML,selectedFittedPoint,fittedExportRow
 import {probeFittedMOC} from './channel-moc-shocks-graphics.js?v=20261114-region-markers';
 import {channelSolverName} from './channel-solver.js?v=20261114-custom-final';
 import {trackingPreset} from './wave-tracker.js?v=20261109-wedge-cone';
-import {trackingInspectionHTML,selectTrackingEvent,trackingExportRows,trackingSummaryRows} from './wave-tracker-tables.js?v=20261114-custom-final';
-import {probeTracking} from './wave-tracker-graphics.js?v=20261114-custom-size';
+import {trackingInspectionHTML,selectTrackingEvent,trackingExportRows,trackingSummaryRows} from './wave-tracker-tables.js?v=20261114-custom-regions';
+import {probeTracking} from './wave-tracker-graphics.js?v=20261114-custom-regions';
 import {chapter6Example} from './regular-channel.js?v=20261109-wedge-cone';
 import {wallPresets} from './wave-wall.js?v=20261109-wedge-cone';
 import {airfoilTables} from './airfoil-tables.js?v=20261109-wedge-cone';
 import {airfoilGeometry,segmentSurface,surfaceSegments,presetSegments} from './airfoil.js?v=20261109-wedge-cone';
 import {nearestChartPoint} from './chart-probe.js?v=20261109-wedge-cone';
 import {probeCone} from './cone-probe.js?v=20261109-wedge-cone';
-import {plotOptions} from './plot-options.js?v=20261114-example67';
+import {plotOptions} from './plot-options.js?v=20261114-custom-regions';
 import {selectGas,gasInfo} from './gas-properties.js?v=20261109-wedge-cone';
 import {controlVolumePreset} from './control-volume.js?v=20261109-wedge-cone';
 import {pressureSweepPlan,advancePressure} from './sweep.js?v=20261109-wedge-cone';
-import {labs,chapters,defaults,inputDefinitions,nozzleInfo,trackingShockDetails} from './labs.js?v=20261114-custom-final';
-import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261114-custom-size';
+import {labs,chapters,defaults,inputDefinitions,nozzleInfo,trackingShockDetails} from './labs.js?v=20261114-custom-regions';
+import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261114-custom-regions';
 const $=id=>document.getElementById(id);let id='rayleigh',inputs={},request=0,current=null,pinned=null,timer,animation=false,frame,lastFrame=0,sceneTime=.001,fieldQuantity='pressure';
 let pendingWaveShape=null,pendingBookCase=null,pendingCustomChannel=false,pendingLegacyCorner=null;
 let displayedChart=null,chartChoices=[],plotSelection={};
-const worker=new Worker(new URL('./worker.js?v=20261114-custom-final',import.meta.url),{type:'module'});
+const worker=new Worker(new URL('./worker.js?v=20261114-custom-regions',import.meta.url),{type:'module'});
 function renderNav(){ $('chapters').innerHTML=chapters.map(([n,title,,ids])=>`<a href="#${ids[0]}" class="${ids.includes(id)?'active':''}" ${ids.includes(id)?'aria-current="page"':''}><span><span class="nav-title">${title}</span></span></a>`).join('');}
 function openLab(){stopSweep();clearTimeout(timer);sweepPositioned=false;sweepFinished=false;let next=location.hash.slice(1)||'rayleigh';if(['oblique','expansion'].includes(next)){pendingLegacyCorner=next;pendingWaveShape=next==='oblique'?'Compression ramp':'Expansion corner';location.hash='wall';return;}if(next==='balances'){location.hash='foundations';return;}if(next==='linear'){location.hash='airfoil';return;}if(!labs[next]){location.hash='rayleigh';return;}id=next;current=null;stopAnimation();inputs=defaults(id);try{let saved=JSON.parse(localStorage.getItem('gdvl-inputs-'+id+(id==='balances'?'-cv2':'')));if(saved&&typeof saved==='object'){for(let k in inputs)if(k in saved)inputs[k]=saved[k];if(id==='wall'&&saved.theta===undefined&&saved.wallSegments?.length)inputs.theta=Math.abs(saved.wallSegments[0].angle);if(id==='airfoil'&&!saved.geometryInput){const old=airfoilGeometry({...inputs,geometryInput:inputs.airfoilShape==='Custom panels'?'Coordinates':'Dimensions'});inputs.upperSegments=surfaceSegments(old.upper);inputs.lowerSegments=surfaceSegments(old.lower);inputs.geometryInput='Angles & lengths';}if(['oblique','expansion'].includes(id)&&saved.cornerColorVersion!==1)inputs.cornerView='Analytical contours';}}catch{}inputs.fluid=gasInfo(inputs).name;if(pendingWaveShape){if(id==='wall'){if(pendingWaveShape===ramjetMode)inputs={...inputs,...ramjetPreset};inputs.wallShape=pendingWaveShape;if(pendingWaveShape!=='Custom wall'&&pendingWaveShape!==ramjetMode&&pendingWaveShape!==shockFanMode){inputs.boundaryMode='Single wall';inputs.theta=Math.abs(wallPresets[pendingWaveShape][0].angle);}if(pendingWaveShape===shockFanMode)inputs={...inputs,...shockFanPreset};if(pendingWaveShape!==ramjetMode&&pendingWaveShape!==shockFanMode)inputs.wallSegments=wallPresets[pendingWaveShape].map(p=>({...p,angle:p.angle*(inputs.wallSide==='Gas below wall'?-1:1)}));}if(id==='collision'){inputs.interactionType=pendingWaveShape;inputs.geometryMode='Custom geometry';}pendingWaveShape=null;}if(pendingBookCase){inputs={...inputs,...chapter6Example(pendingBookCase)};pendingBookCase=null;}if(pendingLegacyCorner&&id==='wall'){let legacy=defaults(pendingLegacyCorner);try{legacy={...legacy,...JSON.parse(localStorage.getItem('gdvl-inputs-'+pendingLegacyCorner)||'{}')};}catch{}for(const key of ['M1','T1','p1','gamma','R','fluid','branch','cornerView','theta'])if(legacy[key]!==undefined)inputs[key]=legacy[key];inputs.wallSide='Gas above wall';pendingLegacyCorner=null;}if(pendingCustomChannel&&id==='wall'){inputs.wallShape='Custom wall';inputs.boundaryMode='Channel';inputs.channelSolver='Shock–Expansion';pendingCustomChannel=false;}if(id==='collision')inputs.geometryMode='Custom geometry';if(id==='wall')inputs.channelSolver=channelSolverName(inputs.channelSolver);let l=labs[id];$('labTitle').textContent=l.chapter===6?'Supersonic Wave Lab':l.title;$('description').textContent=l.description;$('model').textContent=l.model;$('limitations').textContent=l.limitations;let chapter=chapters.find(x=>x[0]===l.chapter);$('labTabs').hidden=l.chapter===6||chapter[3].length<2;$('labTabs').innerHTML=l.chapter===6||chapter[3].length<2?'':chapter[3].map(k=>`<button type="button" data-lab="${k}" class="${id===k?'active':''}">${labs[k].title}</button>`).join('');$('labTabs').querySelectorAll('button').forEach(b=>b.onclick=()=>location.hash=b.dataset.lab);renderNav();renderInputs();solve();}
 const waveShapes=[shockFanMode,'Compression ramp','Expansion corner','Custom wall',ramjetMode];
@@ -176,7 +176,7 @@ function renderTrackingPanel(d){
   $('fittedShockSelect').onchange=()=>{$('fittedShockPosition').value=0;update();};$('fittedShockPosition').oninput=update;update();return;
  }
  const panel=$('trackingEventPanel');panel.hidden=!d.result.tracking;panel.innerHTML=panel.hidden?'':trackingInspectionHTML(d.result,fmt);if(panel.hidden)return;
- const select=$('trackingEventSelect');if(select)select.onchange=()=>{selectTrackingEvent(d.result,select.value);d.scene.selectedTrackingEvent=d.result.selectedTrackingEvent;d.shockDetails=trackingShockDetails(d.result);d.rows=[...d.rows.filter(r=>r.panel),...trackingSummaryRows(d.result)];renderResult();};
+ const select=$('trackingEventSelect');if(select)select.onchange=()=>{selectTrackingEvent(d.result,select.value);d.scene.selectedTrackingEvent=d.result.selectedTrackingEvent;d.scene.regions=d.result.regions;d.shockDetails=trackingShockDetails(d.result);d.rows=[...d.rows.filter(r=>r.panel),...trackingSummaryRows(d.result)];renderResult();};
 }
 function renderRegionTable(d){
  if(d.result.ductSystem){const t=d.result.referenceTable;$('regionTablePanel').hidden=false;$('regionTableTitle').textContent='Properties at every station';$('regionTable').innerHTML=`<div class="region-table-scroll"><table class="region-table"><thead><tr><th>Property</th>${t.columns.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${t.rows.map(r=>`<tr><th>${r.label}</th>${r.values.map(v=>`<td>${fmt(v,6)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${t.note?`<p class="control-hint">${t.note}</p>`:''}`;return;}
