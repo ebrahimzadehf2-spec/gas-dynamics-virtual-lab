@@ -1,4 +1,4 @@
-import {fannoSystemMode,fannoConditions} from './fanno-system.js?v=20261114-duct-dimensions';
+import {fannoSystemMode,fannoConditions} from './fanno-system.js?v=20261114-conditional-duct';
 
 // Chapter 5, Examples 5-1 through 5-6. The book uses Fanning f.
 const system={ductProblem:fannoSystemMode,fannoInterfaceVersion:2,frictionInput:'Dimensionless',fannoUnknown:'Back pressure'};

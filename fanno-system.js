@@ -118,11 +118,9 @@ export function fannoSystemFields(raw){
  fields.push(select('fannoUnknown','Solve for',fannoUnknowns[0],fannoSolveOptions(condition)));
  if(solve!==fannoSolves[1])fields.push(n('reservoirP0','Reservoir pressure',500,.00001,1e9,'kPa'));
  fields.push(n('reservoirT0','Reservoir temperature',400,1,1e5,'K'),n('systemAreaRatio','Nozzle exit / throat area',2,1.000001,1000,'Aₑ/Aₜ'),n('nozzleContraction','Nozzle inlet / throat area',3,1.000001,1000,'Aᵢ/Aₜ'),n('nozzleLength','Nozzle length',1,.000001,1e6,'m'));
- fields.push(select('ductSection','Cross section','Circular',['Circular','Rectangular']),...(x.ductSection==='Rectangular'?[n('ductWidth','Width',.05,.000001,1000,'m'),n('ductHeight','Height',.05,.000001,1000,'m')]:[n('hydraulicDiameter','Diameter',.05,.000001,1000,'m')]));
- fields.push({...n('ductLength','Duct length',1,.000001,1e6,'m'),section:'Friction'});
  if(x.fannoUnknown!==fannoUnknowns[2]&&condition!==fannoConditions[5]){
   fields.push(select('frictionInput','Friction input','Dimensionless',['Dimensionless','Length and friction factor']));
-  if(x.frictionInput==='Length and friction factor')fields.push(n('frictionFactor','Friction factor',.005,0,1),select('frictionConvention','Friction convention','Fanning',['Fanning','Darcy']));
+  if(x.frictionInput==='Length and friction factor')fields.push(select('ductSection','Cross section','Circular',['Circular','Rectangular']),...(x.ductSection==='Rectangular'?[n('ductWidth','Width',.05,.000001,1000,'m'),n('ductHeight','Height',.05,.000001,1000,'m')]:[n('hydraulicDiameter','Diameter',.05,.000001,1000,'m')]),n('ductLength','Duct length',1,.000001,1e6,'m'),n('frictionFactor','Friction factor',.005,0,1),select('frictionConvention','Friction convention','Fanning',['Fanning','Darcy']));
   else fields.push(n('lambda','Friction length fᴅL/D',.2,0,10));
  }
  if(condition===fannoConditions[0])fields.push(n('backRatio','Back / reservoir pressure',.5,.000001,1,'pᵦ/p₀',.001));
