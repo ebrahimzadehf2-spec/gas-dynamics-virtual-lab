@@ -141,3 +141,9 @@ test('Long and degenerate ducts keep only the resolved internal-flow interval',(
  }
  const g=base.gamma,lambda=fannoRatios(machFromArea(base.systemAreaRatio,'subsonic',g),g).F,plan=fannoPressurePlan({...base,lambda});assert.equal(plan.enabled,false);assert.match(plan.message,/No finite/);
 });
+test('Cross-section dimensions determine mass flow and rectangular hydraulic friction',()=>{
+ const circular=run({hydraulicDiameter:.04,ductArea:999}),larger=run({hydraulicDiameter:.08,ductArea:1e-9});
+ near(larger.result.massFlow,4*circular.result.massFlow);near(larger.result.backPressure,circular.result.backPressure);
+ const rectangular=run({ductSection:'Rectangular',ductWidth:.04,ductHeight:.08,ductLength:1,frictionInput:'Length and friction factor',frictionFactor:.002,frictionConvention:'Darcy'});
+ near(rectangular.result.lambda,.002/(2*.04*.08/(.04+.08)));assert.ok(rectangular.checks.mass<1e-7);
+});

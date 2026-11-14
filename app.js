@@ -2,8 +2,8 @@ import {compactTypedInputs} from './typed-inputs.js?v=20261114-compact-inputs';
 import {probeWedgeWall} from './wedge-wall.js?v=20261114-region-markers';
 import {ramjetMode,ramjetPreset,ramjetDescription,ramjetLimit} from './ramjet-inlet.js?v=20261114-restored-inlet-text';
 import {probeInlet} from './ramjet-inlet-graphics.js?v=20261114-region-markers';
-import {fannoExamples} from './fanno-examples.js?v=20261114-fanno-friction-parameter';
-import {fannoSystemMode,fannoSolves,fannoConditions,fannoPressurePlan,migrateFannoInputs} from './fanno-system.js?v=20261113-rainbow-physical';
+import {fannoExamples} from './fanno-examples.js?v=20261114-duct-dimensions';
+import {fannoSystemMode,fannoSolves,fannoConditions,fannoPressurePlan,migrateFannoInputs} from './fanno-system.js?v=20261114-duct-dimensions';
 import {rayleighDistributionNote,fannoDistributionNote} from './duct-contours.js?v=20261113-rainbow-physical';
 import {uniformDiagramText} from './diagram-typography.js?v=20261112-diagram-labels';
 import {rayleighHeatBounds} from './rayleigh-input.js?v=20261110-rayleigh-audit';
@@ -27,7 +27,7 @@ import {plotOptions} from './plot-options.js?v=20261114-region-markers';
 import {selectGas,gasInfo} from './gas-properties.js?v=20261109-wedge-cone';
 import {controlVolumePreset} from './control-volume.js?v=20261109-wedge-cone';
 import {pressureSweepPlan,advancePressure} from './sweep.js?v=20261109-wedge-cone';
-import {labs,chapters,defaults,inputDefinitions,nozzleInfo,trackingShockDetails} from './labs.js?v=20261114-fanno-friction-parameter';
+import {labs,chapters,defaults,inputDefinitions,nozzleInfo,trackingShockDetails} from './labs.js?v=20261114-duct-dimensions';
 import {sceneSVG,chartSVG,fmt} from './graphics.js?v=20261114-region-markers';
 const $=id=>document.getElementById(id);let id='rayleigh',inputs={},request=0,current=null,pinned=null,timer,animation=false,frame,lastFrame=0,sceneTime=.001,fieldQuantity='pressure';
 let pendingWaveShape=null,pendingBookCase=null,pendingCustomChannel=false,pendingLegacyCorner=null;
@@ -246,7 +246,7 @@ function stopAnimation(){animation=false;cancelAnimationFrame(frame);$('scene').
 $('animate').onclick=()=>{if(id==='nozzle'){toggleSweep();return;}if(!current)return;if(animation){stopAnimation();return;}if(matchMedia('(prefers-reduced-motion: reduce)').matches){$('notice').hidden=false;$('notice').textContent='Animation is paused because your system prefers reduced motion.';return;}animation=true;$('scene').classList.add('animating');$('animate').textContent='Ⅱ Pause';$('animate').setAttribute('aria-pressed','true');if(id==='tube'){const tick=t=>{if(!animation)return;if(t-lastFrame>45){lastFrame=t;sceneTime=.00012+(t%6000)/6000*.00188;renderScene();if((plotSelection[id]??'').startsWith('tube-profile-'))renderSelectedPlot();}frame=requestAnimationFrame(tick);};frame=requestAnimationFrame(tick);}else{$('notice').hidden=false;$('notice').textContent='Moving tracers illustrate flow direction only; they are not time-resolved particle trajectories.';}};
 let sweepPlaying=false,sweepTimer=null,sweepPositioned=false,sweepAtEnd=false,sweepDelay=100,sweepFinished=false,solvePending=false,sweepPlanCache=null,sweepPlanKey='';
 function getSweepPlan(){
- const key=JSON.stringify([id,inputs.ductProblem,inputs.fannoSystemSolve,inputs.systemAreaRatio,inputs.nozzleContraction,inputs.nozzleLength,inputs.ductLength,inputs.ductArea,inputs.lambda,inputs.frictionInput,inputs.hydraulicDiameter,inputs.frictionFactor,inputs.frictionConvention,inputs.reservoirT0,inputs.nozzleType,inputs.areaRatio,inputs.contractionRatio,inputs.MIn,inputs.sonicBranch,inputs.outletCondition,inputs.gamma]);
+ const key=JSON.stringify([id,inputs.ductProblem,inputs.fannoSystemSolve,inputs.systemAreaRatio,inputs.nozzleContraction,inputs.nozzleLength,inputs.ductLength,inputs.ductSection,inputs.ductWidth,inputs.ductHeight,inputs.lambda,inputs.frictionInput,inputs.hydraulicDiameter,inputs.frictionFactor,inputs.frictionConvention,inputs.reservoirT0,inputs.nozzleType,inputs.areaRatio,inputs.contractionRatio,inputs.MIn,inputs.sonicBranch,inputs.outletCondition,inputs.gamma]);
  if(key!==sweepPlanKey||!sweepPlanCache){sweepPlanKey=key;try{sweepPlanCache=id==='fanno'?fannoPressurePlan(inputs):pressureSweepPlan(inputs);}catch(e){sweepPlanCache={enabled:false,min:.001,max:1,milestones:[],message:e.message};}}
  return sweepPlanCache;
 }
