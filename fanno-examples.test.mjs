@@ -11,8 +11,8 @@ test('All six book examples load valid distinct problems',()=>{
  for(let n=1;n<=6;n++)assert.ok(solve(n).result.s2.M>0);
  near(solve(1).result.s2.M,.709257);
  near(solve(1).result.s2.p/1000,125.2332);
- near(value(solve(2),'Required duct length'),.184954,.00001);
- near(value(solve(2),'Maximum duct length'),.269985,.00001);
+ near(value(solve(2),'Required friction parameter'),.295926472,.00001);
+ near(value(solve(2),'Maximum friction parameter (sonic exit)'),.431976689,.00001);
  near(solve(3).result.supplyPressure/1000,4871.6966,.01);
  near(solve(4).result.lambda,.172343,.00001);
 });
