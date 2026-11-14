@@ -1,3 +1,4 @@
+import {customFinalMatch} from './custom-final-match.js?v=20261114-custom-final';
 import {solveWaveTracker} from './wave-tracker.js';
 import {regularPattern} from './regular-channel.js';
 import {deg} from './physics.js';
@@ -16,5 +17,6 @@ export function solveShockExpansionChannel(x){
   }
  }
  if(r.bookCase&&r.reason)r.reason=`Example ${r.bookCase} interaction solved. Downstream continuation stops: ${r.reason}`;
+ r.finalStreamMatch=customFinalMatch(x,r);
  return {...r,channelMethod:'Shock–Expansion'};
 }
