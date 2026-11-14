@@ -8,7 +8,7 @@ export function cornerDrawing(s,inputs,{txt,line,poly,shade,fmt}){
  const x=245,y=shock?242:154,L=Math.min(365,(shock?140:105)/Math.max(1e-12,Math.abs(Math.tan(angle)))),right=x+L;
  const wallY=y-L*Math.tan(angle),domain=[[20,52],[right,52],[right,wallY],[x,y],[20,y]];
  const end=a=>{const dx=Math.cos(a),dy=-Math.sin(a),times=[];if(dx>1e-12)times.push((right-x)/dx);if(dy< -1e-12)times.push((52-y)/dy);if(dy>1e-12)times.push((292-y)/dy);const t=Math.min(...times.filter(t=>t>=0));return [x+t*dx,y+t*dy];};
- const region=(cx,cy,n)=>`<circle cx="${cx}" cy="${cy}" r="11" fill="${colored?'#ffffff':'#f8fbf6'}" stroke="#263c4d" stroke-width="1.1"/>`+txt(cx,cy+5,n,'#17212b',15,'middle');
+ const region=(cx,cy,n)=>!shock?txt(cx,cy+5,n,colored?'#ffffff':'#17212b',17,'middle'):`<circle cx="${cx}" cy="${cy}" r="11" fill="${colored?'#ffffff':'#f8fbf6'}" stroke="#263c4d" stroke-width="1.1"/>`+txt(cx,cy+5,n,'#17212b',15,'middle');
  const arc=(a,b,r,label)=>{if(Math.abs(b-a)<1e-7)return '';const points=linspace(a,b,28).map(t=>[x+r*Math.cos(t),y-r*Math.sin(t)]),mid=(a+b)/2;return `<polyline points="${points.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#315c82" stroke-width="1"/>`+txt(x+(r+10)*Math.cos(mid),y-(r+10)*Math.sin(mid)+4,label,'#315c82',14,'middle');};
  let inner=`<defs><clipPath id="cornerGas"><polygon points="${domain.map(p=>p.join(',')).join(' ')}"/></clipPath></defs>`;
  inner+=`<g clip-path="url(#cornerGas)" data-corner-fluid="true">`;
@@ -48,6 +48,7 @@ export function cornerDrawing(s,inputs,{txt,line,poly,shade,fmt}){
  inner+=hatch([20,y],[x,y])+hatch([x,y],[right,wallY])+line(x,y,Math.min(right,x+145),y,'#8b99a5',.8,'3 4')+txt(x,y+22,'A','#263c4d',14,'middle');
  inner+=arc(0,angle,30,'θ');
  if(shock)inner+=arc(0,s.beta,65,'β');else{inner+=arc(0,Math.asin(1/s.M),55,'μ₁')+arc(-turn,Math.asin(1/s.M2)-turn,85,'μ₂');}
+ if(!shock)inner+=txt(300,28,`μ₁ = ${fmt(deg(Math.asin(1/s.M)),4)}°`,'#263c4d',15,'middle')+txt(490,28,`μ₂ = ${fmt(deg(Math.asin(1/s.M2)),4)}°`,'#263c4d',15,'middle');
  inner+=region(123,shock?155:115,'1');
  const r2x=x+.78*L,wally=y-(r2x-x)*Math.tan(angle),wavey=shock?Math.max(55,y-(r2x-x)*Math.tan(s.beta)):y-(r2x-x)*Math.tan(Math.asin(1/s.M2)-turn);
  inner+=region(r2x,(wally+Math.max(55,wavey))/2,'2');
