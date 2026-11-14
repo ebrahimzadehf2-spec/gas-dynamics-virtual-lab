@@ -16,7 +16,7 @@ test('Every turning chart has visible markers matching the solved states',()=>{
 test('Book regions retain their own labels and coincident wall reflections show both region numbers',()=>{
  const d=run('wall',ramjetPreset),c=chart(d);assert.deepEqual(c.markers.map(m=>m.name),['1','2','3']);near(c.markers[1].x,-8);near(c.markers[2].y,d.result.regions[3].p/d.result.s1.p);
  const b=chart(run('cone',{bodyGeometry:'Wedge',nearbyWall:'Both walls'}));assert.ok(b.markers.some(m=>m.name==='3 / 5'));assert.ok(!b.markers.some(m=>m.name==='5'));
- const interaction=chart(run('collision'));const all=interaction.markers.map(m=>m.name).join(' / ');for(const n of ['1','2','3','4','5'])assert.ok(all.includes(n));
+ const interaction=chart(run('collision'));const all=interaction.markers.map(m=>m.name).join(' / ');for(const n of ['1','2','3','4','4′'])assert.ok(all.includes(n));
 });
 test('Airfoil labels match panel and trailing-edge identifiers; continuous cone locations are named',()=>{
  const c=chart(run('airfoil')),all=c.markers.map(m=>m.name).join(' / ');for(const label of ['U1','U2','L1','L2','TE-U+','TE-L+'])assert.ok(all.includes(label));

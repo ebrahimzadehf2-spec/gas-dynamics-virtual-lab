@@ -54,7 +54,7 @@ test('Unified UI geometry always exposes dimensions and produces finite contours
 test('Overall 1-to-4 and 1-to-5 summaries retain signed turn and cumulative entropy',()=>{
  const d=calculate('collision',{...defaults('collision'),thetaUpper:10,thetaLower:20}),groups=d.shockDetails;
  for(const n of [4,5]){
-  const total=groups.find(q=>q.title===`Overall change · 1 → ${n}`);assert.ok(total);
+  const total=groups.find(q=>q.title===`Overall change · 1 → ${n===4?'4′':'4'}`);assert.ok(total);
   const ds=total.extra.find(e=>e.label==='Entropy rise Δs').value;
   near(ds,-d.gas.R*Math.log(d.result.regions[n].p0/d.result.regions[1].p0));
   near(total.extra.find(e=>e.label==='Net flow turn Δθ').value,d.result.slipAngle);
