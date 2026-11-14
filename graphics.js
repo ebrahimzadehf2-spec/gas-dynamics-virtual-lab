@@ -11,7 +11,7 @@ import {wallDrawing} from './wave-wall-graphics.js?v=20261114-region-markers';
 import {airfoilDrawing} from './airfoil-graphics.js?v=20261114-region-markers';
 import {coneGeometry} from './cone-probe.js?v=20261110-cone-conditions';
 import {diagramFontFamily,diagramFontStyle} from './diagram-font.js?v=20261109-wedge-cone';
-import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261114-expansion-plots';
+import {cornerDrawing,cornerPalette,cornerContourColor} from './corner-graphics.js?v=20261114-expansion-labels';
 import {regionLabelPosition,calloutSlot} from './region-labels.js?v=20261109-wedge-cone';
 import {readableSceneLabels} from './scene-labels.js?v=20261112-diagram-labels';
 import {rad,deg,linspace,prandtlMeyer} from './physics.js?v=20261110-rayleigh-audit';
@@ -222,7 +222,7 @@ if(s.comparison){
   label='Analytical wave interaction · signed slip angle · equal geometric scale';meta='Dashed: slip line · solid black: shocks · view ends before wall reflections';
  }
 
- inner=readableSceneLabels(inner);
+ if(s.kind!=='expansion'||inputs.cornerView==='Textbook schematic')inner=readableSceneLabels(inner);
  if(s.kind==='cone')inner+='<circle id="fieldProbePoint" r="3.5" fill="#17212b" stroke="white" stroke-width="1.5" visibility="hidden" pointer-events="none"/>';
  if(field){if(['oblique','expansion','collision'].includes(s.kind))field.palette=cornerPalette;field.options??=f.options;field.note??='Range scaled to this solution';}
  return {label,meta,field,svg:`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${s.kind==='state'?'0 65 640 170':`0 0 ${W} ${H}`}" role="img" aria-label="${esc(label)}"><title>${esc(label)}</title>${diagramFontStyle}<defs><pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M 24 0 L 0 0 0 24" fill="none" stroke="#e4ece1" stroke-width=".5"/></pattern></defs><rect width="640" height="300" fill="#f8fbf6"/><rect width="640" height="300" fill="url(#grid)"/>${inner}</svg>`};

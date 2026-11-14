@@ -9,7 +9,8 @@ export function cornerDrawing(s,inputs,{txt,line,poly,shade,fmt}){
  const wallY=y-L*Math.tan(angle),domain=[[20,52],[right,52],[right,wallY],[x,y],[20,y]];
  const end=a=>{const dx=Math.cos(a),dy=-Math.sin(a),times=[];if(dx>1e-12)times.push((right-x)/dx);if(dy< -1e-12)times.push((52-y)/dy);if(dy>1e-12)times.push((292-y)/dy);const t=Math.min(...times.filter(t=>t>=0));return [x+t*dx,y+t*dy];};
  const region=(cx,cy,n)=>!shock?txt(cx,cy+5,n,colored?'#ffffff':'#17212b',17,'middle'):`<circle cx="${cx}" cy="${cy}" r="11" fill="${colored?'#ffffff':'#f8fbf6'}" stroke="#263c4d" stroke-width="1.1"/>`+txt(cx,cy+5,n,'#17212b',15,'middle');
- const arc=(a,b,r,label)=>{if(Math.abs(b-a)<1e-7)return '';const points=linspace(a,b,28).map(t=>[x+r*Math.cos(t),y-r*Math.sin(t)]),mid=(a+b)/2;return `<polyline points="${points.map(p=>p.join(',')).join(' ')}" fill="none" stroke="#315c82" stroke-width="1"/>`+txt(x+(r+10)*Math.cos(mid),y-(r+10)*Math.sin(mid)+4,label,'#315c82',14,'middle');};
+ const annotation=colored?'#ffffff':'#263c4d';
+ const arc=(a,b,r,label)=>{if(Math.abs(b-a)<1e-7)return '';const points=linspace(a,b,28).map(t=>[x+r*Math.cos(t),y-r*Math.sin(t)]),mid=(a+b)/2;return `<polyline points="${points.map(p=>p.join(',')).join(' ')}" fill="none" stroke="${annotation}" stroke-width="1"/>`+txt(x+(r+10)*Math.cos(mid),y-(r+10)*Math.sin(mid)+4,label,annotation,14,'middle');};
  let inner=`<defs><clipPath id="cornerGas"><polygon points="${domain.map(p=>p.join(',')).join(' ')}"/></clipPath></defs>`;
  inner+=`<g clip-path="url(#cornerGas)" data-corner-fluid="true">`;
  if(colored)inner+=poly(domain,shade(inputs._cornerUp));
@@ -45,16 +46,17 @@ export function cornerDrawing(s,inputs,{txt,line,poly,shade,fmt}){
  // The wall is a polyline with short solid-side hatching, never a filled block.
  inner+=`<polyline data-corner-wall="true" points="20,${y} ${x},${y} ${right},${wallY}" fill="none" stroke="#263c4d" stroke-width="2.2"/>`;
  const hatch=(a,b)=>{const dx=b[0]-a[0],dy=b[1]-a[1],length=Math.hypot(dx,dy),nx=-dy/length,ny=dx/length;let h='';for(let d=8;d<length;d+=13){const xx=a[0]+dx*d/length,yy=a[1]+dy*d/length;h+=line(xx,yy,xx-4*dx/length+7*nx,yy-4*dy/length+7*ny,'#8895a0',.8);}return h;};
- inner+=hatch([20,y],[x,y])+hatch([x,y],[right,wallY])+line(x,y,Math.min(right,x+145),y,'#8b99a5',.8,'3 4')+txt(x,y+22,'A','#263c4d',14,'middle');
+ inner+=hatch([20,y],[x,y])+hatch([x,y],[right,wallY])+line(x,y,Math.min(right,x+145),y,'#8b99a5',.8,'3 4')+txt(shock?x:x-14,shock?y+22:y-12,'A',annotation,14,'middle');
  inner+=arc(0,angle,30,'θ');
- if(shock)inner+=arc(0,s.beta,65,'β');else{inner+=arc(0,Math.asin(1/s.M),55,'μ₁')+arc(-turn,Math.asin(1/s.M2)-turn,85,'μ₂');}
- if(!shock)inner+=txt(300,28,`μ₁ = ${fmt(deg(Math.asin(1/s.M)),4)}°`,'#263c4d',15,'middle')+txt(490,28,`μ₂ = ${fmt(deg(Math.asin(1/s.M2)),4)}°`,'#263c4d',15,'middle');
+ if(shock)inner+=arc(0,s.beta,65,'β');else{inner+=arc(0,Math.asin(1/s.M),90,`μ₁ = ${fmt(deg(Math.asin(1/s.M)),4)}°`)+arc(-turn,Math.asin(1/s.M2)-turn,135,`μ₂ = ${fmt(deg(Math.asin(1/s.M2)),4)}°`);}
+
  inner+=region(123,shock?155:115,'1');
  const r2x=x+.78*L,wally=y-(r2x-x)*Math.tan(angle),wavey=shock?Math.max(55,y-(r2x-x)*Math.tan(s.beta)):y-(r2x-x)*Math.tan(Math.asin(1/s.M2)-turn);
  inner+=region(r2x,(wally+Math.max(55,wavey))/2,'2');
  // Horizontal incident flow is the chapter 6 angular reference.
  const ix=40,iy=shock?77:70;
- inner+=`<g data-view-frame="flow-aligned"><g data-flow-angle="0">${line(ix,iy,ix+58,iy,'#344e61',1.8)}${poly([[ix+58,iy],[ix+50,iy-4],[ix+50,iy+4]],'#344e61')}</g>${txt(ix+67,iy+5,`M₁ = ${fmt(s.M,4)}`,'#263c4d',15)}`;
- inner+='</g>';
+ if(!shock)inner+=`<g data-view-frame="flow-aligned">${txt(120,y-65,`M₁ = ${fmt(s.M,4)}`,annotation,15,'middle')}</g>`;
+ else inner+=`<g data-view-frame="flow-aligned"><g data-flow-angle="0">${line(ix,iy,ix+58,iy,'#344e61',1.8)}${poly([[ix+58,iy],[ix+50,iy-4],[ix+50,iy+4]],'#344e61')}</g>${txt(ix+67,iy+5,`M₁ = ${fmt(s.M,4)}`,'#263c4d',15)}`;
+ if(shock)inner+='</g>';
  return {inner,label:shock?'Oblique shock · horizontal surface and compression ramp':'Prandtl–Meyer fan · horizontal surface and opening corner',meta:'Flow-aligned view · angles to scale · analytical streamlines'};
 }
